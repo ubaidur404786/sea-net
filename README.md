@@ -144,6 +144,50 @@ straight from MILLET and what is new in SEA-Net.
 
 ---
 
+## Getting the data
+
+The datasets are **not** included in this repo (they are large and have their own licenses), so you
+download them once and place them under `data/`. The code checks what is on disk and tells you
+clearly if anything is missing.
+
+### WebTraffic (synthetic, ~19 MB)
+
+This is MILLET's synthetic dataset. Copy its four files from the original MILLET repo
+([`data/WebTraffic/`](https://github.com/JAEarly/MILTimeSeriesClassification/tree/main/data/WebTraffic))
+into `data/WebTraffic/` here:
+
+```
+data/WebTraffic/
+  WebTraffic_TRAIN.csv
+  WebTraffic_TEST.csv
+  WebTraffic_TRAIN_metadata.json
+  WebTraffic_TEST_metadata.json
+```
+
+### UCR archive (128 datasets, ~260 MB zipped)
+
+Download `UCRArchive_2018.zip` from the official UCR page and unzip it into `data/UCR/`:
+
+- Archive page: <https://www.cs.ucr.edu/~eamonn/time_series_data_2018/>
+- Direct link: <https://www.cs.ucr.edu/~eamonn/time_series_data_2018/UCRArchive_2018.zip>
+
+The zip is **password-protected**; the password is given in the archive's briefing document
+([BriefingDocument2018.pdf](https://www.cs.ucr.edu/~eamonn/time_series_data_2018/BriefingDocument2018.pdf))
+on that page. After unzipping, `data/UCR/` should contain one folder per dataset, e.g.:
+
+```
+data/UCR/
+  Coffee/Coffee_TRAIN.tsv, Coffee_TEST.tsv
+  ECG200/...
+  ...
+  Missing_value_and_variable_length_datasets_adjusted/   <- keep this folder; the 15 fixed datasets live here
+```
+
+Keep the `Missing_value_and_variable_length_datasets_adjusted/` folder — it holds the cleaned copies
+of the 15 problem datasets (see [Adjustments to the MILLET code](#adjustments-to-the-millet-code)).
+
+---
+
 ## How to run
 
 Everything runs through `main.py`:
