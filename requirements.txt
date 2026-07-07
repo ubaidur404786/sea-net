@@ -1,0 +1,12 @@
+jupyter
+latextable
+matplotlib
+numpy
+pandas
+scienceplots
+scikit-learn
+scipy
+seaborn
+texttable
+torch
+tqdm
