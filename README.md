@@ -153,7 +153,7 @@ clearly if anything is missing.
 ### WebTraffic (synthetic, ~19 MB)
 
 This is MILLET's synthetic dataset. Copy its four files from the original MILLET repo
-([`data/WebTraffic/`](https://github.com/JAEarly/MILTimeSeriesClassification/tree/main/data/WebTraffic))
+([`data/WebTraffic/`](https://github.com/JAEarly/MILTimeSeriesClassification/tree/master/data/WebTraffic))
 into `data/WebTraffic/` here:
 
 ```
