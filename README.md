@@ -89,6 +89,42 @@ wins** on that dataset.
 
 ---
 
+## Architecture
+
+SEA-Net is just **`input → encoder → pooling head`**. The encoder (`MSTCNSepEncoder`) is the new
+part; the pooling head (`MILAdditivePooling`) is reused from MILLET unchanged. The three views below
+go from the whole network down to a single block. Throughout, **`B`** = batch, **`T`** = series
+length (never changes), **`C`** = number of classes.
+
+### Level 1 — the whole network (tensor shapes)
+
+![SEA-Net architecture, level 1: the whole network with tensor shapes](Latex/archi_level1.png)
+
+The input series `(B, 1, T)` goes through the encoder to per-timestep features `(B, 128, T)`, then
+the Additive pooling head produces three outputs: `bag_logits (B, C)` (the class scores),
+`interpretation (B, C, T)` (importance of each timestep, used by AOPCR / NDCG), and `attn (B, T, 1)`
+(the attention gate, used by the training focus penalty).
+
+### Level 2 — inside the encoder (`MSTCNSepEncoder`)
+
+![SEA-Net architecture, level 2: inside the encoder](Latex/archi_level2.png)
+
+A stem `Conv1d(1 → 128, k=7)` lifts the single channel to 128 channels, then **6 residual blocks**
+run with dilations **1, 2, 4, 8, 16, 16** (capped at 16 to keep each timestep's view local). Zero
+"same" padding keeps the length `T` the same all the way through — so deleting a timestep (which AOPCR
+does) never changes the shape.
+
+### Level 3 — inside one block (`MultiScaleSepBlock`)
+
+![SEA-Net architecture, level 3: inside one MultiScaleSepBlock](Latex/archi_level3.png)
+
+Each block runs a "unit" **twice** and then adds the input back (residual). A unit runs three
+depthwise convolutions (kernels **5 / 11 / 23**) in parallel and **sums** them (multi-scale), then a
+`1×1` pointwise conv mixes the channels, followed by BatchNorm → ReLU → Dropout. Depthwise-separable
+convs use very few weights (this is what makes SEA-Net small); the shape stays `(B, d, T)` in and out.
+
+---
+
 ## What we reuse and what we change
 
 The pipeline has four stages: **data → model → train → results**. Below is exactly what came
