@@ -1,7 +1,7 @@
 jupyter
 latextable
 matplotlib
-mlflow
+mlflow>=3.1
 numpy
 optuna
 pandas

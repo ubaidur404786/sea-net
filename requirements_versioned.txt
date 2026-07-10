@@ -1,7 +1,9 @@
 jupyter==1.0.0
 latextable==1.0.0
 matplotlib==3.7.2
+mlflow==3.14.0
 numpy==1.24.4
+optuna==4.9.0
 overrides==7.4.0
 pandas==2.0.3
 pyyaml==6.0.1

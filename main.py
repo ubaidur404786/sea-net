@@ -41,6 +41,7 @@ warnings.filterwarnings("ignore", message="The given NumPy array is not writable
 import torch
 
 from seanet import data as D
+from seanet import tracking
 from seanet.config import load_config, to_flat_dict
 from seanet.logs import start_logging
 from seanet.model import make_sea_net, make_baseline, num_params, state_dict_size_mb
@@ -110,6 +111,31 @@ def webtraffic_millet(metric_csv):
     return float(df.set_index("Dataset").loc["WebTraffic", reps].mean())
 
 
+def _mlflow_for_default_run(smoke, config_path=os.path.join("configs", "main.yaml")):
+    """
+    Start MLflow for the commands that do not build a full config themselves (webtraffic/single/train).
+
+    Those commands train the default SEA-Net, so they do not go through load_config. This reads the
+    mlflow block from configs/main.yaml and starts the experiment, so they still record every trained
+    model (its params + train/val/test metrics + the versioned model) - the same as "run".
+
+    smoke : if True, MLflow is skipped (smoke runs are throwaway 3-epoch checks; we do not want them
+            polluting the runs/models you compare).
+    config_path : where to read the mlflow settings from.
+    returns : (mlf_handle_or_None, log_model_weights_flag).
+    """
+    if smoke:
+        return None, True
+    try:
+        cfg = load_config(config_path)
+    except Exception as e:                                       # never let a config problem stop training
+        print(f"  [mlflow] could not read {config_path} ({e}); MLflow logging is off for this run.")
+        return None, True
+    mlf = tracking.start_experiment(cfg)
+    log_weights = getattr(getattr(cfg, "mlflow", None), "log_model_weights", True)
+    return mlf, log_weights
+
+
 # ---------------------------------------------------------------------------
 # subcommands (one function per "python main.py <command>")
 # ---------------------------------------------------------------------------
@@ -175,8 +201,11 @@ def cmd_webtraffic(args):
     """
     device = get_device()
     print(f"device: {device}  mode: {'smoke' if args.smoke else 'full'}")
+    mlf, log_weights = _mlflow_for_default_run(args.smoke)     # record the run in MLflow (skipped for smoke)
     kw = dict(n_epochs=3, patience=3) if args.smoke else {}   # smoke = 3 epochs only
-    row = train_one("WebTraffic", device=device, verbose=True, **kw)
+    row = train_one("WebTraffic", device=device, verbose=True, mlf=mlf,
+                    mlf_tags={"command": "webtraffic"}, logged_model_name="seanet",
+                    log_model_weights=log_weights, **kw)
     print("\n=== SEA-Net on WebTraffic ===")
     print_row(row)
     # print SEA-Net next to MILLET for the 3 metrics
@@ -204,8 +233,11 @@ def cmd_single(args):
     if result_exists(name) and not args.smoke:               # already finished -> do not redo it
         print(f"{name} already done -> skip (delete its row in {RESULTS_CSV} to redo)")
         return
+    mlf, log_weights = _mlflow_for_default_run(args.smoke)   # record the run in MLflow (skipped for smoke)
     kw = dict(n_epochs=3, patience=3) if args.smoke else {}
-    row = train_one(name, device=device, verbose=True, **kw)
+    row = train_one(name, device=device, verbose=True, mlf=mlf,
+                    mlf_tags={"command": "single"}, logged_model_name="seanet",
+                    log_model_weights=log_weights, **kw)
     print(f"\n=== SEA-Net on {name} ===")
     print_row(row)
     base = millet_baseline("test_acc.csv")                   # show the MILLET accuracy if this is one of the 85
@@ -238,6 +270,7 @@ def cmd_train(args):
 
     total = len(names)
     print(f"device: {device} | mode: {'smoke' if args.smoke else 'full'} | datasets: {total}", flush=True)
+    mlf, log_weights = _mlflow_for_default_run(args.smoke)   # record every dataset's run in MLflow (skipped for smoke)
     kw = dict(n_epochs=3, patience=3) if args.smoke else {}
     done = skipped = failed = 0                              # running tally for the summary line
     for i, name in enumerate(names, 1):
@@ -250,7 +283,9 @@ def cmd_train(args):
             if not D.summary_row_exists(name):               # make sure its data_summary row exists
                 D.write_summary_row(D.summarise_dataset(name))
             print(f"{tag} {name}", flush=True)               # header; the stage lines below belong to it
-            row = train_one(name, device=device, verbose=True, **kw)   # trains + scores (prints stages)
+            row = train_one(name, device=device, verbose=True, mlf=mlf,   # trains + scores (prints stages)
+                            mlf_tags={"command": "train"}, logged_model_name="seanet",
+                            log_model_weights=log_weights, **kw)
             save_result_row(row)                             # save the metrics + mark it done
             ndcg = "n/a" if row["test_ndcg"] is None else f"{row['test_ndcg']:.3f}"
             print(f"{tag} {name:28s} DONE  acc={row['test_acc']:.4f} AOPCR={row['test_aopcr']:7.3f} "
@@ -301,14 +336,22 @@ def cmd_run(args):
         print(f"\n{dataset} already done -> skip (delete its row in {RESULTS_CSV} to redo)")
         return
 
+    # MLflow records this run so it can be compared with every other model/dataset later (skipped for
+    # smoke, which is a throwaway 3-epoch check). This run's full terminal output is also saved to
+    # results/SEA_NET/logs/ by start_logging in main().
+    mlf = None if smoke else tracking.start_experiment(cfg)
+    log_weights = getattr(getattr(cfg, "mlflow", None), "log_model_weights", True)
+
     # train + score. fit_model + score_model are the same code train_one uses, so nothing is
-    # duplicated. (This run's full terminal output is already being saved to results/SEA_NET/logs/
-    # by start_logging in main(); MLflow is reserved for the Optuna search, not single runs.)
+    # duplicated. score_model also logs to MLflow when mlf is not None (the whole resolved config is
+    # logged as the run's inputs, so the web page shows exactly what produced each result).
     model, train_ds, val_ds, test_ds, train_time_s = fit_model_from_config(
         dataset, cfg, device=device, smoke=smoke, verbose=True)
     lambda_entropy = cfg.model_config.training.lambda_entropy
     row = score_model(model, dataset, train_ds, val_ds, test_ds, device, cfg.seed,
-                      lambda_entropy, train_time_s, verbose=True)
+                      lambda_entropy, train_time_s, verbose=True, mlf=mlf,
+                      mlf_params=to_flat_dict(cfg), mlf_tags={"command": "run", "mode": cfg.run.mode},
+                      logged_model_name=cfg.model, log_model_weights=log_weights)
     print(f"\n=== {cfg.model} on {dataset} ===")
     print_row(row)
 

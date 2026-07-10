@@ -47,16 +47,21 @@ interpretability:
   figures_per_test: 4       # how many extra figures to draw from the start of the test set
   output_dir: results/SEA_NET/interpretation
 
-# mlflow: used for ONE thing - recording every Optuna trial during "python main.py optuna", so you
-# can open the MLflow web page afterwards, sort the trials by validation loss, and pick the best
-# hyperparameters. It is NOT used for ordinary runs (those already log to results/SEA_NET/logs/ and
-# results.csv). Browse the trials with:  mlflow ui   (then open http://127.0.0.1:5000).
+# mlflow: your automatic "lab notebook". EVERY training/evaluation run (run / single / webtraffic /
+# train) AND every Optuna trial is recorded here: its inputs (hyperparameters), its results (train /
+# validation / test accuracy + loss, AOPCR, NDCG), and the trained model saved as a *versioned* model.
+# Open the web page to compare all models/datasets side by side and see which settings won. Browse with:
+#   mlflow ui --backend-store-uri sqlite:///mlflow.db      (then open http://127.0.0.1:5000)
 # See MLFLOW_GUIDE.md for how to view results locally and how to copy them back from Grid5000.
 mlflow:
-  enabled: true                     # turn Optuna-trial tracking on/off
-  experiment_name: SEA-Net          # trials are grouped under this experiment
+  enabled: true                     # turn all MLflow tracking on/off
+  experiment_name: SEA-Net          # runs + trials are grouped under this experiment
   tracking_uri: "sqlite:///mlflow.db"   # a small local database file (mlflow.db) in the repo.
-  # NOTE: recent MLflow dropped the old "./mlruns folder" store, so we use a SQLite file instead.
-  # It is one file, so it copies cleanly from Grid5000 to your laptop. Browse it with:
+  log_model_weights: true           # also save each trained model as a versioned model (Models tab +
+                                    # loading later). Set false to log only params + metrics (no weight
+                                    # files) - e.g. to save disk during the full 129-dataset "train" sweep.
+  # NOTE: recent MLflow dropped the old "./mlruns folder" store, so we use a SQLite file instead (this
+  # is also what lets us save versioned models). mlflow.db + the saved weights under mlartifacts/ are
+  # git-ignored and copy cleanly from Grid5000 to your laptop. Browse with:
   #   mlflow ui --backend-store-uri sqlite:///mlflow.db      (then open http://127.0.0.1:5000)
-  # Leave blank to fall back to sqlite:///mlflow.db anyway. See MLFLOW_GUIDE.md.
+  # Leave tracking_uri blank to fall back to sqlite:///mlflow.db anyway. See MLFLOW_GUIDE.md.

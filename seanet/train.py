@@ -41,6 +41,7 @@ from millet.model.millet_model import MILLETModel
 from millet.util import cross_entropy_criterion, custom_tqdm
 
 from seanet import data as D
+from seanet import tracking
 from seanet.model import make_sea_net, build_model_from_config, num_params, state_dict_size_mb
 from seanet.preprocessing import apply_instance_representation
 
@@ -438,6 +439,11 @@ def train_one(
     window_stride: int = 5,
     model_cfg=None,
     verbose: bool = False,
+    mlf=None,
+    mlf_params: Optional[Dict] = None,
+    mlf_tags: Optional[Dict] = None,
+    logged_model_name: Optional[str] = None,
+    log_model_weights: bool = True,
 ) -> Dict:
     """
     Train a model on one dataset and score it on the test set. This is the single path used for
@@ -466,6 +472,11 @@ def train_one(
     window_size, window_stride : the window length and step (only used for sliding_window).
     model_cfg : optional model config; None = the default SEA-Net (unchanged behaviour).
     verbose : if True, print the 3 stages and show the training bar.
+    mlf : the mlflow handle from tracking.start_experiment (None -> no MLflow logging).
+    mlf_params : INPUTS to log to MLflow; if None, a summary of this run's recipe is built and logged.
+    mlf_tags : extra MLflow labels (e.g. {"command": "single"}).
+    logged_model_name : name to give the versioned model in the MLflow "Models" tab.
+    log_model_weights : also save the trained network's weights as an artifact.
     returns : one flat results-row dict (metrics + footprint + metadata).
     """
     if device is None:
@@ -480,8 +491,21 @@ def train_one(
         val_frac=val_frac, instance_type=instance_type, window_size=window_size,
         window_stride=window_stride, model_cfg=model_cfg, verbose=verbose,
     )
+    # if MLflow is on but the caller did not spell out the inputs, log this run's actual recipe
+    # (learning rate, weight decay, ...) so the web page shows what produced each result.
+    if mlf is not None and mlf_params is None:
+        mlf_params = {
+            "model": model.name, "dataset": name, "seed": seed,
+            "n_epochs": n_epochs, "patience": patience, "max_batch": max_batch,
+            "learning_rate": learning_rate, "weight_decay": weight_decay,
+            "label_smoothing": label_smoothing, "lambda_entropy": lambda_entropy,
+            "min_train_for_val": min_train_for_val, "val_frac": val_frac,
+            "instance_type": instance_type, "window_size": window_size, "window_stride": window_stride,
+        }
     row = score_model(model, name, train_ds, val_ds, test_ds, device, seed, lambda_entropy,
-                      train_time_s, verbose=verbose)
+                      train_time_s, verbose=verbose, mlf=mlf, mlf_params=mlf_params,
+                      mlf_tags=mlf_tags, logged_model_name=logged_model_name,
+                      log_model_weights=log_model_weights)
     del model                                                   # free the model
     if device.type == "cuda":                                  # free GPU memory before the next dataset
         torch.cuda.empty_cache()
@@ -489,19 +513,26 @@ def train_one(
 
 
 def score_model(model, name: str, train_ds, val_ds, test_ds, device: torch.device, seed: int,
-                lambda_entropy: float, train_time_s: float, verbose: bool = False) -> Dict:
+                lambda_entropy: float, train_time_s: float, verbose: bool = False,
+                mlf=None, mlf_params: Optional[Dict] = None, mlf_tags: Optional[Dict] = None,
+                logged_model_name: Optional[str] = None, log_model_weights: bool = True) -> Dict:
     """
-    Score a trained model on the test set and pack the results into one flat row.
+    Score a trained model on the test set, pack the results into one flat row, and (optionally) record
+    the whole run in MLflow so every model can be compared later.
 
-    This is stage 3 of train_one, pulled out so the "run" command can reuse it (it needs the live
-    model afterwards for MLflow logging - confusion matrix, checkpoint, ...). It does NOT free the
-    model; the caller decides when to do that.
+    This is stage 3 of train_one, pulled out so the "run" command can reuse it with the live model.
+    It does NOT free the model; the caller decides when to do that.
 
     model : the trained SeaNetModel.
     name : dataset name.
-    train_ds, val_ds, test_ds : the datasets (for the size fields; val_ds may be None).
+    train_ds, val_ds, test_ds : the datasets (for the size fields + the train/val metrics; val_ds may be None).
     device, seed, lambda_entropy, train_time_s : metadata for the row.
     verbose : if True, print the scoring stage line.
+    mlf : the mlflow handle from tracking.start_experiment (None -> no MLflow logging happens).
+    mlf_params : INPUTS to log to MLflow (usually the resolved config); if None a summary is logged.
+    mlf_tags : extra searchable labels for the MLflow run (e.g. {"command": "run"}).
+    logged_model_name : name to give the versioned model in the MLflow "Models" tab (default: the model's name).
+    log_model_weights : also save the trained network's weights as an artifact (else log only params+metrics).
     returns : one flat results-row dict (same shape written to results.csv).
     """
     # safe_evaluate gives accuracy/AUROC/loss (AUROC may be NaN). evaluate_interpretability gives
@@ -511,7 +542,7 @@ def score_model(model, name: str, train_ds, val_ds, test_ds, device: torch.devic
               f"{' + NDCG' if name == D.WEB_TRAFFIC else ''}) ...", flush=True)
     cls = safe_evaluate(model, test_ds)
     aopcr, ndcg = model.evaluate_interpretability(test_ds)
-    return {
+    row = {
         "dataset": name,
         "model": model.name,
         "seed": seed,
@@ -532,6 +563,77 @@ def score_model(model, name: str, train_ds, val_ds, test_ds, device: torch.devic
         "test_ndcg": round(float(ndcg), 4) if ndcg is not None else None,   # None for UCR
         "train_time_s": round(train_time_s, 2),
     }
+
+    # Record this run in MLflow (if it is switched on). Wrapped in try/except so a logging problem
+    # can never fail a training run - especially important during the long sweep in "train".
+    if mlf is not None:
+        try:
+            _log_run_to_mlflow(mlf, model, name, row, train_ds, val_ds,
+                               mlf_params=mlf_params, mlf_tags=mlf_tags,
+                               logged_model_name=logged_model_name or model.name,
+                               log_model_weights=log_model_weights, verbose=verbose)
+        except Exception as e:                                   # keep training going no matter what
+            print(f"    [mlflow] logging failed (training is unaffected): {type(e).__name__}: {e}")
+    return row
+
+
+def _log_run_to_mlflow(mlf, model, name: str, row: Dict, train_ds, val_ds, *,
+                       mlf_params: Optional[Dict] = None, mlf_tags: Optional[Dict] = None,
+                       logged_model_name: Optional[str] = None,
+                       log_model_weights: bool = True, verbose: bool = False) -> None:
+    """
+    Build the metrics/params/tags for one training run and hand them to tracking.log_run.
+
+    The test metrics are already in `row`; here we add the TRAIN and VALIDATION accuracy + loss (one
+    extra evaluation pass each, only done when MLflow is on) so the web page shows train/val/test side
+    by side - exactly the "show performance by train, val, test accuracies with loss" we want.
+
+    mlf : the mlflow handle. model : the trained SeaNetModel. name : dataset name. row : the results row.
+    train_ds, val_ds : datasets to score for the train/val metrics (val_ds may be None).
+    mlf_params : INPUTS to log (the resolved config); if None a short summary of this run is used.
+    mlf_tags : extra labels. logged_model_name : versioned-model name. log_model_weights : save weights too.
+    verbose : print a one-line confirmation.
+    """
+    # RESULTS: test numbers come from `row`; train/val are measured here (accuracy + loss).
+    tr = safe_evaluate(model, train_ds)
+    metrics = {
+        "train_acc": tr["acc"], "train_loss": tr["loss"],
+        "test_acc": row["test_acc"], "test_bal_acc": row["test_bal_acc"],
+        "test_auroc": row["test_auroc"], "test_loss": row["test_loss"],
+        "test_aopcr": row["test_aopcr"], "train_time_s": row["train_time_s"],
+    }
+    if val_ds is not None:                                       # tiny datasets train without a val split
+        va = safe_evaluate(model, val_ds)
+        metrics["val_acc"] = va["acc"]
+        metrics["val_loss"] = va["loss"]
+    if row["test_ndcg"] is not None:                            # WebTraffic only
+        metrics["test_ndcg"] = row["test_ndcg"]
+
+    # INPUTS: prefer the resolved config passed by the caller; otherwise log a short summary.
+    params = dict(mlf_params) if mlf_params else {
+        "model": model.name, "dataset": name, "seed": row["seed"],
+        "lambda_entropy": row["lambda_entropy"], "n_train": row["n_train"],
+        "n_val": row["n_val"], "n_test": row["n_test"], "n_classes": row["n_classes"],
+        "series_length": row["series_length"],
+    }
+    tags = {"dataset": name, "model": model.name}
+    if mlf_tags:
+        tags.update(mlf_tags)
+
+    tracking.log_run(
+        mlf, run_name=f"{model.name}_{name}", params=params, metrics=metrics, tags=tags,
+        history=getattr(model, "history", None),
+        model=model.net if log_model_weights else None,        # save the network as a versioned model
+        model_params={"n_model_params": row["params"], "model_size_mb": row["model_size_mb"],
+                      "name": model.name},
+        logged_model_name=logged_model_name, verbose=verbose,
+    )
+    if verbose:
+        line = f"train_acc={metrics['train_acc']:.4f}"
+        if "val_acc" in metrics:
+            line += f" val_acc={metrics['val_acc']:.4f}"
+        line += f" test_acc={metrics['test_acc']:.4f} test_loss={metrics['test_loss']:.4f}"
+        print(f"    [mlflow] logged run '{model.name}_{name}'  ({line})")
 
 
 # --------------------------------------------------------------------------------------
