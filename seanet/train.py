@@ -41,7 +41,8 @@ from millet.model.millet_model import MILLETModel
 from millet.util import cross_entropy_criterion, custom_tqdm
 
 from seanet import data as D
-from seanet.model import make_sea_net, num_params, state_dict_size_mb
+from seanet.model import make_sea_net, build_model_from_config, num_params, state_dict_size_mb
+from seanet.preprocessing import apply_instance_representation
 
 # --------------------------------------------------------------------------------------
 # The fixed training settings (same recipe for every dataset).
@@ -217,6 +218,7 @@ class SeaNetModel(MILLETModel):
         patience: int = PATIENCE,
         batch_size: int = MAX_BATCH,
         verbose: bool = False,
+        epoch_callback: Optional[Callable] = None,
     ) -> None:
         """
         Train the network with early stopping, and keep the best weights.
@@ -229,6 +231,8 @@ class SeaNetModel(MILLETModel):
         patience : stop after this many epochs with no improvement.
         batch_size : training batch size.
         verbose : if True, show a live progress bar.
+        epoch_callback : optional function called each epoch as callback(epoch, monitor_loss). Optuna
+            uses it to report progress and prune bad trials (it raises to stop training early).
         returns : nothing; the best weights are stored in self.net.
         """
         loader = train_dataset.create_dataloader(shuffle=True, batch_size=batch_size)
@@ -239,6 +243,7 @@ class SeaNetModel(MILLETModel):
         best_net = None                                          # best weights seen so far
         best_loss = np.inf
         epochs_no_improve = 0
+        self.history = []                                        # per-epoch monitored loss (for MLflow curves)
         # progress bar over epochs; leave=False so it vanishes when the dataset is done
         epoch_bar = custom_tqdm(range(n_epochs), desc="    training", disable=not verbose, leave=False)
         for epoch in epoch_bar:
@@ -248,7 +253,9 @@ class SeaNetModel(MILLETModel):
                 optimizer.zero_grad()
                 out = self(batch["bags"])
                 loss = criterion(out["bag_logits"], targets)     # classification loss
-                if self.lambda_entropy > 0:                      # plus the attention focus penalty
+                # plus the attention focus penalty (only for pooling heads that return "attn";
+                # gap/instance pooling do not, so we just skip it for them)
+                if self.lambda_entropy > 0 and "attn" in out:
                     loss = loss + self.lambda_entropy * attention_entropy(out["attn"])
                 loss.backward()                                  # backprop
                 optimizer.step()                                 # update the weights
@@ -259,6 +266,9 @@ class SeaNetModel(MILLETModel):
                 if verbose:
                     print("    training: NaN loss -> stopping (keeping best weights so far)")
                 break
+            self.history.append(float(monitor_loss))             # record the curve (one point per epoch)
+            if epoch_callback is not None:                       # let Optuna report/prune this trial
+                epoch_callback(epoch, float(monitor_loss))
             if monitor_loss < best_loss:                         # improved -> remember these weights
                 best_loss = monitor_loss
                 best_net = copy.deepcopy(self.net)
@@ -273,16 +283,29 @@ class SeaNetModel(MILLETModel):
             self.net = best_net
 
 
-def make_model(n_clz: int, device: torch.device, lambda_entropy: float = LAMBDA_ENTROPY) -> SeaNetModel:
+def make_model(n_clz: int, device: torch.device, lambda_entropy: float = LAMBDA_ENTROPY,
+               model_cfg=None, n_in: int = 1) -> SeaNetModel:
     """
-    Build a trainable SEA-Net model for a dataset.
+    Build a trainable model for a dataset.
+
+    If no model config is given we build the default SEA-Net (exactly as before, so nothing
+    regresses). If a model config is given, we build whatever it describes (SEA-Net, the MILLET
+    baseline, ...) through the config-driven factory in seanet/model.py.
 
     n_clz : number of classes.
     device : where to run.
     lambda_entropy : strength of the attention penalty.
+    model_cfg : optional model config (the "model_config" section from a loaded config); None = SEA-Net.
+    n_in : number of input channels (1 for single-point instances; the window size when windowing).
     returns : a SeaNetModel ready to .fit().
     """
-    return SeaNetModel("SEA-Net", device, n_clz, make_sea_net(n_clz), lambda_entropy=lambda_entropy)
+    if model_cfg is None:
+        net = make_sea_net(n_clz, n_in=n_in)                 # default path (only n_in can change)
+        name = "SEA-Net"
+    else:
+        net = build_model_from_config(model_cfg, n_clz, n_in=n_in)   # config-driven path
+        name = getattr(model_cfg, "name", "model")
+    return SeaNetModel(name, device, n_clz, net, lambda_entropy=lambda_entropy)
 
 
 def safe_evaluate(model: MILLETModel, dataset: MILTSCDataset) -> Dict:
@@ -318,32 +341,40 @@ def safe_evaluate(model: MILLETModel, dataset: MILTSCDataset) -> Dict:
 
 
 # --------------------------------------------------------------------------------------
-# Train + evaluate ONE dataset -> one results row (the sweep calls this per dataset)
+# Load + build + fit a model (the shared first half). train_one scores it; the interpret
+# command keeps the live model to draw explanations from. Written once so there is no duplication.
 # --------------------------------------------------------------------------------------
-def train_one(
+def fit_model(
     name: str,
     device: Optional[torch.device] = None,
     seed: int = SEED,
     n_epochs: int = N_EPOCHS,
     patience: int = PATIENCE,
     lambda_entropy: float = LAMBDA_ENTROPY,
+    learning_rate: float = LEARNING_RATE,
+    weight_decay: float = WEIGHT_DECAY,
+    label_smoothing: float = LABEL_SMOOTHING,
+    max_batch: int = MAX_BATCH,
+    min_train_for_val: int = MIN_TRAIN_FOR_VAL,
+    val_frac: float = VAL_FRAC,
+    instance_type: str = "single_point",
+    window_size: int = 5,
+    window_stride: int = 5,
+    model_cfg=None,
     verbose: bool = False,
-) -> Dict:
+    epoch_callback: Optional[Callable] = None,
+) -> Tuple[SeaNetModel, MILTSCDataset, Optional[MILTSCDataset], MILTSCDataset, float]:
     """
-    Train SEA-Net on one dataset and score it on the test set. This is the single path used for
-    WebTraffic and every UCR dataset.
+    Load a dataset, apply the instance representation, build the model, and train it.
 
-    Validation policy: if the training set has at least MIN_TRAIN_FOR_VAL series we hold out 20%
-    for validation and early-stop on it; otherwise we train on all of it and early-stop on the
-    training loss.
+    This is the first half of train_one, pulled out so it can be reused (train_one scores the model;
+    the interpret command draws figures from it). The arguments and defaults are identical to
+    train_one's, so behaviour is unchanged.
 
     name : dataset name.
     device : where to run; if None, get_device() picks one.
-    seed : random seed for reproducibility.
-    n_epochs, patience : training length / early stopping (small values are used for --smoke).
-    lambda_entropy : strength of the attention penalty.
-    verbose : if True, print the 3 stages and show the training bar.
-    returns : one flat results-row dict (metrics + footprint + metadata).
+    (all other arguments) : see train_one - same meaning and defaults.
+    returns : (model, train_ds, val_ds, test_ds, train_time_s).
     """
     if device is None:
         device = get_device()
@@ -355,14 +386,23 @@ def train_one(
     train_full = D.load_dataset(name, "train")
     test_ds = D.load_dataset(name, "test")
 
+    # re-shape into the chosen instance representation (single_point = unchanged; sliding_window =
+    # cut each series into windows). This is the only preprocessing step; normalisation lives inside.
+    train_full = apply_instance_representation(train_full, instance_type, window_size, window_stride)
+    test_ds = apply_instance_representation(test_ds, instance_type, window_size, window_stride)
+
+    # number of input channels the model needs: 1 for single timesteps, or the window size when
+    # windowing (each bag is (n_instances, d_instance), so d_instance is the channel count).
+    n_in = int(train_full.get_bag(0).shape[1])
+
     # decide whether to hold out a validation set (only if there is enough training data)
-    if len(train_full) >= MIN_TRAIN_FOR_VAL:
-        train_ds, val_ds = split_train_val(train_full, val_frac=VAL_FRAC, seed=seed)
+    if len(train_full) >= min_train_for_val:
+        train_ds, val_ds = split_train_val(train_full, val_frac=val_frac, seed=seed)
     else:
         train_ds, val_ds = train_full, None
 
-    batch_size = max(min(len(train_ds) // 10, MAX_BATCH), 2)     # small batch for small datasets
-    model = make_model(train_full.n_clz, device, lambda_entropy=lambda_entropy)
+    batch_size = max(min(len(train_ds) // 10, max_batch), 2)     # small batch for small datasets
+    model = make_model(train_full.n_clz, device, lambda_entropy=lambda_entropy, model_cfg=model_cfg, n_in=n_in)
 
     # --- stage 2: train ---
     if verbose:
@@ -370,10 +410,100 @@ def train_one(
         print(f"    stage 2/3: training on {len(train_ds)} series ({val_note}, "
               f"C={train_full.n_clz}, T={len(train_full.get_bag(0))}, batch={batch_size}) ...", flush=True)
     t0 = time.perf_counter()
-    model.fit(train_ds, val_ds, n_epochs=n_epochs, patience=patience, batch_size=batch_size, verbose=verbose)
+    model.fit(train_ds, val_ds, n_epochs=n_epochs, learning_rate=learning_rate,
+              weight_decay=weight_decay, smoothing=label_smoothing, patience=patience,
+              batch_size=batch_size, verbose=verbose, epoch_callback=epoch_callback)
     train_time_s = time.perf_counter() - t0
+    return model, train_ds, val_ds, test_ds, train_time_s
 
-    # --- stage 3: score on the test set ---
+
+# --------------------------------------------------------------------------------------
+# Train + evaluate ONE dataset -> one results row (the sweep calls this per dataset)
+# --------------------------------------------------------------------------------------
+def train_one(
+    name: str,
+    device: Optional[torch.device] = None,
+    seed: int = SEED,
+    n_epochs: int = N_EPOCHS,
+    patience: int = PATIENCE,
+    lambda_entropy: float = LAMBDA_ENTROPY,
+    learning_rate: float = LEARNING_RATE,
+    weight_decay: float = WEIGHT_DECAY,
+    label_smoothing: float = LABEL_SMOOTHING,
+    max_batch: int = MAX_BATCH,
+    min_train_for_val: int = MIN_TRAIN_FOR_VAL,
+    val_frac: float = VAL_FRAC,
+    instance_type: str = "single_point",
+    window_size: int = 5,
+    window_stride: int = 5,
+    model_cfg=None,
+    verbose: bool = False,
+) -> Dict:
+    """
+    Train a model on one dataset and score it on the test set. This is the single path used for
+    WebTraffic and every UCR dataset.
+
+    Every hyperparameter is an argument with a default equal to the original hardcoded constant,
+    so calling train_one(name) behaves exactly as before. The config-driven path
+    (train_one_from_config) just fills these arguments from the YAML files instead.
+
+    Validation policy: if the training set has at least min_train_for_val series we hold out a
+    val_frac slice for validation and early-stop on it; otherwise we train on all of it and
+    early-stop on the training loss.
+
+    name : dataset name.
+    device : where to run; if None, get_device() picks one.
+    seed : random seed for reproducibility.
+    n_epochs, patience : training length / early stopping (small values are used for --smoke).
+    lambda_entropy : strength of the attention penalty.
+    learning_rate, weight_decay : Adam optimiser settings.
+    label_smoothing : label smoothing amount.
+    max_batch : upper bound on the batch size (actual batch = clamp(n_train // 10, 2, max_batch)).
+    min_train_for_val : need at least this many train series to hold out a validation set.
+    val_frac : size of the validation split.
+    instance_type : "single_point" (one instance = one timestep, the default) or "sliding_window"
+                    (one instance = a window of the series).
+    window_size, window_stride : the window length and step (only used for sliding_window).
+    model_cfg : optional model config; None = the default SEA-Net (unchanged behaviour).
+    verbose : if True, print the 3 stages and show the training bar.
+    returns : one flat results-row dict (metrics + footprint + metadata).
+    """
+    if device is None:
+        device = get_device()
+
+    # stages 1-2 (load -> instance representation -> build -> train) are shared with the interpret
+    # command, so they live in fit_model. train_one just scores the fitted model below.
+    model, train_ds, val_ds, test_ds, train_time_s = fit_model(
+        name, device=device, seed=seed, n_epochs=n_epochs, patience=patience,
+        lambda_entropy=lambda_entropy, learning_rate=learning_rate, weight_decay=weight_decay,
+        label_smoothing=label_smoothing, max_batch=max_batch, min_train_for_val=min_train_for_val,
+        val_frac=val_frac, instance_type=instance_type, window_size=window_size,
+        window_stride=window_stride, model_cfg=model_cfg, verbose=verbose,
+    )
+    row = score_model(model, name, train_ds, val_ds, test_ds, device, seed, lambda_entropy,
+                      train_time_s, verbose=verbose)
+    del model                                                   # free the model
+    if device.type == "cuda":                                  # free GPU memory before the next dataset
+        torch.cuda.empty_cache()
+    return row
+
+
+def score_model(model, name: str, train_ds, val_ds, test_ds, device: torch.device, seed: int,
+                lambda_entropy: float, train_time_s: float, verbose: bool = False) -> Dict:
+    """
+    Score a trained model on the test set and pack the results into one flat row.
+
+    This is stage 3 of train_one, pulled out so the "run" command can reuse it (it needs the live
+    model afterwards for MLflow logging - confusion matrix, checkpoint, ...). It does NOT free the
+    model; the caller decides when to do that.
+
+    model : the trained SeaNetModel.
+    name : dataset name.
+    train_ds, val_ds, test_ds : the datasets (for the size fields; val_ds may be None).
+    device, seed, lambda_entropy, train_time_s : metadata for the row.
+    verbose : if True, print the scoring stage line.
+    returns : one flat results-row dict (same shape written to results.csv).
+    """
     # safe_evaluate gives accuracy/AUROC/loss (AUROC may be NaN). evaluate_interpretability gives
     # AOPCR (always) and NDCG (WebTraffic only). AOPCR is the slow part because it re-runs the model.
     if verbose:
@@ -381,9 +511,7 @@ def train_one(
               f"{' + NDCG' if name == D.WEB_TRAFFIC else ''}) ...", flush=True)
     cls = safe_evaluate(model, test_ds)
     aopcr, ndcg = model.evaluate_interpretability(test_ds)
-
-    # pack everything into one flat row (this is what gets written to results.csv)
-    row = {
+    return {
         "dataset": name,
         "model": model.name,
         "seed": seed,
@@ -404,7 +532,79 @@ def train_one(
         "test_ndcg": round(float(ndcg), 4) if ndcg is not None else None,   # None for UCR
         "train_time_s": round(train_time_s, 2),
     }
-    del model                                                   # free the model
-    if device.type == "cuda":                                  # free GPU memory before the next dataset
-        torch.cuda.empty_cache()
-    return row
+
+
+# --------------------------------------------------------------------------------------
+# Config-driven entry points (used by "python main.py run" and "python main.py interpret")
+# --------------------------------------------------------------------------------------
+def _train_kwargs_from_config(cfg, smoke: bool = False) -> Dict:
+    """
+    Turn a loaded config into the keyword arguments that train_one / fit_model expect.
+
+    Both config-driven wrappers below read the config the same way, so that reading lives here once
+    (no duplication). It pulls the training block from the model file and the preprocessing block
+    from main.yaml.
+
+    cfg : a loaded config (from load_config).
+    smoke : if True, force a quick 3-epoch run (for testing, not a real result).
+    returns : a dict of keyword arguments for train_one / fit_model.
+    """
+    t = cfg.model_config.training                               # the "training" block of the model file
+    n_epochs, patience = (3, 3) if smoke else (t.n_epochs, t.patience)
+    # the "preprocessing" block of main.yaml (optional -> default to single_point)
+    p = getattr(cfg, "preprocessing", None)
+    instance_type = getattr(p, "instance_type", "single_point") if p is not None else "single_point"
+    window_size = getattr(p, "window_size", 5) if p is not None else 5
+    window_stride = getattr(p, "window_stride", 5) if p is not None else 5
+    return dict(
+        seed=cfg.seed,
+        n_epochs=n_epochs,
+        patience=patience,
+        lambda_entropy=t.lambda_entropy,
+        learning_rate=t.learning_rate,
+        weight_decay=t.weight_decay,
+        label_smoothing=t.label_smoothing,
+        max_batch=t.max_batch,
+        min_train_for_val=t.min_train_for_val,
+        val_frac=t.val_frac,
+        instance_type=instance_type,
+        window_size=window_size,
+        window_stride=window_stride,
+        model_cfg=cfg.model_config,
+    )
+
+
+def train_one_from_config(name: str, cfg, device: Optional[torch.device] = None,
+                          smoke: bool = False, verbose: bool = False) -> Dict:
+    """
+    Train + evaluate one dataset using values read from a config object (see seanet/config.py).
+
+    A thin wrapper that fills train_one's arguments from the config, so there is still only one
+    training code path.
+
+    name : dataset name to run.
+    cfg : a loaded config (from load_config).
+    device : where to run; if None, get_device() picks one.
+    smoke : if True, force a quick 3-epoch run (for testing, not a real result).
+    verbose : if True, print the 3 stages and the training bar.
+    returns : the same flat results-row dict as train_one.
+    """
+    return train_one(name, device=device, verbose=verbose, **_train_kwargs_from_config(cfg, smoke))
+
+
+def fit_model_from_config(name: str, cfg, device: Optional[torch.device] = None,
+                          smoke: bool = False, verbose: bool = False):
+    """
+    Load + build + train a model using config values, and return the LIVE model (not scored).
+
+    Used by the interpret command, which needs the fitted model to draw explanations from. It shares
+    the same config reading and the same fit_model path as training, so nothing is duplicated.
+
+    name : dataset name to run.
+    cfg : a loaded config (from load_config).
+    device : where to run; if None, get_device() picks one.
+    smoke : if True, force a quick 3-epoch run.
+    verbose : if True, print the stages and the training bar.
+    returns : (model, train_ds, val_ds, test_ds, train_time_s) - same as fit_model.
+    """
+    return fit_model(name, device=device, verbose=verbose, **_train_kwargs_from_config(cfg, smoke))

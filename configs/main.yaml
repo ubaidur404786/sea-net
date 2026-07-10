@@ -1,0 +1,62 @@
+# main.yaml - the top-level settings for a run.
+#
+# This is the ONE file you edit to control a run. It says which model to use, which
+# dataset to run, the random seed, and where the results go. The actual model settings
+# (encoder, pooling, training hyperparameters) live in a separate file per model, under
+# configs/models/<model>.yaml, and are loaded automatically based on the "model" value below.
+#
+# Nothing here is hardcoded in the Python code any more: "python main.py run" reads this
+# file and builds everything from it. You can also override a few things on the command
+# line, e.g. "python main.py run --model millet --dataset Coffee --smoke".
+
+# which model to run. Must match a file configs/models/<model>.yaml
+# options that exist today: seanet, millet   (transformer is a placeholder, not implemented yet)
+model: seanet
+
+# what to run
+run:
+  mode: single          # single = train + evaluate one dataset (the only mode for now)
+  dataset: WebTraffic   # the dataset to use when mode is "single"
+  smoke: false          # true = quick 3-epoch check (for testing the pipeline, NOT a real result)
+
+# preprocessing: how each series is turned into "instances" for the MIL model.
+#   single_point   = one instance is one timestep (MILLET's original setup; NDCG works here).
+#   sliding_window = one instance is a window of the series; window_size / window_stride control it
+#                    (NDCG is skipped in this mode - windows have no per-timestep ground truth).
+preprocessing:
+  instance_type: single_point   # single_point | sliding_window
+  window_size: 5
+  window_stride: 5
+
+# random seed, so a run can be reproduced exactly
+seed: 0
+
+# device to train on. "auto" picks cuda -> mps -> cpu; you can also force "cpu" or "cuda".
+device: auto
+
+# where our output files (results.csv, done.txt, ...) are written
+output:
+  results_dir: results/SEA_NET
+
+# interpretability: MILLET-style per-sample explanation figures.
+# These are produced by "python main.py interpret" - running that command IS the on/off switch
+# (the spec's generate_interpretation). The settings below control what it draws.
+interpretability:
+  dataset: WebTraffic       # which dataset to explain (the spec's default_dataset)
+  figures_per_class: 2      # how many example figures to draw per class
+  figures_per_test: 4       # how many extra figures to draw from the start of the test set
+  output_dir: results/SEA_NET/interpretation
+
+# mlflow: used for ONE thing - recording every Optuna trial during "python main.py optuna", so you
+# can open the MLflow web page afterwards, sort the trials by validation loss, and pick the best
+# hyperparameters. It is NOT used for ordinary runs (those already log to results/SEA_NET/logs/ and
+# results.csv). Browse the trials with:  mlflow ui   (then open http://127.0.0.1:5000).
+# See MLFLOW_GUIDE.md for how to view results locally and how to copy them back from Grid5000.
+mlflow:
+  enabled: true                     # turn Optuna-trial tracking on/off
+  experiment_name: SEA-Net          # trials are grouped under this experiment
+  tracking_uri: "sqlite:///mlflow.db"   # a small local database file (mlflow.db) in the repo.
+  # NOTE: recent MLflow dropped the old "./mlruns folder" store, so we use a SQLite file instead.
+  # It is one file, so it copies cleanly from Grid5000 to your laptop. Browse it with:
+  #   mlflow ui --backend-store-uri sqlite:///mlflow.db      (then open http://127.0.0.1:5000)
+  # Leave blank to fall back to sqlite:///mlflow.db anyway. See MLFLOW_GUIDE.md.

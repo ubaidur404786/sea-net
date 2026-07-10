@@ -1,0 +1,60 @@
+# seanet.yaml - the SEA-Net model (our model).
+#
+# SEA-Net = a small multi-scale depthwise-separable TCN encoder + MILLET's Additive pooling head.
+# These numbers are the EXACT values that were baked into the Python code before the config system
+# existed (seanet/model.py and seanet/train.py). They are copied here so results do not change:
+# running with this file gives the same model and the same training recipe as before.
+
+name: seanet
+
+# ---- the encoder (feature extractor): turns each timestep into a 128-d feature vector ----
+encoder:
+  type: mstcn_sep        # our "Multi-Scale separable TCN" encoder
+  d: 128                 # channel width the encoder works with
+  n_blocks: 6            # how many residual blocks are stacked
+  dropout: 0.2           # dropout inside the encoder blocks
+  max_dilation: 16       # dilation grows 1,2,4,8,16 but is capped here (keeps each view local)
+  kernels: [5, 11, 23]   # the three depthwise kernel sizes, summed in every block
+
+# ---- the pooling head: turns per-timestep features into a prediction + importance scores ----
+pooling:
+  type: additive         # MILLET's MILAdditivePooling (reused unchanged)
+  d_attn: 8              # width of the small attention MLP
+  dropout: 0.2
+  positional_encoding: true
+
+# ---- the training recipe (same for every dataset) ----
+training:
+  n_epochs: 400          # max epochs (early stopping usually stops sooner)
+  patience: 60           # stop if the watched loss has not improved for this many epochs
+  max_batch: 16          # batch size = clamp(n_train // 10, 2, max_batch)
+  learning_rate: 0.00125 # 1.25e-3
+  weight_decay: 0.00012  # 1.2e-4
+  label_smoothing: 0.13  # softens the labels a little (helps avoid over-confident mistakes)
+  lambda_entropy: 0.01   # strength of the attention "focus" penalty (0 turns it off)
+  min_train_for_val: 100 # need at least this many train series to hold out a validation set
+  val_frac: 0.2          # size of the validation split (20%)
+  optimizer: adam        # the only optimizer wired up right now
+
+# ---- Optuna hyperparameter search (disabled by default) ----
+# Run with:  python main.py optuna    (uses WebTraffic by default). Each trial trains a model with
+# sampled hyperparameters and Optuna minimises the validation loss. When it finishes, the best
+# values are written to configs/models/seanet.best.yaml, which future runs load automatically
+# (delete that file to go back to the defaults above). Everything here is configurable.
+optuna:
+  enabled: false           # must be true for "python main.py optuna" to run a search
+  n_trials: 20             # how many hyperparameter combinations to try
+  timeout: null            # stop after this many seconds (null = no time limit)
+  sampler: tpe             # how to pick the next trial: tpe (smart) or random
+  pruner: median           # stop hopeless trials early: median or none
+  save_best_parameters: true   # write the winners to seanet.best.yaml
+  # search_space: which hyperparameters to tune and their ranges (grouped like the config above).
+  # each leaf has a type (float/int/categorical) and its range (low/high, or choices).
+  search_space:
+    training:
+      learning_rate: {type: float, low: 0.0003, high: 0.005, log: true}
+      weight_decay: {type: float, low: 0.00001, high: 0.0005, log: true}
+      label_smoothing: {type: float, low: 0.0, high: 0.2}
+      lambda_entropy: {type: float, low: 0.0, high: 0.05}
+    encoder:
+      dropout: {type: float, low: 0.1, high: 0.4}

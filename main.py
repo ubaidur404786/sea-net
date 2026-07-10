@@ -29,6 +29,7 @@ import argparse
 import os
 import sys
 import warnings
+from datetime import datetime
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))   # so "import seanet" works
 
@@ -40,8 +41,11 @@ warnings.filterwarnings("ignore", message="The given NumPy array is not writable
 import torch
 
 from seanet import data as D
+from seanet.config import load_config, to_flat_dict
+from seanet.logs import start_logging
 from seanet.model import make_sea_net, make_baseline, num_params, state_dict_size_mb
-from seanet.train import train_one, get_device
+from seanet.train import (train_one, train_one_from_config, fit_model_from_config, score_model,
+                          get_device)
 from seanet.results import result_exists, save_result_row, build_comparison, millet_baseline, RESULTS_CSV
 
 
@@ -265,6 +269,141 @@ def cmd_train(args):
     build_comparison(verbose=True)                           # print the win/tie/loss summary at the end
 
 
+def cmd_run(args):
+    """
+    "run" command: the new config-driven entry point. It reads configs/main.yaml (plus the model
+    file it points at), then trains + evaluates the chosen dataset with the chosen model, using
+    only values from the config. Command-line flags (--model, --dataset, --smoke) override the
+    file so you can try things quickly without editing YAML.
+
+    args : parsed arguments (args.config, args.model, args.dataset, args.smoke).
+    returns : nothing.
+    """
+    overrides = {"model": args.model} if args.model else None   # --model swaps the model file
+    cfg = load_config(args.config, overrides=overrides)
+
+    # let the command line override a couple of run settings
+    dataset = args.dataset or cfg.run.dataset
+    smoke = args.smoke or getattr(cfg.run, "smoke", False)
+    device = get_device() if cfg.device == "auto" else torch.device(cfg.device)
+
+    # show exactly what config is driving this run (reproducibility + a quick sanity check)
+    print(f"=== run: model={cfg.model} dataset={dataset} device={device} "
+          f"mode={'smoke' if smoke else 'full'} ===")
+    print("resolved config:")
+    for key, value in to_flat_dict(cfg).items():
+        print(f"  {key} = {value}")
+
+    if cfg.run.mode != "single":                                # only "single" is wired up so far
+        raise SystemExit(f"run mode {cfg.run.mode!r} is not supported yet (use mode: single).")
+
+    if result_exists(dataset) and not smoke:                    # already finished -> do not redo it
+        print(f"\n{dataset} already done -> skip (delete its row in {RESULTS_CSV} to redo)")
+        return
+
+    # train + score. fit_model + score_model are the same code train_one uses, so nothing is
+    # duplicated. (This run's full terminal output is already being saved to results/SEA_NET/logs/
+    # by start_logging in main(); MLflow is reserved for the Optuna search, not single runs.)
+    model, train_ds, val_ds, test_ds, train_time_s = fit_model_from_config(
+        dataset, cfg, device=device, smoke=smoke, verbose=True)
+    lambda_entropy = cfg.model_config.training.lambda_entropy
+    row = score_model(model, dataset, train_ds, val_ds, test_ds, device, cfg.seed,
+                      lambda_entropy, train_time_s, verbose=True)
+    print(f"\n=== {cfg.model} on {dataset} ===")
+    print_row(row)
+
+    if smoke:
+        print("\n  (smoke = 3 epochs; correctness only, NOT a result - not saved)")
+    else:
+        save_result_row(row)
+        print(f"\n  saved -> {RESULTS_CSV}")
+
+    del model
+    if device.type == "cuda":
+        torch.cuda.empty_cache()
+
+
+def cmd_interpret(args):
+    """
+    "interpret" command: train a model and draw MILLET-style per-sample explanation figures.
+
+    It reads the "interpretability" block of configs/main.yaml (which dataset, how many figures per
+    class, how many per test sample, where to save), trains a model on that dataset through the same
+    config-driven path as "run", then saves one figure per selected test series. --dataset / --model
+    / --smoke override the config for a quick look.
+
+    args : parsed arguments (args.config, args.model, args.dataset, args.smoke).
+    returns : nothing.
+    """
+    from seanet.interpretability import generate_interpretations   # imported here so matplotlib only loads for this command
+
+    overrides = {"model": args.model} if args.model else None
+    cfg = load_config(args.config, overrides=overrides)
+    icfg = getattr(cfg, "interpretability", None)
+
+    # figure out the settings (command line overrides the config, config overrides the defaults)
+    dataset = args.dataset or (getattr(icfg, "dataset", None) if icfg else None) or cfg.run.dataset
+    figures_per_class = getattr(icfg, "figures_per_class", 2) if icfg else 2
+    figures_per_test = getattr(icfg, "figures_per_test", 4) if icfg else 4
+    base_dir = getattr(icfg, "output_dir", os.path.join("results", "SEA_NET", "interpretation")) if icfg \
+        else os.path.join("results", "SEA_NET", "interpretation")
+    device = get_device() if cfg.device == "auto" else torch.device(cfg.device)
+    smoke = args.smoke
+
+    print(f"=== interpret: model={cfg.model} dataset={dataset} device={device} "
+          f"mode={'smoke' if smoke else 'full'} ===")
+
+    # train a model to explain (same fit path as training), then draw the figures from it
+    model, _, _, test_ds, _ = fit_model_from_config(dataset, cfg, device=device, smoke=smoke, verbose=True)
+    print("    drawing figures ...", flush=True)
+
+    if smoke:
+        # smoke = a quick check: draw ONE preview figure into a fixed file, so repeated smoke runs
+        # do not pile up dozens of throwaway figures. Real (training) runs are the ones we keep.
+        out_dir = os.path.join(base_dir, dataset, "smoke")
+        paths = generate_interpretations(model, test_ds, out_dir, dataset_name=dataset,
+                                         limit=1, fixed_name="smoke_preview.png")
+    else:
+        # real run: save all figures into a fresh folder stamped with the date and time, so every
+        # training run's interpretation results are kept separately and are easy to find later.
+        stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        out_dir = os.path.join(base_dir, dataset, stamp)
+        paths = generate_interpretations(model, test_ds, out_dir, figures_per_class, figures_per_test, dataset)
+
+    print(f"\nsaved {len(paths)} figure(s) to {out_dir}/")
+    for p in paths[:8]:
+        print("  ", p)
+    if len(paths) > 8:
+        print(f"   ... and {len(paths) - 8} more")
+
+    if smoke:
+        print("\n  (smoke = 3 epochs + 1 preview figure only; run without --smoke to save the full,\n"
+              "   date-stamped set from a properly trained model)")
+
+    del model
+    if device.type == "cuda":
+        torch.cuda.empty_cache()
+
+
+def cmd_optuna(args):
+    """
+    "optuna" command: run an Optuna hyperparameter search for the chosen model.
+
+    It reads the "optuna" block from the model config (configs/models/<model>.yaml), trains many
+    trials on the dataset (WebTraffic by default), and - unless smoke - saves the best values to
+    configs/models/<model>.best.yaml so future runs use them automatically.
+
+    args : parsed arguments (args.config, args.model, args.dataset, args.smoke).
+    returns : nothing.
+    """
+    from seanet.optimize import run_optuna
+
+    overrides = {"model": args.model} if args.model else None
+    cfg = load_config(args.config, overrides=overrides)
+    device = get_device() if cfg.device == "auto" else torch.device(cfg.device)
+    run_optuna(cfg, dataset=args.dataset, device=device, smoke=args.smoke, verbose=True)
+
+
 def cmd_results(args):
     """
     "results" command: rebuild and print the comparison-vs-MILLET table from whatever is finished.
@@ -273,6 +412,21 @@ def cmd_results(args):
     returns : nothing.
     """
     build_comparison(verbose=True)
+
+
+def cmd_report(args):
+    """
+    "report" command: build all the paper-ready outputs from the finished results - the summary
+    table, the SEA-Net vs MILLET comparison, and every figure - and save them under results/SEA_NET/.
+
+    This is the same code the analysis notebook uses (seanet/report.py), so the figures are drawn in
+    one place. Run it any time; it uses whatever has finished so far.
+
+    args : parsed arguments (unused).
+    returns : nothing.
+    """
+    from seanet.report import generate_report
+    generate_report(verbose=True)
 
 
 # ---------------------------------------------------------------------------
@@ -317,12 +471,50 @@ def main():
     p.add_argument("--smoke", action="store_true", help="quick check (3 epochs each)")
     p.set_defaults(func=cmd_train)
 
+    # run (config-driven entry point)
+    p = sub.add_parser("run", help="config-driven run: read configs/main.yaml and train + evaluate")
+    p.add_argument("--config", default=os.path.join("configs", "main.yaml"), help="path to main.yaml")
+    p.add_argument("--model", help="override the model in the config (e.g. seanet, millet)")
+    p.add_argument("--dataset", help="override the dataset in the config (e.g. Coffee)")
+    p.add_argument("--smoke", action="store_true", help="quick check (3 epochs), not saved")
+    p.set_defaults(func=cmd_run)
+
+    # interpret (per-sample explanation figures)
+    p = sub.add_parser("interpret", help="train a model + draw per-sample interpretability figures")
+    p.add_argument("--config", default=os.path.join("configs", "main.yaml"), help="path to main.yaml")
+    p.add_argument("--model", help="override the model in the config (e.g. seanet, millet)")
+    p.add_argument("--dataset", help="override the dataset to explain (e.g. WebTraffic)")
+    p.add_argument("--smoke", action="store_true", help="quick check (3 epochs)")
+    p.set_defaults(func=cmd_interpret)
+
+    # optuna (hyperparameter search)
+    p = sub.add_parser("optuna", help="run an Optuna hyperparameter search (reads the model's optuna block)")
+    p.add_argument("--config", default=os.path.join("configs", "main.yaml"), help="path to main.yaml")
+    p.add_argument("--model", help="which model to tune (e.g. seanet)")
+    p.add_argument("--dataset", help="dataset to search on (default: WebTraffic)")
+    p.add_argument("--smoke", action="store_true", help="quick check: 2 trials x 3 epochs, not saved")
+    p.set_defaults(func=cmd_optuna)
+
     # results
     p = sub.add_parser("results", help="build + print the comparison vs MILLET")
     p.set_defaults(func=cmd_results)
 
+    # report (all paper-ready tables + figures)
+    p = sub.add_parser("report", help="generate the summary table + all figures under results/SEA_NET/")
+    p.set_defaults(func=cmd_report)
+
     args = parser.parse_args()
-    args.func(args)          # call the function set by set_defaults for the chosen command
+    # save a timestamped copy of everything printed to results/SEA_NET/logs/<command>_<date-time>.log,
+    # so every command (smoke, single, train, run, interpret, optuna, ...) leaves a permanent record.
+    log_path = start_logging(args.command)
+    try:
+        args.func(args)      # call the function set by set_defaults for the chosen command
+    except Exception:        # make sure a crash's traceback is also written to the log file
+        import traceback
+        traceback.print_exc(file=sys.stdout)   # stdout is teed to the log; stderr is not
+        raise
+    finally:
+        print(f"\n[log] finished; full output saved to {log_path}")
 
 
 if __name__ == "__main__":

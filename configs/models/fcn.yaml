@@ -1,0 +1,31 @@
+# fcn.yaml - the MILLET FCN baseline (a second baseline you can train through this pipeline).
+#
+# FCN is one of the backbones the MILLET paper reports (see results/UCR/FCN/). This file lets you
+# train it here with the same generic recipe as SEA-Net, just by picking a different encoder.
+# It shows off the point of the encoder registry: swapping the model is a one-line config change.
+
+name: fcn
+
+# ---- the encoder: MILLET's FCN backbone (fixed 128-channel output) ----
+encoder:
+  type: fcn
+
+# ---- pooling: Conjunctive, to match how MILLET evaluates its backbones ----
+pooling:
+  type: conjunctive
+  d_attn: 8
+  dropout: 0.1
+  positional_encoding: true
+
+# ---- the training recipe (same generic loop as the other models) ----
+training:
+  n_epochs: 400
+  patience: 60
+  max_batch: 16
+  learning_rate: 0.00125
+  weight_decay: 0.00012
+  label_smoothing: 0.13
+  lambda_entropy: 0.0    # baselines have no attention-focus penalty
+  min_train_for_val: 100
+  val_frac: 0.2
+  optimizer: adam

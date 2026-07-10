@@ -1,0 +1,15 @@
+# SEA-Net results summary
+
+| metric | value |
+|---|---|
+| datasets_with_results | 129 |
+| mean_test_accuracy | 0.8296 |
+| mean_aopcr | 0.6585 |
+| webtraffic_ndcg | 0.7133 |
+| params | 269083 |
+| model_size_mb | 3.539 |
+| millet_overlap_datasets | 85 |
+| acc_win_tie_loss | 26/14/45 |
+| aopcr_win_tie_loss | 4/0/81 |
+| acc_mean_ours_vs_millet | 0.8294 / 0.8445 |
+| aopcr_mean_ours_vs_millet | 0.572 / 4.553 |

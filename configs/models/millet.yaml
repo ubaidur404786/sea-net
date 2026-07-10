@@ -1,0 +1,37 @@
+# millet.yaml - the MILLET baseline model.
+#
+# This is the original paper's model: an InceptionTime encoder + Conjunctive pooling head.
+# In the current pipeline the baseline is used mainly for the parameter-count comparison
+# ("python main.py params"); the paper's published numbers come from results/UCR/InceptionTime/.
+# This file lets you also TRAIN the baseline through the same config-driven path as SEA-Net,
+# so the two models share one training recipe and only differ by their config.
+#
+# The encoder/pooling values match how the baseline is built in seanet/model.py (make_baseline).
+# The training block is the same generic recipe as SEA-Net, except lambda_entropy is 0 because the
+# entropy "focus" penalty is a SEA-Net idea, not part of MILLET.
+
+name: millet
+
+# ---- the encoder: MILLET's InceptionTime feature extractor (outputs 128 channels) ----
+encoder:
+  type: inceptiontime
+
+# ---- the pooling head: MILLET's Conjunctive pooling ----
+pooling:
+  type: conjunctive
+  d_attn: 8
+  dropout: 0.1
+  positional_encoding: true
+
+# ---- the training recipe (same generic loop as SEA-Net) ----
+training:
+  n_epochs: 400
+  patience: 60
+  max_batch: 16
+  learning_rate: 0.00125
+  weight_decay: 0.00012
+  label_smoothing: 0.13
+  lambda_entropy: 0.0    # baseline has no attention-focus penalty
+  min_train_for_val: 100
+  val_frac: 0.2
+  optimizer: adam

@@ -1,8 +1,11 @@
 jupyter
 latextable
 matplotlib
+mlflow
 numpy
+optuna
 pandas
+pyyaml
 scienceplots
 scikit-learn
 scipy

@@ -1,0 +1,40 @@
+# transformer.yaml - PLACEHOLDER for a future transformer-based model.
+#
+# This model is NOT implemented yet. The file exists so the configuration structure is stable
+# and adding the model later is only a matter of filling in the encoder and wiring one class in
+# seanet/model.py. If you select this model today ("model: transformer"), the pipeline will stop
+# with a clear "not implemented yet" message instead of doing something surprising.
+#
+# When the transformer is added, "type: transformer" below will map to a real encoder class and
+# these values will become its real hyperparameters.
+
+name: transformer
+implemented: false       # the model factory checks this flag and refuses to build until it is true
+
+# ---- draft encoder settings (shape only, not used until the model is implemented) ----
+encoder:
+  type: transformer
+  d_model: 128           # feature width
+  n_heads: 8             # number of attention heads
+  n_layers: 4            # number of transformer blocks
+  dropout: 0.2
+
+# ---- pooling: reuse the same MIL pooling head as the other models ----
+pooling:
+  type: additive
+  d_attn: 8
+  dropout: 0.2
+  positional_encoding: true
+
+# ---- training: the same generic recipe as the other models ----
+training:
+  n_epochs: 400
+  patience: 60
+  max_batch: 16
+  learning_rate: 0.00125
+  weight_decay: 0.00012
+  label_smoothing: 0.13
+  lambda_entropy: 0.01
+  min_train_for_val: 100
+  val_frac: 0.2
+  optimizer: adam
