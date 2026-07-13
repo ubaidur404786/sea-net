@@ -11,18 +11,22 @@ What this file is for:
     It reads (never writes) the result CSVs, and produces:
       - figures  -> results/SEA_NET/figures/*.png (data summary, results, and the MILLET comparison),
       - a summary table -> results/SEA_NET/summary.csv and summary.md (paper-ready headline numbers),
-      - the per-dataset comparison -> results/SEA_NET/comparison_vs_millet.csv (via seanet.results).
+      - the per-dataset comparison -> results/SEA_NET/comparison_vs_millet.csv (via seanet.results),
+      - the pooling-head comparison figures -> from results/SEA_NET/pooling_benchmark.csv, IF that file
+        exists (i.e. you have run `python main.py benchmark`); skipped quietly otherwise.
 
 Input:
-    The three CSVs under results/SEA_NET/ (data_summary.csv, results.csv, and the MILLET baseline).
+    The CSVs under results/SEA_NET/ (data_summary.csv, results.csv, the MILLET baseline, and the
+    optional pooling_benchmark.csv).
 Output:
     PNG figures + a summary table; the functions also return the values so the notebook can show them.
 
 Related files:
-    - seanet/data.py    -> read_our_csv() (tolerant CSV reader) and DATA_SUMMARY_CSV.
-    - seanet/results.py -> load_results() and build_comparison() (the data this module plots).
+    - seanet/data.py      -> read_our_csv() (tolerant CSV reader) and DATA_SUMMARY_CSV.
+    - seanet/results.py   -> load_results() and build_comparison() (the data this module plots).
+    - seanet/benchmark.py -> writes pooling_benchmark.csv (the pooling-head comparison this module plots).
     - main.py ("report" command) -> calls generate_report().
-    - analysis.ipynb    -> a thin notebook that calls generate_report() and shows the saved figures.
+    - analysis.ipynb      -> a thin notebook that calls generate_report() and shows the saved figures.
 """
 import os
 from typing import Dict, List, Tuple
@@ -38,6 +42,12 @@ from seanet import results as R
 FIGURES_DIR = os.path.join("results", "SEA_NET", "figures")
 SUMMARY_CSV = os.path.join("results", "SEA_NET", "summary.csv")
 SUMMARY_MD = os.path.join("results", "SEA_NET", "summary.md")
+# where the pooling benchmark writes its results (mirrors seanet/benchmark.BENCHMARK_CSV; defined here
+# so report.py stays free of the heavier benchmark/train imports - it only needs the path string).
+BENCHMARK_CSV = os.path.join("results", "SEA_NET", "pooling_benchmark.csv")
+
+# our new pooling heads (highlighted in the benchmark figure so they stand out from the baselines)
+NEW_POOLING_HEADS = {"classwise_conjunctive", "softmax_conjunctive", "adaptive_classwise"}
 
 
 def _to_num(df: pd.DataFrame, cols: List[str]) -> pd.DataFrame:
@@ -66,6 +76,26 @@ def load_frames() -> Tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame]:
     comparison = _to_num(R.build_comparison(verbose=False),      # also refreshes comparison_vs_millet.csv
                          ["ours_acc", "millet_acc", "acc_diff", "ours_aopcr", "millet_aopcr", "aopcr_diff"])
     return summary, results, comparison
+
+
+def load_benchmark(path: str = BENCHMARK_CSV) -> pd.DataFrame:
+    """
+    Load the pooling-head benchmark frame (from `python main.py benchmark`), or an empty frame.
+
+    The file is append-only, so a re-run of the same (dataset, pooling) pair can appear twice; we keep
+    the last row for each pair (newest wins), exactly like results.load_results does for results.csv.
+
+    path : the pooling_benchmark.csv file.
+    returns : a DataFrame (empty if the benchmark has not been run yet).
+    """
+    if not os.path.exists(path):
+        return pd.DataFrame()
+    df = _to_num(D.read_our_csv(path),
+                 ["test_acc", "test_bal_acc", "test_auroc", "test_loss", "test_aopcr", "test_ndcg",
+                  "params", "train_time_s"])
+    if {"dataset", "pooling"}.issubset(df.columns):
+        df = df.drop_duplicates(["dataset", "pooling"], keep="last").reset_index(drop=True)
+    return df
 
 
 # --------------------------------------------------------------------------------------
@@ -159,6 +189,69 @@ def plot_comparison(comparison: pd.DataFrame, figdir: str = FIGURES_DIR) -> List
     return paths
 
 
+def plot_pooling_benchmark(bench: pd.DataFrame, figdir: str = FIGURES_DIR) -> List[str]:
+    """
+    Draw the pooling-head comparison from pooling_benchmark.csv. Two figures:
+      1) pooling_benchmark.png            - mean test accuracy and mean AOPCR per head (bars, best first),
+      2) pooling_benchmark_by_dataset.png - a per-dataset test-accuracy heatmap (head x dataset).
+    Our new heads (classwise_conjunctive / softmax_conjunctive / adaptive_classwise) are drawn in orange
+    so they stand out from the MILLET baselines.
+
+    bench : the benchmark frame from load_benchmark().
+    figdir : where to save the PNGs.
+    returns : the list of saved figure paths (empty if there is nothing to plot).
+    """
+    os.makedirs(figdir, exist_ok=True)
+    paths: List[str] = []
+    if bench.empty or "pooling" not in bench.columns:
+        return paths
+
+    n_datasets = bench["dataset"].nunique()
+    # mean of each metric over the datasets, per pooling head, best accuracy first
+    agg = bench.groupby("pooling").agg(
+        mean_acc=("test_acc", "mean"),
+        mean_aopcr=("test_aopcr", "mean"),
+    ).sort_values("mean_acc", ascending=False)
+
+    # figure 1: mean accuracy + mean AOPCR bars (each panel sorted by its own metric, best first)
+    fig, ax = plt.subplots(1, 2, figsize=(12, 5))
+    for a, col, title in [(ax[0], "mean_acc", "Mean test accuracy"),
+                          (ax[1], "mean_aopcr", "Mean AOPCR (interpretability)")]:
+        s = agg[col].sort_values(ascending=False)
+        colors = ["darkorange" if p in NEW_POOLING_HEADS else "steelblue" for p in s.index]
+        bars = a.bar(range(len(s)), s.values, color=colors)
+        a.set_xticks(range(len(s))); a.set_xticklabels(s.index, rotation=30, ha="right")
+        a.set_title(title); a.set_ylabel(col)
+        for b, v in zip(bars, s.values):                        # write the value on top of each bar
+            if pd.notna(v):
+                a.text(b.get_x() + b.get_width() / 2, v, f"{v:.3f}", ha="center", va="bottom", fontsize=8)
+    fig.suptitle(f"Pooling head comparison (mean over {n_datasets} datasets)   [orange = our new heads]")
+    fig.tight_layout()
+    p = os.path.join(figdir, "pooling_benchmark.png"); fig.savefig(p, dpi=120); plt.close(fig); paths.append(p)
+
+    # figure 2: per-dataset accuracy heatmap (rows = pooling head ordered best-first, cols = dataset)
+    pivot = bench.pivot_table(index="pooling", columns="dataset", values="test_acc", aggfunc="mean")
+    pivot = pivot.reindex(agg.index)                            # rows in the same best-first order as above
+    vmin, vmax = float(pivot.min().min()), float(pivot.max().max())
+    fig, ax = plt.subplots(figsize=(1.4 * len(pivot.columns) + 3, 0.6 * len(pivot.index) + 2))
+    im = ax.imshow(pivot.values, aspect="auto", cmap="viridis")
+    ax.set_xticks(range(len(pivot.columns))); ax.set_xticklabels(pivot.columns, rotation=30, ha="right")
+    ax.set_yticks(range(len(pivot.index))); ax.set_yticklabels(pivot.index)
+    for i in range(pivot.shape[0]):                             # annotate each cell with its accuracy
+        for j in range(pivot.shape[1]):
+            v = pivot.values[i, j]
+            if pd.notna(v):
+                shade = (v - vmin) / (vmax - vmin + 1e-9)       # dark cell -> white text, light cell -> black
+                ax.text(j, i, f"{v:.2f}", ha="center", va="center", fontsize=8,
+                        color="white" if shade < 0.5 else "black")
+    fig.colorbar(im, ax=ax, label="test accuracy")
+    ax.set_title("Test accuracy per pooling head x dataset")
+    fig.tight_layout()
+    p = os.path.join(figdir, "pooling_benchmark_by_dataset.png")
+    fig.savefig(p, dpi=120); plt.close(fig); paths.append(p)
+    return paths
+
+
 # --------------------------------------------------------------------------------------
 # Tables / summaries
 # --------------------------------------------------------------------------------------
@@ -227,6 +320,11 @@ def generate_report(figdir: str = FIGURES_DIR, verbose: bool = True) -> Dict:
     if len(comparison):
         figures += plot_comparison(comparison, figdir)
 
+    # optional: the pooling-head comparison, only if `python main.py benchmark` has been run
+    bench = load_benchmark()
+    if len(bench):
+        figures += plot_pooling_benchmark(bench, figdir)
+
     perf = performance_summary(results, comparison)
     csv_path, md_path = write_summary_table(perf)
 
@@ -234,6 +332,13 @@ def generate_report(figdir: str = FIGURES_DIR, verbose: bool = True) -> Dict:
         print("=== SEA-Net report ===")
         for key, value in perf.items():
             print(f"  {key:26s}: {value}")
+        if len(bench):                                          # short pooling ranking, best first
+            print("\n  pooling benchmark (mean test_acc over "
+                  f"{bench['dataset'].nunique()} datasets):")
+            rank = bench.groupby("pooling")["test_acc"].mean().sort_values(ascending=False)
+            for pooling, acc in rank.items():
+                mark = "  <- new" if pooling in NEW_POOLING_HEADS else ""
+                print(f"    {pooling:24s} {acc:.4f}{mark}")
         print(f"\nwrote {len(figures)} figures -> {figdir}/")
         for p in figures:
             print("  ", p)

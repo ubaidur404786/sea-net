@@ -366,6 +366,25 @@ def cmd_run(args):
         torch.cuda.empty_cache()
 
 
+def cmd_benchmark(args):
+    """
+    "benchmark" command: train the same encoder with several pooling heads on several datasets and
+    print a ranking, so you can see which pooling wins (and by how much).
+
+    It swaps ONLY the pooling head on the base model config (default seanet), so the encoder and
+    training recipe are identical across variants - a fair A/B. Results go to their OWN file
+    results/SEA_NET/pooling_benchmark.csv; it never touches results.csv / done.txt or the MILLET
+    comparison. Each run is also logged to MLflow when enabled. --datasets / --pooling / --model
+    override the defaults; --smoke does a quick 3-epoch check (not saved).
+
+    args : parsed arguments (args.config, args.model, args.datasets, args.pooling, args.smoke).
+    returns : nothing.
+    """
+    from seanet.benchmark import run_benchmark
+    run_benchmark(datasets=args.datasets, poolings=args.pooling, base_model=args.model,
+                  config_path=args.config, smoke=args.smoke, verbose=True)
+
+
 def cmd_interpret(args):
     """
     "interpret" command: train a model and draw MILLET-style per-sample explanation figures.
@@ -521,6 +540,18 @@ def main():
     p.add_argument("--dataset", help="override the dataset in the config (e.g. Coffee)")
     p.add_argument("--smoke", action="store_true", help="quick check (3 epochs), not saved")
     p.set_defaults(func=cmd_run)
+
+    # benchmark (compare pooling heads on the same encoder)
+    p = sub.add_parser("benchmark", help="compare pooling heads (same encoder) on several datasets + rank them")
+    p.add_argument("--config", default=os.path.join("configs", "main.yaml"), help="path to main.yaml")
+    p.add_argument("--model", default="seanet",
+                   help="base model config whose pooling head is swapped (default: seanet)")
+    p.add_argument("--datasets", nargs="+", metavar="NAME",
+                   help="datasets to run (default: a small, fast set incl. WebTraffic)")
+    p.add_argument("--pooling", nargs="+", metavar="TYPE",
+                   help="pooling heads to compare (default: the 2 baselines + our 3 new heads)")
+    p.add_argument("--smoke", action="store_true", help="quick check (3 epochs each), not saved")
+    p.set_defaults(func=cmd_benchmark)
 
     # interpret (per-sample explanation figures)
     p = sub.add_parser("interpret", help="train a model + draw per-sample interpretability figures")
