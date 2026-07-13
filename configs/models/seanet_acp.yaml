@@ -1,0 +1,64 @@
+# seanet_acp.yaml - SEA-Net encoder + our "adaptive_classwise" pooling head (ACP). RECOMMENDED.
+#
+# A copy of seanet.yaml with ONLY the pooling head changed (fair A/B vs the Conjunctive baseline).
+# ACP combines the two wins: one attention gate PER CLASS, plus a learnable per-class "beta" that
+# slides the time aggregation between mean (average the whole series) and max (trust one key region).
+# It strictly generalises GAP, Instance, Conjunctive and max pooling, so a well-trained model can only
+# match or beat the baseline. Run it with:
+#   python main.py run --model seanet_acp
+#   python main.py run --model seanet_acp --dataset Coffee --smoke
+
+name: seanet_acp
+
+# ---- the encoder (identical to seanet.yaml) ----
+encoder:
+  type: mstcn_sep
+  d: 128
+  n_blocks: 6
+  dropout: 0.2
+  max_dilation: 16
+  kernels: [5, 11, 23]
+
+# ---- the pooling head (THE ONLY DIFFERENCE vs seanet.yaml) ----
+pooling:
+  type: adaptive_classwise      # per-class gate + learnable mean<->max aggregator (soft-argmax, beta)
+  d_attn: 8                     # width of the small attention MLP
+  dropout: 0.2
+  positional_encoding: true
+  init_beta: 0.3                # INITIAL per-class sharpness beta (it is learnable; this is its start).
+                                # beta ~ 0 -> mean pooling (= Conjunctive); large beta -> max pooling.
+                                # Start small so training begins near the safe mean, then sharpens.
+
+# ---- the training recipe (identical to seanet.yaml) ----
+training:
+  n_epochs: 400
+  patience: 60
+  max_batch: 16
+  learning_rate: 0.00125
+  weight_decay: 0.00012
+  label_smoothing: 0.13
+  lambda_entropy: 0.01
+  min_train_for_val: 100
+  val_frac: 0.2
+  optimizer: adam
+
+# ---- Optuna hyperparameter search (disabled by default) ----
+# Run with:  python main.py optuna --model seanet_acp
+# beta is LEARNED per class during training, so it is not in the search space below. If you want Optuna
+# to tune its INITIAL value too, add under search_space:  pooling: {init_beta: {type: float, low: 0.05,
+# high: 3.0, log: true}}  - it works because build_pooling reads pooling.init_beta from config.
+optuna:
+  enabled: false
+  n_trials: 20
+  timeout: null
+  sampler: tpe
+  pruner: median
+  save_best_parameters: true
+  search_space:
+    training:
+      learning_rate: {type: float, low: 0.0003, high: 0.005, log: true}
+      weight_decay: {type: float, low: 0.00001, high: 0.0005, log: true}
+      label_smoothing: {type: float, low: 0.0, high: 0.2}
+      lambda_entropy: {type: float, low: 0.0, high: 0.05}
+    encoder:
+      dropout: {type: float, low: 0.1, high: 0.4}

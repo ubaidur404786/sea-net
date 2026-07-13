@@ -36,6 +36,7 @@ Related files:
     - seanet/features.py -> the first half of a model (the encoder).
     - configs/models/<model>.yaml -> the "pooling" block picks the type and its settings.
 """
+import inspect
 import math
 from typing import Dict, Tuple, Type
 
@@ -77,8 +78,9 @@ def build_pooling(pooling_cfg, d_in: int, n_clz: int) -> nn.Module:
     """
     Build a pooling head from its config block, using the registry.
 
-    pooling_cfg : the "pooling" section of a model config (.type, .dropout, .positional_encoding,
-                  and .d_attn for the attention-based heads).
+    pooling_cfg : the "pooling" section of a model config. Always has .type, .dropout,
+                  .positional_encoding; may also name head-specific settings - .d_attn (attention
+                  heads), .temperature (softmax_conjunctive), .init_beta (adaptive_classwise).
     d_in : the feature width coming out of the encoder (the pooling input size).
     n_clz : number of classes.
     returns : a pooling module that maps (B, d_in, T) -> the output dict.
@@ -87,13 +89,19 @@ def build_pooling(pooling_cfg, d_in: int, n_clz: int) -> nn.Module:
     kind = pooling_cfg.type
     if kind not in POOLING_REGISTRY:
         raise ValueError(f"Unknown pooling type {kind!r}. Registered: {sorted(POOLING_REGISTRY)}")
-    pooling_cls, has_attn = POOLING_REGISTRY[kind]
+    pooling_cls, _has_attn = POOLING_REGISTRY[kind]
     kwargs = dict(
         dropout=pooling_cfg.dropout,
         apply_positional_encoding=pooling_cfg.positional_encoding,
     )
-    if has_attn and hasattr(pooling_cfg, "d_attn"):          # only the attention heads accept d_attn
-        kwargs["d_attn"] = pooling_cfg.d_attn
+    # Optional, head-specific settings. Each is passed ONLY if (a) the config names it AND (b) this
+    # head's constructor actually accepts it - so d_attn goes only to attention heads, temperature only
+    # to softmax_conjunctive, and init_beta only to adaptive_classwise. Adding a knob to a new head
+    # later needs no change here: just name it in the config and as a constructor argument.
+    accepted = inspect.signature(pooling_cls).parameters
+    for opt in ("d_attn", "temperature", "init_beta"):
+        if opt in accepted and hasattr(pooling_cfg, opt):
+            kwargs[opt] = getattr(pooling_cfg, opt)
     return pooling_cls(d_in, n_clz, **kwargs)
 
 
