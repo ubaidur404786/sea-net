@@ -549,7 +549,8 @@ def main():
     args = parser.parse_args()
     # save a timestamped copy of everything printed to results/SEA_NET/logs/<command>_<date-time>.log,
     # so every command (smoke, single, train, run, interpret, optuna, ...) leaves a permanent record.
-    log_path = start_logging(args.command)
+    # Smoke runs go to logs/smoke/ (git-ignored) so only real training logs are committed.
+    log_path = start_logging(args.command, smoke=getattr(args, "smoke", False))
     try:
         args.func(args)      # call the function set by set_defaults for the chosen command
     except Exception:        # make sure a crash's traceback is also written to the log file

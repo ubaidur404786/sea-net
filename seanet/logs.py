@@ -9,8 +9,13 @@ What this file is for:
 
     It works like the Unix "tee" command: text goes to the screen AND to the file at the same time.
 
+    Smoke runs are throwaway pipeline checks (usually done on your laptop), so their logs go into a
+    separate results/SEA_NET/logs/smoke/ folder that .gitignore excludes. Real training logs stay in
+    results/SEA_NET/logs/ and ARE committed, so the Grid5000 training record travels with the repo.
+
 How to use it (see main.py):
-    start_logging("train")     # from now on, every print() also lands in the log file
+    start_logging("train")            # a real run -> logs/train_<date-time>.log (committed)
+    start_logging("single", smoke=True)   # a smoke run -> logs/smoke/single_<date-time>.log (ignored)
     ... run the command ...
 
 The one class here (Tee) just forwards each write() to two places. Nothing clever.
@@ -48,7 +53,7 @@ class Tee:
         self.logfile.flush()
 
 
-def start_logging(command: str) -> str:
+def start_logging(command: str, smoke: bool = False) -> str:
     """
     Begin saving all terminal output to results/SEA_NET/logs/<command>_<date-time>.log.
 
@@ -57,11 +62,15 @@ def start_logging(command: str) -> str:
     alone), so the log file stays clean and readable.
 
     command : the command name, used in the file name (e.g. "train", "optuna").
+    smoke : if True, write into the logs/smoke/ subfolder instead (git-ignored, so throwaway smoke
+            checks never get committed; real training logs go straight in logs/ and are kept).
     returns : the path of the log file that was opened.
     """
-    os.makedirs(LOGS_DIR, exist_ok=True)                       # make the logs folder if needed
+    # real logs -> logs/ (committed);  smoke logs -> logs/smoke/ (ignored). See .gitignore.
+    logs_dir = os.path.join(LOGS_DIR, "smoke") if smoke else LOGS_DIR
+    os.makedirs(logs_dir, exist_ok=True)                       # make the logs folder if needed
     stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")       # date-time, so each run has its own file
-    path = os.path.join(LOGS_DIR, f"{command}_{stamp}.log")
+    path = os.path.join(logs_dir, f"{command}_{stamp}.log")
     logfile = open(path, "w", encoding="utf-8")
     sys.stdout = Tee(sys.stdout, logfile)                      # from now on, print() also writes to the file
     print(f"[log] command '{command}' started at {stamp}")
