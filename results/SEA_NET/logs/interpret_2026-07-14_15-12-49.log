@@ -1,0 +1,20 @@
+[log] command 'interpret' started at 2026-07-14_15-12-49
+[log] a copy of everything below is being saved to: results/SEA_NET/logs/interpret_2026-07-14_15-12-49.log
+
+=== interpret: model=seanet_conjunctive dataset=WebTraffic device=cuda mode=full ===
+    stage 1/3: loading data ...
+    stage 2/3: training on 400 series (val=100, C=10, T=1008, batch=8) ...
+    drawing figures ...
+
+saved 22 figure(s) to results/SEA_NET/interpretation/WebTraffic/2026-07-14_15-14-09/
+   results/SEA_NET/interpretation/WebTraffic/2026-07-14_15-14-09/WebTraffic_sample0000_true0_pred0.png
+   results/SEA_NET/interpretation/WebTraffic/2026-07-14_15-14-09/WebTraffic_sample0001_true0_pred0.png
+   results/SEA_NET/interpretation/WebTraffic/2026-07-14_15-14-09/WebTraffic_sample0050_true1_pred1.png
+   results/SEA_NET/interpretation/WebTraffic/2026-07-14_15-14-09/WebTraffic_sample0051_true1_pred1.png
+   results/SEA_NET/interpretation/WebTraffic/2026-07-14_15-14-09/WebTraffic_sample0100_true2_pred3.png
+   results/SEA_NET/interpretation/WebTraffic/2026-07-14_15-14-09/WebTraffic_sample0101_true2_pred3.png
+   results/SEA_NET/interpretation/WebTraffic/2026-07-14_15-14-09/WebTraffic_sample0150_true3_pred3.png
+   results/SEA_NET/interpretation/WebTraffic/2026-07-14_15-14-09/WebTraffic_sample0151_true3_pred3.png
+   ... and 14 more
+
+[log] finished; full output saved to results/SEA_NET/logs/interpret_2026-07-14_15-12-49.log
