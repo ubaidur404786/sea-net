@@ -52,7 +52,7 @@ training:
 # BOTTOM of this file (records.optuna_best) - no separate .best.yaml. See seanet.yaml for the details.
 # NOTE: pooling.temperature is also searched here (its INITIAL value); it keeps being learned afterwards.
 optuna:
-  enabled: false
+  enabled: true
   n_trials: 30                 # big search space (training + encoder + pooling) -> use plenty of trials
   timeout: null
   sampler: tpe
@@ -75,3 +75,36 @@ optuna:
       d_attn: {type: categorical, choices: [4, 8, 16, 32]}
       dropout: {type: float, low: 0.1, high: 0.4}
       temperature: {type: float, low: 0.2, high: 5.0, log: true}   # softmax temperature (this head only)
+
+# ===== AUTO-FILLED RESULTS (managed by main.py - do not edit below this line) =====
+# These records let you compare the DEFAULT recipe against Optuna's BEST without opening MLflow,
+# and (with `use_params: auto`) train with whichever scored higher. They are filled in for you:
+#   records.default     : metrics from our last real `python main.py run` (default recipe).
+#   records.optuna_best : the params Optuna found + their metrics (`python main.py optuna`).
+
+records:
+  optuna_best:
+    params:
+      training:
+        learning_rate: 0.0011577365765245713
+        weight_decay: 3.145649768799423e-05
+        label_smoothing: 0.017597091084706286
+        lambda_entropy: 0.048980432248188106
+        max_batch: 8
+      encoder:
+        d: 64
+        n_blocks: 3
+        dropout: 0.22294761630610715
+        max_dilation: 8
+      pooling:
+        d_attn: 8
+        dropout: 0.1650404086693623
+        temperature: 1.0454492672536897
+    metrics:
+      test_acc: 0.904
+      test_loss: 0.3163
+      test_auroc: 0.9919
+      val_loss: 0.4227
+      dataset: WebTraffic
+      n_trials: 30
+      recorded: '2026-07-14 14:44:12'

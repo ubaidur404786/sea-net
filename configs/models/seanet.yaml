@@ -52,7 +52,7 @@ training:
 # (records.optuna_best: the params AND their test_acc/loss/auroc), so you can compare it with the
 # default recipe and switch via `use_params` above. No separate .best.yaml file is created.
 optuna:
-  enabled: false           # must be true for "python main.py optuna" to run a search
+  enabled: true           # must be true for "python main.py optuna" to run a search
   n_trials: 30             # how many combinations to try (this is a big space, so use plenty)
   timeout: null            # stop after this many seconds (null = no time limit)
   sampler: tpe             # how to pick the next trial: tpe (smart) or random
@@ -78,25 +78,34 @@ optuna:
       d_attn: {type: categorical, choices: [4, 8, 16, 32]}   # width of the small attention MLP
       dropout: {type: float, low: 0.1, high: 0.4}
 
-
 # ===== AUTO-FILLED RESULTS (managed by main.py - do not edit below this line) =====
 # These records let you compare the DEFAULT recipe against Optuna's BEST without opening MLflow,
 # and (with `use_params: auto`) train with whichever scored higher. They are filled in for you:
-#   records.default     : metrics from your last real `python main.py run` (default recipe).
+#   records.default     : metrics from our last real `python main.py run` (default recipe).
 #   records.optuna_best : the params Optuna found + their metrics (`python main.py optuna`).
 
 records:
   optuna_best:
     params:
       training:
-        learning_rate: 0.0010940172036395918
-        weight_decay: 0.0002648861086061879
-        label_smoothing: 0.0490670737508708
-        lambda_entropy: 0.041191557678354994
+        learning_rate: 0.0005076417815298255
+        weight_decay: 4.091626401527854e-05
+        label_smoothing: 0.014544866656788336
+        lambda_entropy: 0.007608685664283788
+        max_batch: 8
       encoder:
-        dropout: 0.10493655791833958
+        d: 128
+        n_blocks: 3
+        dropout: 0.15583378869148168
+        max_dilation: 16
+      pooling:
+        d_attn: 16
+        dropout: 0.28079526048212006
     metrics:
-      val_loss: 0.5588
+      test_acc: 0.906
+      test_loss: 0.3068
+      test_auroc: 0.9922
+      val_loss: 0.3982
       dataset: WebTraffic
-      n_trials: 40
-      note: migrated from legacy seanet.best.yaml; re-run optuna to record test_acc/loss/auroc
+      n_trials: 30
+      recorded: '2026-07-14 14:37:20'

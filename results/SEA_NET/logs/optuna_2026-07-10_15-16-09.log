@@ -1,0 +1,6 @@
+[log] command 'optuna' started at 2026-07-10_15-16-09
+[log] a copy of everything below is being saved to: results/SEA_NET/logs/optuna_2026-07-10_15-16-09.log
+
+Optuna is disabled for model 'seanet'. Set 'optuna.enabled: true' in configs/models/seanet.yaml to run a search.
+
+[log] finished; full output saved to results/SEA_NET/logs/optuna_2026-07-10_15-16-09.log

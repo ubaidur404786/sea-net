@@ -47,7 +47,7 @@ training:
 # After the search the best config is retrained + scored on test and saved into the records block at the
 # BOTTOM of this file (records.optuna_best) - no separate .best.yaml. See seanet.yaml for the details.
 optuna:
-  enabled: false
+  enabled: true
   n_trials: 30                 # big search space (training + encoder + pooling) -> use plenty of trials
   timeout: null
   sampler: tpe
@@ -69,3 +69,35 @@ optuna:
     pooling:
       d_attn: {type: categorical, choices: [4, 8, 16, 32]}
       dropout: {type: float, low: 0.1, high: 0.4}
+
+# ===== AUTO-FILLED RESULTS (managed by main.py - do not edit below this line) =====
+# These records let you compare the DEFAULT recipe against Optuna's BEST without opening MLflow,
+# and (with `use_params: auto`) train with whichever scored higher. They are filled in for you:
+#   records.default     : metrics from our last real `python main.py run` (default recipe).
+#   records.optuna_best : the params Optuna found + their metrics (`python main.py optuna`).
+
+records:
+  optuna_best:
+    params:
+      training:
+        learning_rate: 0.0007339198007141648
+        weight_decay: 5.056155262003501e-05
+        label_smoothing: 0.012829499269756873
+        lambda_entropy: 0.034623605968500996
+        max_batch: 8
+      encoder:
+        d: 128
+        n_blocks: 4
+        dropout: 0.3002231139891045
+        max_dilation: 16
+      pooling:
+        d_attn: 32
+        dropout: 0.10140864285776413
+    metrics:
+      test_acc: 0.934
+      test_loss: 0.2312
+      test_auroc: 0.9967
+      val_loss: 0.5112
+      dataset: WebTraffic
+      n_trials: 30
+      recorded: '2026-07-14 14:41:22'
