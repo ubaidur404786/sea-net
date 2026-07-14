@@ -42,7 +42,7 @@ import torch
 
 from seanet import data as D
 from seanet import tracking
-from seanet.config import load_config, to_flat_dict
+from seanet.config import load_config, to_flat_dict, param_choice_message, record_metrics
 from seanet.logs import start_logging
 from seanet.model import make_sea_net, make_baseline, num_params, state_dict_size_mb
 from seanet.train import (train_one, train_one_from_config, fit_model_from_config, score_model,
@@ -329,6 +329,11 @@ def cmd_run(args):
     for key, value in to_flat_dict(cfg).items():
         print(f"  {key} = {value}")
 
+    # say which recipe (default vs Optuna-best) this run uses, and how they compare (see use_params)
+    msg = param_choice_message(cfg)
+    if msg:
+        print(msg)
+
     if cfg.run.mode != "single":                                # only "single" is wired up so far
         raise SystemExit(f"run mode {cfg.run.mode!r} is not supported yet (use mode: single).")
 
@@ -360,6 +365,16 @@ def cmd_run(args):
     else:
         save_result_row(row)
         print(f"\n  saved -> {RESULTS_CSV}")
+        # save THIS default recipe's metrics into the model file, so they can be compared with Optuna's
+        # best later. Only when we actually trained the DEFAULT recipe (not an auto-picked optuna-best).
+        choice = getattr(cfg, "_param_choice", None)
+        if choice is None or getattr(choice, "used", "default") == "default":
+            record_metrics(cfg.model, "default", {
+                "test_acc": row["test_acc"], "test_loss": row["test_loss"],
+                "test_auroc": row["test_auroc"], "dataset": dataset,
+                "recorded": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            })
+            print(f"  recorded default metrics -> configs/models/{cfg.model}.yaml (records.default)")
 
     del model
     if device.type == "cuda":

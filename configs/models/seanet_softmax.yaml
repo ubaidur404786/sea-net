@@ -10,6 +10,10 @@
 
 name: seanet_softmax
 
+# which recipe to train with: default | optuna_best | auto  (see seanet.yaml for the full explanation).
+# 'auto' uses Optuna's best only if it scored a higher test accuracy than the default recipe.
+use_params: auto
+
 # ---- the encoder (identical to seanet.yaml) ----
 encoder:
   type: mstcn_sep
@@ -44,21 +48,30 @@ training:
 
 # ---- Optuna hyperparameter search (disabled by default) ----
 # Run with:  python main.py optuna --model seanet_softmax
-# temperature is LEARNED during training, so it is not in the search space below. If you want Optuna
-# to tune its INITIAL value too, add under search_space:  pooling: {temperature: {type: float, low:
-# 0.2, high: 5.0, log: true}}  - it works because build_pooling reads pooling.temperature from config.
+# After the search the best config is retrained + scored on test and saved into the records block at the
+# BOTTOM of this file (records.optuna_best) - no separate .best.yaml. See seanet.yaml for the details.
+# NOTE: pooling.temperature is also searched here (its INITIAL value); it keeps being learned afterwards.
 optuna:
   enabled: false
-  n_trials: 20
+  n_trials: 30                 # big search space (training + encoder + pooling) -> use plenty of trials
   timeout: null
   sampler: tpe
   pruner: median
   save_best_parameters: true
+  # DETAILED search: the training recipe, the ENCODER (feature extractor) AND the POOLING head together.
   search_space:
     training:
       learning_rate: {type: float, low: 0.0003, high: 0.005, log: true}
       weight_decay: {type: float, low: 0.00001, high: 0.0005, log: true}
       label_smoothing: {type: float, low: 0.0, high: 0.2}
       lambda_entropy: {type: float, low: 0.0, high: 0.05}
+      max_batch: {type: categorical, choices: [8, 16, 32]}
     encoder:
+      d: {type: categorical, choices: [64, 96, 128]}
+      n_blocks: {type: int, low: 3, high: 8}
       dropout: {type: float, low: 0.1, high: 0.4}
+      max_dilation: {type: categorical, choices: [8, 16, 32]}
+    pooling:
+      d_attn: {type: categorical, choices: [4, 8, 16, 32]}
+      dropout: {type: float, low: 0.1, high: 0.4}
+      temperature: {type: float, low: 0.2, high: 5.0, log: true}   # softmax temperature (this head only)

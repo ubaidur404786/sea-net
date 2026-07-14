@@ -134,8 +134,10 @@ def run_benchmark(datasets: Optional[List[str]] = None, poolings: Optional[List[
     if unknown:
         raise SystemExit(f"Unknown pooling type(s) {unknown}. Registered: {sorted(POOLING_REGISTRY)}")
 
-    # load the base config once for the device + MLflow settings (each run reloads its own copy below)
-    base_cfg = load_config(config_path, overrides={"model": base_model})
+    # load the base config once for the device + MLflow settings (each run reloads its own copy below).
+    # use_params="default" keeps the comparison fair: every pooling head uses the SAME default recipe,
+    # not one head's Optuna-best params.
+    base_cfg = load_config(config_path, overrides={"model": base_model}, use_params="default")
     if device is None:
         device = get_device() if base_cfg.device == "auto" else torch.device(base_cfg.device)
     # MLflow records every run so they are comparable in the web UI too (off for smoke - a plumbing check)
@@ -156,7 +158,7 @@ def run_benchmark(datasets: Optional[List[str]] = None, poolings: Optional[List[
             tag = f"[{i:>2}/{total}]"
             try:
                 # reload a fresh config and swap ONLY the pooling head (keeps encoder + recipe identical)
-                cfg = load_config(config_path, overrides={"model": base_model})
+                cfg = load_config(config_path, overrides={"model": base_model}, use_params="default")
                 cfg.model_config.pooling.type = pooling
                 cfg.model_config.name = f"{base_model}-{pooling}"     # labels the row + the MLflow model
                 print(f"\n{tag} {dataset}  pooling={pooling}", flush=True)

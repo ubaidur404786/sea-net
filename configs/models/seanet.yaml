@@ -7,6 +7,15 @@
 
 name: seanet
 
+# which recipe to train with:
+#   default     = use the encoder / pooling / training blocks below, as written.
+#   optuna_best = use the params Optuna found (saved in the "records" block at the bottom of this file).
+#   auto        = use optuna_best IF it scored a higher test accuracy than default, otherwise default.
+# `python main.py run` prints which one it picked and how the two compare. Typical flow: run normal
+# first (fills records.default), then `python main.py optuna` (fills records.optuna_best), then leave
+# this on `auto` so the better recipe is used automatically.
+use_params: auto
+
 # ---- the encoder (feature extractor): turns each timestep into a 128-d feature vector ----
 encoder:
   type: mstcn_sep        # our "Multi-Scale separable TCN" encoder
@@ -38,23 +47,56 @@ training:
 
 # ---- Optuna hyperparameter search (disabled by default) ----
 # Run with:  python main.py optuna    (uses WebTraffic by default). Each trial trains a model with
-# sampled hyperparameters and Optuna minimises the validation loss. When it finishes, the best
-# values are written to configs/models/seanet.best.yaml, which future runs load automatically
-# (delete that file to go back to the defaults above). Everything here is configurable.
+# sampled hyperparameters and Optuna minimises the validation loss. When it finishes, the best config
+# is retrained + scored on the test set and saved into the "records" block at the BOTTOM of this file
+# (records.optuna_best: the params AND their test_acc/loss/auroc), so you can compare it with the
+# default recipe and switch via `use_params` above. No separate .best.yaml file is created.
 optuna:
   enabled: false           # must be true for "python main.py optuna" to run a search
-  n_trials: 20             # how many hyperparameter combinations to try
+  n_trials: 30             # how many combinations to try (this is a big space, so use plenty)
   timeout: null            # stop after this many seconds (null = no time limit)
   sampler: tpe             # how to pick the next trial: tpe (smart) or random
   pruner: median           # stop hopeless trials early: median or none
-  save_best_parameters: true   # write the winners to seanet.best.yaml
-  # search_space: which hyperparameters to tune and their ranges (grouped like the config above).
-  # each leaf has a type (float/int/categorical) and its range (low/high, or choices).
+  save_best_parameters: true   # after the search, save the winners into records.optuna_best (below)
+  # search_space: which hyperparameters to tune and their ranges. Grouped like the config above, so the
+  # dotted path (training.learning_rate / encoder.d / pooling.d_attn) is set straight into this model.
+  # Each leaf has a type (float/int/categorical) and its range (low/high[/log], or choices). This is the
+  # DETAILED search: the training recipe, the ENCODER (feature extractor) AND the POOLING head together.
   search_space:
     training:
       learning_rate: {type: float, low: 0.0003, high: 0.005, log: true}
       weight_decay: {type: float, low: 0.00001, high: 0.0005, log: true}
       label_smoothing: {type: float, low: 0.0, high: 0.2}
       lambda_entropy: {type: float, low: 0.0, high: 0.05}
-    encoder:
+      max_batch: {type: categorical, choices: [8, 16, 32]}
+    encoder:                                        # the feature extractor (MSTCN-separable)
+      d: {type: categorical, choices: [64, 96, 128]}         # channel width the encoder works with
+      n_blocks: {type: int, low: 3, high: 8}                 # depth = number of residual blocks
       dropout: {type: float, low: 0.1, high: 0.4}
+      max_dilation: {type: categorical, choices: [8, 16, 32]}   # how wide the receptive field grows
+    pooling:                                        # the MIL pooling head
+      d_attn: {type: categorical, choices: [4, 8, 16, 32]}   # width of the small attention MLP
+      dropout: {type: float, low: 0.1, high: 0.4}
+
+
+# ===== AUTO-FILLED RESULTS (managed by main.py - do not edit below this line) =====
+# These records let you compare the DEFAULT recipe against Optuna's BEST without opening MLflow,
+# and (with `use_params: auto`) train with whichever scored higher. They are filled in for you:
+#   records.default     : metrics from your last real `python main.py run` (default recipe).
+#   records.optuna_best : the params Optuna found + their metrics (`python main.py optuna`).
+
+records:
+  optuna_best:
+    params:
+      training:
+        learning_rate: 0.0010940172036395918
+        weight_decay: 0.0002648861086061879
+        label_smoothing: 0.0490670737508708
+        lambda_entropy: 0.041191557678354994
+      encoder:
+        dropout: 0.10493655791833958
+    metrics:
+      val_loss: 0.5588
+      dataset: WebTraffic
+      n_trials: 40
+      note: migrated from legacy seanet.best.yaml; re-run optuna to record test_acc/loss/auroc
