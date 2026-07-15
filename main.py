@@ -9,21 +9,33 @@ What this file is for:
 Commands (run "python main.py -h" to see them):
     python main.py summary [NAME|--all]   look at the data (shapes + a summary row per dataset)
     python main.py params                 print how much smaller SEA-Net is than the baseline
-    python main.py webtraffic [--smoke]   train on WebTraffic and compare to MILLET
-    python main.py single NAME [--smoke]  train + evaluate one dataset
-    python main.py train [options]        the full sweep: WebTraffic + all 128 UCR datasets
-    python main.py results                rebuild + print the comparison table vs MILLET
+    python main.py webtraffic [--model M] train on WebTraffic and compare to MILLET
+    python main.py single NAME [--model M] train + evaluate one dataset
+    python main.py train [--model M]      the full sweep: WebTraffic + all 128 UCR, for ONE model
+    python main.py run                    config-driven single run (reads configs/main.yaml)
+    python main.py benchmark              compare pooling heads on the same encoder
+    python main.py interpret              per-sample explanation figures
+    python main.py optuna [--model M]     hyperparameter search
+    python main.py results [--model M]    rebuild best_results.csv + the comparison vs MILLET
+    python main.py report                 all figures + summary + refresh the README results section
 
 Related files:
     - seanet/data.py    -> loading, summaries (used by "summary").
     - seanet/model.py   -> the model + size helpers (used by "params").
-    - seanet/train.py   -> train_one() + get_device() (used by "webtraffic", "single", "train").
-    - seanet/results.py -> saving results + the comparison (used by "train", "single", "results").
-    - analysis.ipynb    -> the notebook that turns the saved csv files into figures.
+    - seanet/train.py   -> train_one_from_config() + get_device() (the one training path).
+    - seanet/results.py -> saving results + resume + the comparison (used by "train", "single", "results").
+    - seanet/report.py  -> the figures, the summary table, and the README results section.
+    - analysis.ipynb    -> a thin notebook that calls seanet/report.py.
 
-The training commands (webtraffic / single / train without --smoke) really train models, so you
-run them yourself. Everything is resumable: re-running "train" skips datasets that are already
-finished (it checks done.txt), so it is safe to stop with Ctrl+C and start again.
+The training commands (webtraffic / single / train / run without --smoke) really train models, so
+you run them yourself.
+
+How resuming works: a finished run is remembered as "model|settings|dataset", where "settings" is a
+short fingerprint of the encoder/pooling/training values (see seanet/config.settings_fingerprint).
+So it is safe to stop "train" with Ctrl+C and start again - it picks up where it left off. Every
+model sweeps the whole archive on its own (running "seanet" does not mark the datasets done for
+"seanet_acp"), and changing any hyperparameter changes the fingerprint, which retrains that model
+across all datasets instead of silently mixing old and new numbers into one table.
 """
 import argparse
 import os
@@ -42,12 +54,13 @@ import torch
 
 from seanet import data as D
 from seanet import tracking
-from seanet.config import load_config, to_flat_dict, param_choice_message, record_metrics
+from seanet.config import (load_config, to_flat_dict, param_choice_message, record_metrics,
+                           settings_fingerprint)
 from seanet.logs import start_logging
 from seanet.model import make_sea_net, make_baseline, num_params, state_dict_size_mb
-from seanet.train import (train_one, train_one_from_config, fit_model_from_config, score_model,
-                          get_device)
-from seanet.results import result_exists, save_result_row, build_comparison, millet_baseline, RESULTS_CSV
+from seanet.train import (train_one_from_config, fit_model_from_config, score_model, get_device)
+from seanet.results import (result_exists, save_result_row, build_comparison, build_best_results,
+                            millet_baseline, new_run_dir, sweep_status, RESULTS_CSV, BEST_CSV)
 
 
 # ---------------------------------------------------------------------------
@@ -111,29 +124,55 @@ def webtraffic_millet(metric_csv):
     return float(df.set_index("Dataset").loc["WebTraffic", reps].mean())
 
 
-def _mlflow_for_default_run(smoke, config_path=os.path.join("configs", "main.yaml")):
+def _load_run_config(args, command):
     """
-    Start MLflow for the commands that do not build a full config themselves (webtraffic/single/train).
+    Work out everything a training command needs from the config + the command line, in one place.
 
-    Those commands train the default SEA-Net, so they do not go through load_config. This reads the
-    mlflow block from configs/main.yaml and starts the experiment, so they still record every trained
-    model (its params + train/val/test metrics + the versioned model) - the same as "run".
+    Every training command (run / single / webtraffic / train) resolves its settings the same way,
+    so they all share this: the config file, the --model / --dataset / --smoke overrides, the device,
+    and - importantly - the settings fingerprint that identifies this exact recipe. The fingerprint
+    is what makes a sweep resumable per model: see seanet/results.py.
 
-    smoke : if True, MLflow is skipped (smoke runs are throwaway 3-epoch checks; we do not want them
-            polluting the runs/models you compare).
-    config_path : where to read the mlflow settings from.
-    returns : (mlf_handle_or_None, log_model_weights_flag).
+    args : the parsed command-line arguments.
+    command : the main.py command name (used for the MLflow tag + the run folder name).
+    returns : (cfg, device, smoke, fingerprint).
     """
-    if smoke:
-        return None, True
-    try:
-        cfg = load_config(config_path)
-    except Exception as e:                                       # never let a config problem stop training
-        print(f"  [mlflow] could not read {config_path} ({e}); MLflow logging is off for this run.")
-        return None, True
-    mlf = tracking.start_experiment(cfg)
-    log_weights = getattr(getattr(cfg, "mlflow", None), "log_model_weights", True)
-    return mlf, log_weights
+    config_path = getattr(args, "config", None) or os.path.join("configs", "main.yaml")
+    overrides = {"model": args.model} if getattr(args, "model", None) else None
+    cfg = load_config(config_path, overrides=overrides)
+    device = get_device() if cfg.device == "auto" else torch.device(cfg.device)
+    smoke = bool(getattr(args, "smoke", False)) or bool(getattr(cfg.run, "smoke", False))
+    fingerprint = settings_fingerprint(cfg)
+    return cfg, device, smoke, fingerprint
+
+
+def _train_and_save(name, cfg, device, smoke, fingerprint, command, run_dir, mlf, log_weights,
+                    verbose=True):
+    """
+    Train one dataset through the config path, stamp the row with its recipe, and save it.
+
+    This is the single place a results row is produced and written, so every command records the
+    same fields: which model, which settings fingerprint, and (via save_result_row) when it ran.
+
+    name : dataset name.
+    cfg : the loaded config. device : where to train. smoke : quick 3-epoch check (never saved).
+    fingerprint : the settings id from _load_run_config.
+    command : the main.py command (an MLflow tag, so runs can be filtered by how they were started).
+    run_dir : this invocation's datetime folder (from new_run_dir), or None.
+    mlf : the mlflow handle (None = no logging). log_weights : also save the trained weights.
+    verbose : print the training stages.
+    returns : the results row dict.
+    """
+    row = train_one_from_config(
+        name, cfg, device=device, smoke=smoke, verbose=verbose,
+        mlf=mlf, mlf_params=to_flat_dict(cfg),
+        mlf_tags={"command": command, "settings": fingerprint},
+        logged_model_name=cfg.model, log_model_weights=log_weights,
+    )
+    row["settings"] = fingerprint                            # the recipe that produced this row
+    if not smoke:                                            # smoke runs are throwaway, never saved
+        save_result_row(row, run_dir=run_dir)
+    return row
 
 
 # ---------------------------------------------------------------------------
@@ -196,70 +235,83 @@ def cmd_webtraffic(args):
     "webtraffic" command: train on WebTraffic and compare to MILLET (this is our main sanity check,
     because WebTraffic is the only dataset with NDCG).
 
-    args : parsed arguments (args.smoke).
+    args : parsed arguments (args.model, args.config, args.smoke).
     returns : nothing.
     """
-    device = get_device()
-    print(f"device: {device}  mode: {'smoke' if args.smoke else 'full'}")
-    mlf, log_weights = _mlflow_for_default_run(args.smoke)     # record the run in MLflow (skipped for smoke)
-    kw = dict(n_epochs=3, patience=3) if args.smoke else {}   # smoke = 3 epochs only
-    row = train_one("WebTraffic", device=device, verbose=True, mlf=mlf,
-                    mlf_tags={"command": "webtraffic"}, logged_model_name="seanet",
-                    log_model_weights=log_weights, **kw)
-    print("\n=== SEA-Net on WebTraffic ===")
+    cfg, device, smoke, fingerprint = _load_run_config(args, "webtraffic")
+    print(f"=== webtraffic: model={cfg.model} settings={fingerprint} device={device} "
+          f"mode={'smoke' if smoke else 'full'} ===")
+    print(param_choice_message(cfg))
+    run_dir = None if smoke else new_run_dir("webtraffic", cfg.model)
+    mlf = None if smoke else tracking.start_experiment(cfg, model=cfg.model)
+    log_weights = getattr(getattr(cfg, "mlflow", None), "log_model_weights", True)
+    row = _train_and_save("WebTraffic", cfg, device, smoke, fingerprint, "webtraffic", run_dir,
+                          mlf, log_weights, verbose=True)
+    print(f"\n=== {cfg.model} on WebTraffic ===")
     print_row(row)
-    # print SEA-Net next to MILLET for the 3 metrics
+    # print our model next to MILLET for the 3 metrics
     print("\n=== vs MILLET ConjunctiveInceptionTime (mean of 5 reps) ===")
-    print(f"  {'metric':8s} {'SEA-Net':>10s} {'MILLET':>10s}")
+    print(f"  {'metric':8s} {cfg.model:>10s} {'MILLET':>10s}")
     print(f"  {'acc':8s} {row['test_acc']:>10.4f} {webtraffic_millet('test_acc.csv'):>10.4f}")
     print(f"  {'AOPCR':8s} {row['test_aopcr']:>10.4f} {webtraffic_millet('test_aopcr.csv'):>10.4f}")
     print(f"  {'NDCG@n':8s} {str(row['test_ndcg']):>10s} {webtraffic_millet('test_ndcg.csv'):>10.4f}")
-    if args.smoke:                                            # smoke numbers are not real results
-        print("\n  (smoke = 3 epochs; correctness only, NOT a result)")
+    if smoke:                                                 # smoke numbers are not real results
+        print("\n  (smoke = 3 epochs; correctness only, NOT a result - not saved)")
     else:
-        save_result_row(row)                                 # save the real result
-        print(f"\n  saved -> {RESULTS_CSV}")
+        print(f"\n  saved -> {RESULTS_CSV}  (run folder: {run_dir})")
 
 
 def cmd_single(args):
     """
     "single" command: train + evaluate one dataset and save its result.
 
-    args : parsed arguments (args.dataset, args.smoke).
+    args : parsed arguments (args.dataset, args.model, args.config, args.smoke).
     returns : nothing.
     """
-    device = get_device()
+    cfg, device, smoke, fingerprint = _load_run_config(args, "single")
     name = args.dataset
-    if result_exists(name) and not args.smoke:               # already finished -> do not redo it
-        print(f"{name} already done -> skip (delete its row in {RESULTS_CSV} to redo)")
+    print(f"=== single: model={cfg.model} dataset={name} settings={fingerprint} device={device} "
+          f"mode={'smoke' if smoke else 'full'} ===")
+    print(param_choice_message(cfg))
+    if result_exists(name, cfg.model, fingerprint) and not smoke:   # this model+settings already did it
+        print(f"{name} already done for {cfg.model}|{fingerprint} -> skip "
+              f"(delete its line in results/SEA_NET/done.txt to redo)")
         return
-    mlf, log_weights = _mlflow_for_default_run(args.smoke)   # record the run in MLflow (skipped for smoke)
-    kw = dict(n_epochs=3, patience=3) if args.smoke else {}
-    row = train_one(name, device=device, verbose=True, mlf=mlf,
-                    mlf_tags={"command": "single"}, logged_model_name="seanet",
-                    log_model_weights=log_weights, **kw)
-    print(f"\n=== SEA-Net on {name} ===")
+    run_dir = None if smoke else new_run_dir("single", cfg.model)
+    mlf = None if smoke else tracking.start_experiment(cfg, model=cfg.model)
+    log_weights = getattr(getattr(cfg, "mlflow", None), "log_model_weights", True)
+    row = _train_and_save(name, cfg, device, smoke, fingerprint, "single", run_dir,
+                          mlf, log_weights, verbose=True)
+    print(f"\n=== {cfg.model} on {name} ===")
     print_row(row)
     base = millet_baseline("test_acc.csv")                   # show the MILLET accuracy if this is one of the 85
     if name in base.index:
         print(f"\n  MILLET acc baseline for {name}: {base[name]:.4f}  (ours {row['test_acc']:.4f})")
-    if not args.smoke:
-        save_result_row(row)
-        print(f"\n  saved -> {RESULTS_CSV}")
-    else:
+    if smoke:
         print("\n  (smoke = 3 epochs; correctness only, NOT a result - not saved)")
+    else:
+        print(f"\n  saved -> {RESULTS_CSV}  (run folder: {run_dir})")
 
 
 def cmd_train(args):
     """
-    "train" command: the full sweep. Trains WebTraffic first, then all 128 UCR datasets, saving
-    each result. It is resumable (skips finished datasets) and fault-tolerant (a failure on one
-    dataset is logged and the loop keeps going).
+    "train" command: the full sweep for ONE model. Trains WebTraffic first, then all 128 UCR
+    datasets, saving each result. It is resumable and fault-tolerant (a failure on one dataset is
+    logged and the loop keeps going).
 
-    args : parsed arguments (args.only, args.limit, args.no_webtraffic, args.smoke).
+    Which model it sweeps comes from the config (--model overrides it), so every model can be swept
+    over the whole archive: `python main.py train --model seanet_acp` trains that model on all 129,
+    even if `seanet` already did them. Resuming is per model AND per settings: if you change a
+    hyperparameter, the fingerprint changes and this model retrains everything under the new id;
+    if you do not, it picks up exactly where it stopped.
+
+    args : parsed arguments (args.model, args.config, args.only, args.limit, args.no_webtraffic,
+           args.smoke).
     returns : nothing.
     """
-    device = get_device()
+    cfg, device, smoke, fingerprint = _load_run_config(args, "train")
+    model_name = cfg.model
+
     # decide which datasets to run
     if args.only:
         names = args.only                                    # explicit list from the user
@@ -269,13 +321,29 @@ def cmd_train(args):
         names = ([] if args.no_webtraffic else [D.WEB_TRAFFIC]) + ucr   # WebTraffic first, then UCR
 
     total = len(names)
-    print(f"device: {device} | mode: {'smoke' if args.smoke else 'full'} | datasets: {total}", flush=True)
-    mlf, log_weights = _mlflow_for_default_run(args.smoke)   # record every dataset's run in MLflow (skipped for smoke)
-    kw = dict(n_epochs=3, patience=3) if args.smoke else {}
+    print(f"=== train: model={model_name} settings={fingerprint} device={device} "
+          f"mode={'smoke' if smoke else 'full'} datasets={total} ===", flush=True)
+    print(param_choice_message(cfg), flush=True)
+
+    # say up front how much of this sweep is already finished, so a long resume is never a mystery
+    status = sweep_status(model_name, fingerprint, names)
+    if status["done"]:
+        print(f"  resuming: {len(status['done'])} already done for {model_name}|{fingerprint}, "
+              f"{len(status['todo'])} to go", flush=True)
+    else:
+        print(f"  fresh sweep for {model_name}|{fingerprint}: nothing done yet for these settings",
+              flush=True)
+
+    run_dir = None if smoke else new_run_dir("train", model_name)   # this invocation's own folder
+    if run_dir:
+        print(f"  this run's rows -> {run_dir}/results.csv", flush=True)
+    mlf = None if smoke else tracking.start_experiment(cfg, model=model_name)
+    log_weights = getattr(getattr(cfg, "mlflow", None), "log_model_weights", True)
+
     done = skipped = failed = 0                              # running tally for the summary line
     for i, name in enumerate(names, 1):
         tag = f"[{i:>3}/{total}]"                             # e.g. "[ 22/129]"
-        if result_exists(name):                              # already finished -> skip
+        if result_exists(name, model_name, fingerprint):     # this model+settings already did it
             print(f"{tag} {name:28s} already done -> skip", flush=True)
             skipped += 1
             continue
@@ -283,10 +351,8 @@ def cmd_train(args):
             if not D.summary_row_exists(name):               # make sure its data_summary row exists
                 D.write_summary_row(D.summarise_dataset(name))
             print(f"{tag} {name}", flush=True)               # header; the stage lines below belong to it
-            row = train_one(name, device=device, verbose=True, mlf=mlf,   # trains + scores (prints stages)
-                            mlf_tags={"command": "train"}, logged_model_name="seanet",
-                            log_model_weights=log_weights, **kw)
-            save_result_row(row)                             # save the metrics + mark it done
+            row = _train_and_save(name, cfg, device, smoke, fingerprint, "train", run_dir,
+                                  mlf, log_weights, verbose=True)
             ndcg = "n/a" if row["test_ndcg"] is None else f"{row['test_ndcg']:.3f}"
             print(f"{tag} {name:28s} DONE  acc={row['test_acc']:.4f} AOPCR={row['test_aopcr']:7.3f} "
                   f"NDCG={ndcg:>5s} C={row['n_classes']:>3d} T={row['series_length']:>5d} "
@@ -300,8 +366,10 @@ def cmd_train(args):
             failed += 1
 
     print(f"\nDone: {done} trained, {skipped} skipped, {failed} failed. Results -> {RESULTS_CSV}", flush=True)
-    print("\n=== Comparison vs MILLET ===", flush=True)
-    build_comparison(verbose=True)                           # print the win/tie/loss summary at the end
+    if not smoke:
+        build_best_results(verbose=True)                     # refresh "which model won which dataset"
+    print(f"\n=== Comparison vs MILLET (model {model_name}) ===", flush=True)
+    build_comparison(verbose=True, model=model_name)         # this model's own win/tie/loss summary
 
 
 def cmd_run(args):
@@ -314,16 +382,11 @@ def cmd_run(args):
     args : parsed arguments (args.config, args.model, args.dataset, args.smoke).
     returns : nothing.
     """
-    overrides = {"model": args.model} if args.model else None   # --model swaps the model file
-    cfg = load_config(args.config, overrides=overrides)
-
-    # let the command line override a couple of run settings
-    dataset = args.dataset or cfg.run.dataset
-    smoke = args.smoke or getattr(cfg.run, "smoke", False)
-    device = get_device() if cfg.device == "auto" else torch.device(cfg.device)
+    cfg, device, smoke, fingerprint = _load_run_config(args, "run")
+    dataset = args.dataset or cfg.run.dataset               # --dataset overrides the config
 
     # show exactly what config is driving this run (reproducibility + a quick sanity check)
-    print(f"=== run: model={cfg.model} dataset={dataset} device={device} "
+    print(f"=== run: model={cfg.model} dataset={dataset} settings={fingerprint} device={device} "
           f"mode={'smoke' if smoke else 'full'} ===")
     print("resolved config:")
     for key, value in to_flat_dict(cfg).items():
@@ -337,14 +400,16 @@ def cmd_run(args):
     if cfg.run.mode != "single":                                # only "single" is wired up so far
         raise SystemExit(f"run mode {cfg.run.mode!r} is not supported yet (use mode: single).")
 
-    if result_exists(dataset) and not smoke:                    # already finished -> do not redo it
-        print(f"\n{dataset} already done -> skip (delete its row in {RESULTS_CSV} to redo)")
+    if result_exists(dataset, cfg.model, fingerprint) and not smoke:   # this model+settings did it
+        print(f"\n{dataset} already done for {cfg.model}|{fingerprint} -> skip "
+              f"(delete its line in results/SEA_NET/done.txt to redo)")
         return
 
     # MLflow records this run so it can be compared with every other model/dataset later (skipped for
     # smoke, which is a throwaway 3-epoch check). This run's full terminal output is also saved to
     # results/SEA_NET/logs/ by start_logging in main().
-    mlf = None if smoke else tracking.start_experiment(cfg)
+    run_dir = None if smoke else new_run_dir("run", cfg.model)
+    mlf = None if smoke else tracking.start_experiment(cfg, model=cfg.model)
     log_weights = getattr(getattr(cfg, "mlflow", None), "log_model_weights", True)
 
     # train + score. fit_model + score_model are the same code train_one uses, so nothing is
@@ -357,14 +422,15 @@ def cmd_run(args):
                       lambda_entropy, train_time_s, verbose=True, mlf=mlf,
                       mlf_params=to_flat_dict(cfg), mlf_tags={"command": "run", "mode": cfg.run.mode},
                       logged_model_name=cfg.model, log_model_weights=log_weights)
+    row["settings"] = fingerprint                               # the recipe that produced this row
     print(f"\n=== {cfg.model} on {dataset} ===")
     print_row(row)
 
     if smoke:
         print("\n  (smoke = 3 epochs; correctness only, NOT a result - not saved)")
     else:
-        save_result_row(row)
-        print(f"\n  saved -> {RESULTS_CSV}")
+        save_result_row(row, run_dir=run_dir)
+        print(f"\n  saved -> {RESULTS_CSV}  (run folder: {run_dir})")
         # save THIS default recipe's metrics into the model file, so they can be compared with Optuna's
         # best later. Only when we actually trained the DEFAULT recipe (not an auto-picked optuna-best).
         choice = getattr(cfg, "_param_choice", None)
@@ -483,12 +549,23 @@ def cmd_optuna(args):
 
 def cmd_results(args):
     """
-    "results" command: rebuild and print the comparison-vs-MILLET table from whatever is finished.
+    "results" command: rebuild the tracking tables from whatever is finished.
 
-    args : parsed arguments (unused).
+    Builds two things:
+      - best_results.csv         : one row per dataset - which model won it, with which settings and
+                                   on which date (the "what should I actually use" table), and
+      - comparison_vs_millet.csv : our numbers vs the paper's. With --model it is a single model's
+                                   honest table; without, it uses the best model per dataset and
+                                   carries a "model" column saying which one that was.
+
+    args : parsed arguments (args.model).
     returns : nothing.
     """
-    build_comparison(verbose=True)
+    best = build_best_results(verbose=True)
+    if not best.empty:
+        print(f"\n  best_results -> {BEST_CSV}")
+    print()
+    build_comparison(verbose=True, model=args.model)
 
 
 def cmd_report(args):
@@ -531,17 +608,23 @@ def main():
 
     # webtraffic
     p = sub.add_parser("webtraffic", help="train on WebTraffic + sanity-check vs MILLET")
+    p.add_argument("--config", default=os.path.join("configs", "main.yaml"), help="path to main.yaml")
+    p.add_argument("--model", help="override the model in the config (e.g. seanet, millet)")
     p.add_argument("--smoke", action="store_true", help="quick check (3 epochs)")
     p.set_defaults(func=cmd_webtraffic)
 
     # single
     p = sub.add_parser("single", help="train + evaluate one dataset, save its result")
     p.add_argument("dataset", help="dataset name, e.g. Coffee")
+    p.add_argument("--config", default=os.path.join("configs", "main.yaml"), help="path to main.yaml")
+    p.add_argument("--model", help="override the model in the config (e.g. seanet, millet)")
     p.add_argument("--smoke", action="store_true", help="quick check (3 epochs)")
     p.set_defaults(func=cmd_single)
 
-    # train (the full sweep)
-    p = sub.add_parser("train", help="full sweep: WebTraffic + all 128 UCR (resumable)")
+    # train (the full sweep, for ONE model)
+    p = sub.add_parser("train", help="full sweep for one model: WebTraffic + all 128 UCR (resumable)")
+    p.add_argument("--config", default=os.path.join("configs", "main.yaml"), help="path to main.yaml")
+    p.add_argument("--model", help="which model to sweep (e.g. seanet, seanet_acp); default: the config's")
     p.add_argument("--only", nargs="+", metavar="NAME", help="only these datasets")
     p.add_argument("--limit", type=int, help="only the first N UCR datasets")
     p.add_argument("--no-webtraffic", action="store_true", help="UCR only")
@@ -585,7 +668,8 @@ def main():
     p.set_defaults(func=cmd_optuna)
 
     # results
-    p = sub.add_parser("results", help="build + print the comparison vs MILLET")
+    p = sub.add_parser("results", help="build + print the comparison vs MILLET + best_results.csv")
+    p.add_argument("--model", help="compare only this model (default: the best model per dataset)")
     p.set_defaults(func=cmd_results)
 
     # report (all paper-ready tables + figures)

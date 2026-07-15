@@ -54,6 +54,7 @@ Related files:
     - seanet/optimize.py  -> logs each Optuna trial via trial_run() / log_params() / log_metric().
 """
 from contextlib import contextmanager
+from datetime import datetime
 from typing import Dict, Optional
 
 
@@ -88,7 +89,33 @@ def is_enabled(cfg) -> bool:
     return bool(m is not None and getattr(m, "enabled", False))
 
 
-def start_experiment(cfg):
+def experiment_name(cfg, model: Optional[str] = None, when: Optional[str] = None) -> str:
+    """
+    Build the experiment name a run is filed under: "<base>_<model>_<date>".
+
+    Grouping by model AND day is what keeps the MLflow page readable once several models have each
+    swept 129 datasets: instead of one endless "SEA-Net" list, you get e.g.
+
+        SEA-Net_seanet_2026-07-15
+        SEA-Net_seanet_acp_2026-07-15
+        SEA-Net_seanet_2026-07-16          <- yesterday's sweep stays separate
+
+    so "the seanet sweep I ran on the 15th" is one click, and re-running the same model on another
+    day never mixes the two.
+
+    cfg : a loaded config (reads cfg.mlflow.experiment_name as the base).
+    model : the model config name, e.g. "seanet". None -> the base name is used unchanged.
+    when : the date stamp; None -> today. Passed in only by the tests.
+    returns : the experiment name string.
+    """
+    base = getattr(getattr(cfg, "mlflow", None), "experiment_name", "SEA-Net") or "SEA-Net"
+    if not model:
+        return base
+    date = when or datetime.now().strftime("%Y-%m-%d")
+    return f"{base}_{model}_{date}"
+
+
+def start_experiment(cfg, model: Optional[str] = None):
     """
     Point MLflow at the right store + experiment, ONCE, before you start logging runs.
 
@@ -97,6 +124,8 @@ def start_experiment(cfg):
     logging becomes a no-op automatically.
 
     cfg : a loaded config (reads cfg.mlflow.tracking_uri and cfg.mlflow.experiment_name).
+    model : the model being run, e.g. "seanet". Runs are filed under "<base>_<model>_<date>" so each
+            model's daily sweep is its own group in the MLflow UI (see experiment_name above).
     returns : the mlflow module, or None.
     """
     if not is_enabled(cfg):
@@ -109,7 +138,7 @@ def start_experiment(cfg):
     # the config falls back to the same default so tracking always works out of the box.
     uri = getattr(cfg.mlflow, "tracking_uri", "") or "sqlite:///mlflow.db"
     mlflow.set_tracking_uri(uri)
-    experiment = getattr(cfg.mlflow, "experiment_name", "SEA-Net")
+    experiment = experiment_name(cfg, model)
     mlflow.set_experiment(experiment)                          # all runs get grouped under this name
     print(f"  [mlflow] logging runs to experiment '{experiment}' at {uri}")
     print(f"  [mlflow] browse later with:  mlflow ui --backend-store-uri {uri}")

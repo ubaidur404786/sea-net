@@ -29,6 +29,8 @@ Why a SimpleNamespace and not a plain dict:
     types.SimpleNamespace lets you write cfg.model_config.training.learning_rate, which reads like
     normal Python. It is part of the standard library, so there is nothing new to learn.
 """
+import hashlib
+import json
 import os
 from types import SimpleNamespace
 from typing import Dict, Optional
@@ -178,9 +180,13 @@ def _select_params(model_cfg: Dict, use_params_override: Optional[str] = None):
     if mode == "optuna_best" and has_best:
         used = "optuna_best"
     elif (mode == "auto" and has_best and best_acc is not None
-          and (default_acc is None or best_acc >= default_acc)):
-        used = "optuna_best"                                     # auto: use best only if it scored higher
+          and default_acc is not None and best_acc >= default_acc):
+        used = "optuna_best"                                     # auto: use best only if it BEAT the default
     else:
+        # "auto" with no recorded default falls back to the default recipe on purpose. Picking
+        # optuna_best here would mean the default never runs, so records.default could never be
+        # written (main.py only records it when the default recipe actually trained) and auto would
+        # be stuck on optuna_best forever - even when the default is the better recipe.
         used = "default"
 
     if used == "optuna_best":
@@ -204,6 +210,12 @@ def param_choice_message(cfg) -> str:
     dacc, oacc, used = pc.default_acc, pc.optuna_acc, pc.used
     if not pc.has_best:                                          # no Optuna record yet
         return f"[params] using DEFAULT recipe (no Optuna record yet - run 'python main.py optuna --model {cfg.model}')."
+    if pc.mode == "auto" and dacc is None:
+        # there IS an Optuna record but no default to compare it against, so auto stays on default
+        # and this run will fill records.default - the next auto run can then compare the two.
+        return (f"[params] using DEFAULT recipe: `auto` has nothing to compare against yet "
+                f"(optuna-best test_acc {oacc:.4f}, default not recorded). This run records the "
+                f"default, then `auto` picks the better of the two.")
     cmp = ""
     if dacc is not None and oacc is not None:
         winner = "optuna-best" if oacc >= dacc else "default"
@@ -295,3 +307,49 @@ def to_flat_dict(cfg, prefix: str = "") -> Dict:
         else:                                            # a value (number / string / list)
             flat[full_key] = value
     return flat
+
+
+# --------------------------------------------------------------------------------------
+# Settings fingerprint: "is this the same experiment?" in 8 characters.
+#
+# A results row is only allowed to satisfy the resume check ("already trained, skip it") when the
+# model AND the settings that produced it are the same. Comparing every hyperparameter each time
+# would be slow and fiddly, so we hash them once into a short id, e.g. "a3f1c9", and store it in
+# every results row. Change the learning rate (or the encoder width, or the seed) and the id changes,
+# so that model retrains across all the datasets instead of silently mixing old and new numbers.
+# --------------------------------------------------------------------------------------
+# Only these parts of the config decide the fingerprint. `optuna`, `records`, `use_params`, `mlflow`
+# and `output` are excluded on purpose: they are bookkeeping, not model settings, so editing them
+# must NOT invalidate finished results.
+FINGERPRINT_BLOCKS = ("encoder", "pooling", "training")
+
+
+def settings_fingerprint(cfg) -> str:
+    """
+    Build the short id that says which settings produced a result.
+
+    It covers everything that changes what gets trained: the model's encoder / pooling / training
+    blocks (as resolved, so an Optuna-best recipe fingerprints differently from the default), plus
+    the run's seed and preprocessing block from main.yaml.
+
+    Note n_epochs / patience are included, so a --smoke run (3 epochs) can never be mistaken for a
+    real result - but smoke runs are not saved anyway, so this only matters as a safety net.
+
+    cfg : a loaded config (from load_config).
+    returns : an 8-character hex id, e.g. "a3f1c9d2".
+    """
+    flat: Dict = {}
+    model_cfg = getattr(cfg, "model_config", None)
+    for block in FINGERPRINT_BLOCKS:
+        node = getattr(model_cfg, block, None) if model_cfg is not None else None
+        if node is not None:
+            flat.update(to_flat_dict(node, prefix=f"{block}."))
+    flat["seed"] = getattr(cfg, "seed", None)
+    preprocessing = getattr(cfg, "preprocessing", None)
+    if preprocessing is not None:
+        flat.update(to_flat_dict(preprocessing, prefix="preprocessing."))
+
+    # sort_keys + default=str make the hash stable: the same settings always give the same id,
+    # whatever order PyYAML happened to read the file in.
+    payload = json.dumps(flat, sort_keys=True, default=str)
+    return hashlib.sha1(payload.encode("utf-8")).hexdigest()[:8]

@@ -1,26 +1,26 @@
-dataset,pooling,model,params,model_size_mb,n_train,n_val,n_test,series_length,n_classes,test_acc,test_bal_acc,test_auroc,test_loss,test_aopcr,test_ndcg,train_time_s
-WebTraffic,additive,seanet-additive,269083,3.5386,400,100,500,1008,10,0.938,0.938,0.9958,0.295,1.6577,0.6936,128.22
-WebTraffic,conjunctive,seanet-conjunctive,269083,3.5386,400,100,500,1008,10,0.96,0.96,0.9984,0.24,1.4613,0.6927,193.1
-WebTraffic,classwise_conjunctive,seanet-classwise_conjunctive,269164,3.5389,400,100,500,1008,10,0.948,0.948,0.9956,0.2675,2.0021,0.7391,152.3
-WebTraffic,softmax_conjunctive,seanet-softmax_conjunctive,269165,3.5392,400,100,500,1008,10,0.916,0.916,0.9905,0.39,1.1424,0.6157,109.62
-WebTraffic,adaptive_classwise,seanet-adaptive_classwise,269174,3.5392,400,100,500,1008,10,0.946,0.946,0.9978,0.2627,1.7164,0.6013,266.6
-Coffee,additive,seanet-additive,268051,3.5347,28,0,28,286,2,1.0,1.0,1.0,0.0775,0.5251,,24.6
-Coffee,conjunctive,seanet-conjunctive,268051,3.5347,28,0,28,286,2,1.0,1.0,1.0,0.0742,0.6587,,68.11
-Coffee,classwise_conjunctive,seanet-classwise_conjunctive,268060,3.5347,28,0,28,286,2,1.0,1.0,1.0,0.0755,0.3389,,49.18
-Coffee,softmax_conjunctive,seanet-softmax_conjunctive,268061,3.535,28,0,28,286,2,1.0,1.0,1.0,0.0668,0.0028,,39.89
-Coffee,adaptive_classwise,seanet-adaptive_classwise,268062,3.535,28,0,28,286,2,1.0,1.0,1.0,0.071,0.2798,,23.98
-ECG200,additive,seanet-additive,268051,3.5347,81,19,100,96,2,0.9,0.8915,0.9427,0.2998,0.5585,,21.6
-ECG200,conjunctive,seanet-conjunctive,268051,3.5347,81,19,100,96,2,0.89,0.8655,0.9609,0.278,0.0721,,21.76
-ECG200,classwise_conjunctive,seanet-classwise_conjunctive,268060,3.5347,81,19,100,96,2,0.82,0.7865,0.9314,0.4117,0.0238,,30.84
-ECG200,softmax_conjunctive,seanet-softmax_conjunctive,268061,3.535,81,19,100,96,2,0.91,0.9054,0.9497,0.3071,0.0905,,19.41
-ECG200,adaptive_classwise,seanet-adaptive_classwise,268062,3.535,81,19,100,96,2,0.91,0.8993,0.9588,0.2583,-0.2672,,19.24
-GunPoint,additive,seanet-additive,268051,3.5347,50,0,150,150,2,0.9933,0.9932,0.9998,0.0895,0.4563,,33.56
-GunPoint,conjunctive,seanet-conjunctive,268051,3.5347,50,0,150,150,2,0.9933,0.9932,0.9998,0.0823,0.5008,,26.53
-GunPoint,classwise_conjunctive,seanet-classwise_conjunctive,268060,3.5347,50,0,150,150,2,0.9933,0.9932,0.9996,0.1069,0.373,,39.97
-GunPoint,softmax_conjunctive,seanet-softmax_conjunctive,268061,3.535,50,0,150,150,2,0.9667,0.9666,0.9986,0.1145,0.1485,,51.82
-GunPoint,adaptive_classwise,seanet-adaptive_classwise,268062,3.535,50,0,150,150,2,0.9933,0.9932,1.0,0.0957,-0.0243,,62.99
-ItalyPowerDemand,additive,seanet-additive,268051,3.5347,67,0,1029,24,2,0.9689,0.9689,0.9827,0.1407,0.1955,,55.03
-ItalyPowerDemand,conjunctive,seanet-conjunctive,268051,3.5347,67,0,1029,24,2,0.9689,0.9689,0.9887,0.1382,0.0922,,38.94
-ItalyPowerDemand,classwise_conjunctive,seanet-classwise_conjunctive,268060,3.5347,67,0,1029,24,2,0.9699,0.9699,0.9862,0.1387,0.1045,,67.78
-ItalyPowerDemand,softmax_conjunctive,seanet-softmax_conjunctive,268061,3.535,67,0,1029,24,2,0.9738,0.9737,0.98,0.1369,0.1412,,76.51
-ItalyPowerDemand,adaptive_classwise,seanet-adaptive_classwise,268062,3.535,67,0,1029,24,2,0.9621,0.9621,0.9791,0.1471,0.0377,,41.48
+dataset         , pooling              , model                       , params, model_size_mb, n_train, n_val, n_test, series_length, n_classes, test_acc, test_bal_acc, test_auroc, test_loss, test_aopcr, test_ndcg, train_time_s
+WebTraffic      , additive             , seanet-additive             , 269083,        3.5386,     400,   100,    500,          1008,        10,   0.938 ,       0.938 ,     0.9958,    0.295 , 1.6577    ,    0.6936,       128.22
+WebTraffic      , conjunctive          , seanet-conjunctive          , 269083,        3.5386,     400,   100,    500,          1008,        10,   0.96  ,       0.96  ,     0.9984,    0.24  , 1.4613    ,    0.6927,       193.1
+WebTraffic      , classwise_conjunctive, seanet-classwise_conjunctive, 269164,        3.5389,     400,   100,    500,          1008,        10,   0.948 ,       0.948 ,     0.9956,    0.2675, 2.0021    ,    0.7391,       152.3
+WebTraffic      , softmax_conjunctive  , seanet-softmax_conjunctive  , 269165,        3.5392,     400,   100,    500,          1008,        10,   0.916 ,       0.916 ,     0.9905,    0.39  , 1.1424    ,    0.6157,       109.62
+WebTraffic      , adaptive_classwise   , seanet-adaptive_classwise   , 269174,        3.5392,     400,   100,    500,          1008,        10,   0.946 ,       0.946 ,     0.9978,    0.2627, 1.7164    ,    0.6013,       266.6
+Coffee          , additive             , seanet-additive             , 268051,        3.5347,      28,     0,     28,           286,         2,   1.0   ,       1.0   ,     1.0   ,    0.0775, 0.5251    ,          ,        24.6
+Coffee          , conjunctive          , seanet-conjunctive          , 268051,        3.5347,      28,     0,     28,           286,         2,   1.0   ,       1.0   ,     1.0   ,    0.0742, 0.6587    ,          ,        68.11
+Coffee          , classwise_conjunctive, seanet-classwise_conjunctive, 268060,        3.5347,      28,     0,     28,           286,         2,   1.0   ,       1.0   ,     1.0   ,    0.0755, 0.3389    ,          ,        49.18
+Coffee          , softmax_conjunctive  , seanet-softmax_conjunctive  , 268061,        3.535 ,      28,     0,     28,           286,         2,   1.0   ,       1.0   ,     1.0   ,    0.0668, 0.0028    ,          ,        39.89
+Coffee          , adaptive_classwise   , seanet-adaptive_classwise   , 268062,        3.535 ,      28,     0,     28,           286,         2,   1.0   ,       1.0   ,     1.0   ,    0.071 , 0.2798    ,          ,        23.98
+ECG200          , additive             , seanet-additive             , 268051,        3.5347,      81,    19,    100,            96,         2,   0.9   ,       0.8915,     0.9427,    0.2998, 0.5585    ,          ,        21.6
+ECG200          , conjunctive          , seanet-conjunctive          , 268051,        3.5347,      81,    19,    100,            96,         2,   0.89  ,       0.8655,     0.9609,    0.278 , 0.0721    ,          ,        21.76
+ECG200          , classwise_conjunctive, seanet-classwise_conjunctive, 268060,        3.5347,      81,    19,    100,            96,         2,   0.82  ,       0.7865,     0.9314,    0.4117, 0.0238    ,          ,        30.84
+ECG200          , softmax_conjunctive  , seanet-softmax_conjunctive  , 268061,        3.535 ,      81,    19,    100,            96,         2,   0.91  ,       0.9054,     0.9497,    0.3071, 0.0905    ,          ,        19.41
+ECG200          , adaptive_classwise   , seanet-adaptive_classwise   , 268062,        3.535 ,      81,    19,    100,            96,         2,   0.91  ,       0.8993,     0.9588,    0.2583, -0.2672   ,          ,        19.24
+GunPoint        , additive             , seanet-additive             , 268051,        3.5347,      50,     0,    150,           150,         2,   0.9933,       0.9932,     0.9998,    0.0895, 0.4563    ,          ,        33.56
+GunPoint        , conjunctive          , seanet-conjunctive          , 268051,        3.5347,      50,     0,    150,           150,         2,   0.9933,       0.9932,     0.9998,    0.0823, 0.5008    ,          ,        26.53
+GunPoint        , classwise_conjunctive, seanet-classwise_conjunctive, 268060,        3.5347,      50,     0,    150,           150,         2,   0.9933,       0.9932,     0.9996,    0.1069, 0.373     ,          ,        39.97
+GunPoint        , softmax_conjunctive  , seanet-softmax_conjunctive  , 268061,        3.535 ,      50,     0,    150,           150,         2,   0.9667,       0.9666,     0.9986,    0.1145, 0.1485    ,          ,        51.82
+GunPoint        , adaptive_classwise   , seanet-adaptive_classwise   , 268062,        3.535 ,      50,     0,    150,           150,         2,   0.9933,       0.9932,     1.0   ,    0.0957, -0.0243   ,          ,        62.99
+ItalyPowerDemand, additive             , seanet-additive             , 268051,        3.5347,      67,     0,   1029,            24,         2,   0.9689,       0.9689,     0.9827,    0.1407, 0.1955    ,          ,        55.03
+ItalyPowerDemand, conjunctive          , seanet-conjunctive          , 268051,        3.5347,      67,     0,   1029,            24,         2,   0.9689,       0.9689,     0.9887,    0.1382, 0.0922    ,          ,        38.94
+ItalyPowerDemand, classwise_conjunctive, seanet-classwise_conjunctive, 268060,        3.5347,      67,     0,   1029,            24,         2,   0.9699,       0.9699,     0.9862,    0.1387, 0.1045    ,          ,        67.78
+ItalyPowerDemand, softmax_conjunctive  , seanet-softmax_conjunctive  , 268061,        3.535 ,      67,     0,   1029,            24,         2,   0.9738,       0.9737,     0.98  ,    0.1369, 0.1412    ,          ,        76.51
+ItalyPowerDemand, adaptive_classwise   , seanet-adaptive_classwise   , 268062,        3.535 ,      67,     0,   1029,            24,         2,   0.9621,       0.9621,     0.9791,    0.1471, 0.0377    ,          ,        41.48

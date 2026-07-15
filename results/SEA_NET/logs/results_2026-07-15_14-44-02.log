@@ -1,0 +1,17 @@
+[log] command 'results' started at 2026-07-15_14-44-02
+[log] a copy of everything below is being saved to: results/SEA_NET/logs/results_2026-07-15_14-44-02.log
+
+  [results] migrated 129 existing rows to the model+settings schema (tagged settings='legacy'; backup -> results/SEA_NET/archive/results_pre-migration_2026-07-15_14-44-02.csv)
+  [results] dropped 129 un-keyed done.txt entries so every model retrains under its own settings id (backup -> results/SEA_NET/archive/done_pre-migration_2026-07-15_14-44-02.txt)
+  best_results: 129 datasets | wins per model: {'SEA-Net': 129}
+  wrote results/SEA_NET/best_results.csv
+
+  best_results -> results/SEA_NET/best_results.csv
+
+Comparing: best model per dataset
+UCR datasets evaluated: 128  (with MILLET baseline: 85, without: 43)
+  accuracy  vs MILLET  -> win/tie/loss = 26/14/45   | mean acc  ours 0.8294 vs MILLET 0.8445
+  AOPCR     vs MILLET  -> win/tie/loss = 4/0/81   | mean AOPCR ours 0.572 vs MILLET 4.553
+  wrote results/SEA_NET/comparison_vs_millet.csv
+
+[log] finished; full output saved to results/SEA_NET/logs/results_2026-07-15_14-44-02.log

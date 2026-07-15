@@ -141,7 +141,7 @@ def run_benchmark(datasets: Optional[List[str]] = None, poolings: Optional[List[
     if device is None:
         device = get_device() if base_cfg.device == "auto" else torch.device(base_cfg.device)
     # MLflow records every run so they are comparable in the web UI too (off for smoke - a plumbing check)
-    mlf = None if smoke else tracking.start_experiment(base_cfg)
+    mlf = None if smoke else tracking.start_experiment(base_cfg, model=base_cfg.model)
     log_weights = getattr(getattr(base_cfg, "mlflow", None), "log_model_weights", True)
 
     total = len(datasets) * len(poolings)

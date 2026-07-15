@@ -195,7 +195,7 @@ def run_optuna(cfg, dataset=None, device=None, smoke: bool = False, verbose: boo
 
     # MLflow records each trial so you can compare them later and pick the best. Skipped for smoke
     # (a plumbing check) so the MLflow web page only ever holds real searches.
-    mlf = None if smoke else tracking.start_experiment(cfg)
+    mlf = None if smoke else tracking.start_experiment(cfg, model=cfg.model)
 
     print(f"=== optuna: model={cfg.model} dataset={dataset} device={device} "
           f"mode={'smoke' if smoke else 'full'} ===")

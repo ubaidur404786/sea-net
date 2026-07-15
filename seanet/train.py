@@ -677,7 +677,7 @@ def _train_kwargs_from_config(cfg, smoke: bool = False) -> Dict:
 
 
 def train_one_from_config(name: str, cfg, device: Optional[torch.device] = None,
-                          smoke: bool = False, verbose: bool = False) -> Dict:
+                          smoke: bool = False, verbose: bool = False, **kwargs) -> Dict:
     """
     Train + evaluate one dataset using values read from a config object (see seanet/config.py).
 
@@ -689,9 +689,13 @@ def train_one_from_config(name: str, cfg, device: Optional[torch.device] = None,
     device : where to run; if None, get_device() picks one.
     smoke : if True, force a quick 3-epoch run (for testing, not a real result).
     verbose : if True, print the 3 stages and the training bar.
+    kwargs : passed straight to train_one - the MLflow arguments (mlf, mlf_params, mlf_tags,
+             logged_model_name, log_model_weights), so a config-driven sweep records its runs
+             exactly like the older hardcoded path did.
     returns : the same flat results-row dict as train_one.
     """
-    return train_one(name, device=device, verbose=verbose, **_train_kwargs_from_config(cfg, smoke))
+    return train_one(name, device=device, verbose=verbose,
+                     **_train_kwargs_from_config(cfg, smoke), **kwargs)
 
 
 def fit_model_from_config(name: str, cfg, device: Optional[torch.device] = None,
