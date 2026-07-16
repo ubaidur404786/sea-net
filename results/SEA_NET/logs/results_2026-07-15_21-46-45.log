@@ -1,0 +1,15 @@
+[log] command 'results' started at 2026-07-15_21-46-45
+[log] a copy of everything below is being saved to: results/SEA_NET/logs/results_2026-07-15_21-46-45.log
+
+  best_results: 129 datasets | wins per model: {'SEA-Net': 108, 'seanet_classwise': 13, 'seanet': 8}
+  wrote results/SEA_NET/best_results.csv
+
+  best_results -> results/SEA_NET/best_results.csv
+
+Comparing: model 'seanet_classwise'
+UCR datasets evaluated: 35  (with MILLET baseline: 23, without: 12)
+  accuracy  vs MILLET  -> win/tie/loss = 7/6/10   | mean acc  ours 0.8404 vs MILLET 0.8542
+  AOPCR     vs MILLET  -> win/tie/loss = 0/0/23   | mean AOPCR ours 0.674 vs MILLET 4.221
+  wrote results/SEA_NET/comparison_vs_millet.csv
+
+[log] finished; full output saved to results/SEA_NET/logs/results_2026-07-15_21-46-45.log
