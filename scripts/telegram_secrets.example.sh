@@ -1,0 +1,11 @@
+# telegram_secrets.example.sh - a TEMPLATE, safe to commit (no real secrets here).
+#
+# To use phone tracking:
+#   1) copy this file to  scripts/telegram_secrets.sh   (that copy is git-ignored)
+#   2) paste your real TOKEN and CHAT_ID into the copy
+#
+# You get TOKEN from @BotFather, and CHAT_ID from the getUpdates command
+# (see GRID5K_CMD_HELP.md, section 8).
+
+TOKEN="PUT-YOUR-BOT-TOKEN-HERE"
+CHAT_ID="PUT-YOUR-CHAT-ID-HERE"

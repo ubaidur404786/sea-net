@@ -2,6 +2,9 @@
 *#
 *.swp
 
+# our private Telegram bot token + chat id (never commit this)
+scripts/telegram_secrets.sh
+
 *.DS_Store
 
 __pycache__/
