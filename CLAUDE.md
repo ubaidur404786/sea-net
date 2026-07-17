@@ -28,6 +28,8 @@ This project runs in two different places:
 
 Keep this in mind when writing or suggesting code: smoke tests happen locally first, and the real training scripts run later on the server.
 
+**Important — the two environments can differ.** The *code* is the same in both places (same repo), but the *environment around the code* is not: Python version, conda env name, installed package versions, GPU/CUDA availability, file paths, and how a job is started (local terminal vs Grid5000 `oarsub`) can all be different. So before I write or suggest anything that depends on the environment (install commands, run commands, node requests, device settings), I must NOT assume the server matches the local machine. I should first ask for the current server-side environment details (or the output of the check commands), wait for you to paste them here, and only then continue. Never guess server settings from the local ones.
+
 ## 6. Comments must sound student-written
 
 Write code comments the way a student would write them, not the way an AI would. Keep them natural, short, and simple — not overly formal or robotic.
