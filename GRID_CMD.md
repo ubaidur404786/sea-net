@@ -50,7 +50,7 @@ conda activate seanet
 ## 3. Submit a job (`oarsub`)
 
 ```bash
-oarsub -I -t besteffort -p "host='chifflot-1'" -l host=1,walltime=12:00:00
+oarsub -I -t besteffort -p "host='chifflot-4'" -l host=1,walltime=12:00:00
 # or a different node:
 oarsub -I -t besteffort -p "host='esterel32-1'" -l host=1,walltime=12:00:00
 ```
