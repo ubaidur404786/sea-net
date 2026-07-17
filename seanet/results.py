@@ -1,31 +1,22 @@
 """
-seanet/results.py - saving results, resuming a sweep, and comparing to MILLET.
+seanet/results.py - saving results and comparing to MILLET.
 
 What this file is for:
-    Three jobs, all just pandas + csv:
-      1. Remember what has finished, PER MODEL AND PER SETTING, so a long run can stop and resume
-         without redoing work - and so a different model (or the same model with new hyperparameters)
-         is not wrongly skipped just because another model already ran that dataset.
-      2. Store each finished (model, settings, dataset) run's numbers, stamped with the date/time.
-      3. Compare our numbers to the MILLET paper's, dataset by dataset, and say where we win/tie/lose.
+    Two jobs, both just pandas + csv:
+      1. Remember what has finished and store each dataset's numbers, so a long run can stop and
+         resume without redoing work.
+      2. Compare our UCR numbers to the MILLET paper's numbers, dataset by dataset, and say where
+         we win / tie / lose.
 
-What counts as "already done" (the resume key):
-    A run is identified by THREE things together:  model | settings | dataset
-      - model    : the config name, e.g. "seanet", "seanet_acp", "millet".
-      - settings : an 8-character fingerprint of the encoder / pooling / training blocks + seed +
-                   preprocessing (see seanet/config.settings_fingerprint).
-      - dataset  : e.g. "Coffee".
-    So: change a hyperparameter -> the fingerprint changes -> that model retrains on every dataset
-    (its old rows stay as history). Run a different model -> it trains on every dataset even though
-    "seanet" already did them. Re-run the same model + settings -> finished datasets are skipped.
-
-Files it writes (all under results/SEA_NET/):
-    - results.csv               : one row per finished (model, settings, dataset) (append-only).
-    - done.txt                  : plain-text list of finished "model|settings|dataset" keys.
-    - best_results.csv          : ONE row per dataset - the best model for it, and when it ran.
+Files it writes (each model in its OWN folder results/SEA_NET/<model>/, e.g. results/SEA_NET/seanet/):
+    - results.csv               : one row of metrics per finished dataset (append-only).
+    - done.txt                  : plain-text list of finished dataset names (the "what is done" list).
     - comparison_vs_millet.csv  : our numbers next to MILLET's, with win/tie/loss columns.
-    - runs/<datetime>_<model>_<command>/ : a per-invocation folder holding just that run's rows.
-    - archive/                  : one-time backups taken before the schema migration (see below).
+    (+ one shared results/SEA_NET/model_comparison.csv, written by compare_models, ranking the models.)
+
+    Per-model folders are what let us sweep several pooling heads (seanet, seanet_conjunctive,
+    seanet_acp, ...) over ALL datasets without clobbering each other: results.csv / done.txt are
+    keyed by dataset name only, so two models sharing one folder would overwrite each other's rows.
 
 Files it reads:
     - results.csv / done.txt    : our own outputs.
@@ -33,20 +24,17 @@ Files it reads:
       numbers (already in the repo). We use the Conjunctive-InceptionTime model as the baseline.
 
 Related files:
-    - seanet/config.py  -> settings_fingerprint() builds the "settings" id used as part of the key.
-    - main.py           -> calls result_exists() to skip finished runs and save_result_row() after each.
-    - seanet/report.py  -> reads these CSVs to draw the figures and the summary table.
+    - main.py calls result_exists() to skip finished datasets, save_result_row() after each
+      dataset, and build_comparison() at the end (and for the "results" command).
+    - analysis.ipynb reads results.csv and calls build_comparison() to make figures.
 
 Note on this machine: some tool keeps re-aligning .csv files (padding columns with spaces), which
 once corrupted results.csv mid-run and made the sweep restart from scratch. To be safe:
   - the "what is done" list is a plain .txt file (done.txt), which the tool leaves alone, and
   - results.csv is written append-only (never read-then-rewritten), so it can't be corrupted mid-write.
-The ONLY exception is the one-time migration below, which backs the file up first.
 """
 import os
-import shutil
-from datetime import datetime
-from typing import Dict, List, Optional
+from typing import Dict
 
 import numpy as np
 import pandas as pd
@@ -56,293 +44,139 @@ from seanet.data import UCR_128_DATASETS, read_our_csv
 # --------------------------------------------------------------------------------------
 # Paths + column order
 # --------------------------------------------------------------------------------------
-RESULTS_DIR = os.path.join("results", "SEA_NET")
-RESULTS_CSV = os.path.join(RESULTS_DIR, "results.csv")            # our metrics, one row per run
-COMPARISON_CSV = os.path.join(RESULTS_DIR, "comparison_vs_millet.csv")   # our numbers vs MILLET
-BEST_CSV = os.path.join(RESULTS_DIR, "best_results.csv")          # best model per dataset (+ when)
-DONE_TXT = os.path.join(RESULTS_DIR, "done.txt")                  # finished "model|settings|dataset" keys
-RUNS_DIR = os.path.join(RESULTS_DIR, "runs")                      # one folder per invocation (datetime)
-ARCHIVE_DIR = os.path.join(RESULTS_DIR, "archive")                # pre-migration backups
+# Each model writes into its OWN folder: results/SEA_NET/<model>/. Use the *_for(model) helpers below
+# to build the paths; the bare constants (RESULTS_CSV, ...) are kept for old callers and point at the
+# DEFAULT model's folder (seanet).
+RESULTS_ROOT = os.path.join("results", "SEA_NET")     # everything SEA-Net writes lives under here
+DEFAULT_MODEL = "seanet"                              # the model whose folder the plain sweep uses
+
+
+def results_dir_for(model: str = None) -> str:
+    """The folder that holds one model's result files: results/SEA_NET/<model>/ (default: seanet)."""
+    return os.path.join(RESULTS_ROOT, model or DEFAULT_MODEL)
+
+
+def results_csv_for(model: str = None) -> str:
+    """That model's metrics table (one row per finished dataset)."""
+    return os.path.join(results_dir_for(model), "results.csv")
+
+
+def done_txt_for(model: str = None) -> str:
+    """That model's 'what is finished' list (plain text, one dataset name per line)."""
+    return os.path.join(results_dir_for(model), "done.txt")
+
+
+def comparison_csv_for(model: str = None) -> str:
+    """That model's per-dataset comparison against the MILLET baseline."""
+    return os.path.join(results_dir_for(model), "comparison_vs_millet.csv")
+
+
+# Backward-compatible module constants (the DEFAULT model's paths). Prefer the *_for(model) helpers.
+RESULTS_CSV = results_csv_for()                                           # our metrics, one row per dataset
+COMPARISON_CSV = comparison_csv_for()                                     # our numbers vs MILLET
+DONE_TXT = done_txt_for()                                                 # plain-text list of finished datasets
 
 # Where the MILLET paper's published numbers live (one column per model and repetition).
 MILLET_UCR_DIR = os.path.join("results", "UCR", "InceptionTime")
 BASELINE_MODEL = "ConjunctiveInceptionTime"   # the MILLET model we compare against (it has 5 reps)
 
 # The column order for results.csv, so the file is always laid out the same way.
-# "settings" and "run_at" are what make a row traceable: which recipe produced it, and when.
 RESULT_COLUMNS = [
-    "dataset", "model", "settings", "run_at", "seed", "device", "params", "model_size_mb",
+    "dataset", "model", "seed", "device", "params", "model_size_mb",
     "n_train", "n_val", "n_test", "series_length", "n_classes", "lambda_entropy",
     "test_acc", "test_bal_acc", "test_auroc", "test_loss", "test_aopcr", "test_ndcg",
     "train_time_s",
 ]
-
-# The settings tag given to the 129 rows that were trained before this file understood settings.
-# They are kept as history and still show up in the reports, but because no live config can ever
-# fingerprint to the word "legacy", they never satisfy the resume check -> everything retrains clean.
-LEGACY_SETTINGS = "legacy"
 
 # How close counts as a "tie" (anything smaller than this is not a real win or loss).
 ACC_TIE_BAND = 0.005    # 0.5% for accuracy
 AOPCR_TIE_BAND = 0.1    # AOPCR is on a ~0..15 scale, so 0.1 is a small band
 
 
-def _now() -> str:
-    """The timestamp written into every results row, e.g. '2026-07-15 14:30:12'."""
-    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-
 # --------------------------------------------------------------------------------------
-# 0. One-time migration to the model+settings schema
-#
-# The old results.csv/done.txt had no idea which settings produced a row, and done.txt keyed on the
-# dataset name alone (so a second model was skipped because SEA-Net had already run that dataset).
-# This upgrades both, ONCE, keeping the originals in archive/ first. Old rows are tagged
-# settings="legacy": they stay visible as history, but they no longer block a retrain.
+# 1. Remembering what is done + saving results
 # --------------------------------------------------------------------------------------
-_MIGRATED = False
+def load_done(model: str = None) -> set:
+    """
+    Read a model's done.txt into a set of dataset names.
 
-
-def _archive(path: str) -> Optional[str]:
-    """Copy a file into archive/ with a timestamp, so a migration can never lose data."""
+    model : which model's list to read (default: seanet).
+    returns : set of finished dataset names (empty set if the file does not exist yet).
+    """
+    path = done_txt_for(model)
     if not os.path.exists(path):
-        return None
-    os.makedirs(ARCHIVE_DIR, exist_ok=True)
-    stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    base, ext = os.path.splitext(os.path.basename(path))
-    dest = os.path.join(ARCHIVE_DIR, f"{base}_pre-migration_{stamp}{ext}")
-    shutil.copy2(path, dest)
-    return dest
-
-
-def ensure_migrated(verbose: bool = True) -> None:
-    """
-    Bring results.csv + done.txt up to the model+settings schema, once per process.
-
-    Safe to call as often as you like: it checks whether the files already have the new shape and
-    returns immediately if so. Both files are backed up into archive/ before anything is rewritten.
-
-    verbose : print what was migrated (only ever prints on the one run that does the work).
-    returns : nothing.
-    """
-    global _MIGRATED
-    if _MIGRATED:
-        return
-    _MIGRATED = True
-
-    # --- results.csv: add the "settings" / "run_at" columns to any pre-existing rows ---
-    if os.path.exists(RESULTS_CSV):
-        df = read_our_csv(RESULTS_CSV)
-        if "settings" not in df.columns:
-            backup = _archive(RESULTS_CSV)
-            # the old rows all came from the default SEA-Net recipe; date them from the file itself
-            # so the history keeps a truthful (if approximate) "when did this run" stamp.
-            mtime = datetime.fromtimestamp(os.path.getmtime(RESULTS_CSV)).strftime("%Y-%m-%d %H:%M:%S")
-            df["settings"] = LEGACY_SETTINGS
-            df["run_at"] = mtime
-            df.reindex(columns=RESULT_COLUMNS).to_csv(RESULTS_CSV, index=False)
-            if verbose:
-                print(f"  [results] migrated {len(df)} existing rows to the model+settings schema "
-                      f"(tagged settings='{LEGACY_SETTINGS}'; backup -> {backup})")
-
-    # --- done.txt: old lines are bare dataset names; the new ones are "model|settings|dataset" ---
-    if os.path.exists(DONE_TXT):
-        with open(DONE_TXT) as f:
-            lines = [ln.strip() for ln in f if ln.strip()]
-        legacy = [ln for ln in lines if "|" not in ln]
-        if legacy:
-            backup = _archive(DONE_TXT)
-            keyed = [ln for ln in lines if "|" in ln]        # keep any already-new keys
-            with open(DONE_TXT, "w") as f:
-                for line in keyed:
-                    f.write(line + "\n")
-            if verbose:
-                print(f"  [results] dropped {len(legacy)} un-keyed done.txt entries so every model "
-                      f"retrains under its own settings id (backup -> {backup})")
-
-
-# --------------------------------------------------------------------------------------
-# 1. Remembering what is done (per model + settings + dataset) + saving results
-# --------------------------------------------------------------------------------------
-def done_key(model: str, settings: str, dataset: str) -> str:
-    """
-    Build the one string that identifies a finished run.
-
-    model : the config name, e.g. "seanet".
-    settings : the 8-char fingerprint from seanet.config.settings_fingerprint.
-    dataset : e.g. "Coffee".
-    returns : e.g. "seanet|9eb2ac03|Coffee".
-    """
-    return f"{model}|{settings}|{dataset}"
-
-
-def load_done() -> set:
-    """
-    Read done.txt into a set of "model|settings|dataset" keys.
-
-    returns : set of finished keys (empty set if done.txt does not exist yet).
-    """
-    ensure_migrated()
-    if not os.path.exists(DONE_TXT):
         return set()
-    with open(DONE_TXT) as f:
-        return {line.strip() for line in f if line.strip()}   # one key per line, ignore blanks
+    with open(path) as f:
+        return {line.strip() for line in f if line.strip()}   # one name per line, ignore blanks
 
 
-def mark_done(model: str, settings: str, dataset: str) -> None:
+def mark_done(name: str, model: str = None) -> None:
     """
-    Add a finished run's key to done.txt (only if it is not already there).
+    Add a dataset name to a model's done.txt (only if it is not already there).
 
-    model, settings, dataset : the three parts of the resume key.
+    name : the finished dataset name.  model : which model's list (default: seanet).
     returns : nothing.
     """
-    os.makedirs(os.path.dirname(DONE_TXT), exist_ok=True)
-    key = done_key(model, settings, dataset)
-    if key not in load_done():                                # avoid writing the same key twice
-        with open(DONE_TXT, "a") as f:
-            f.write(key + "\n")
+    path = done_txt_for(model)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    if name not in load_done(model):                          # avoid writing the same name twice
+        with open(path, "a") as f:
+            f.write(name + "\n")
 
 
-def result_exists(dataset: str, model: Optional[str] = None, settings: Optional[str] = None) -> bool:
+def result_exists(name: str, model: str = None) -> bool:
     """
-    Say whether THIS model, with THESE settings, has already finished THIS dataset.
+    Say whether a dataset is already finished FOR THIS MODEL. We check done.txt (a plain-text file
+    that the CSV aligner cannot corrupt), not results.csv.
 
-    We check done.txt (a plain-text file the CSV aligner cannot corrupt), not results.csv.
-
-    dataset : dataset name.
-    model : the config name, e.g. "seanet". If None, the answer is always False - an unidentified
-            run has no key, so it can never match a finished one (we would rather retrain than
-            wrongly skip).
-    settings : the settings fingerprint. If None, same reasoning as model.
-    returns : True only if the exact model|settings|dataset key is in done.txt.
+    name : dataset name.  model : which model's list (default: seanet).
+    returns : True if the dataset is in that model's done.txt.
     """
-    if model is None or settings is None:
-        return False
-    return done_key(model, settings, dataset) in load_done()
+    return name in load_done(model)
 
 
-def load_results(path: str = RESULTS_CSV) -> pd.DataFrame:
+def load_results(model: str = None, path: str = None) -> pd.DataFrame:
     """
-    Read results.csv into a DataFrame.
+    Read a model's results.csv into a DataFrame.
 
-    Because results.csv is append-only, the same run could appear more than once (if it was re-run),
-    so we keep only the last row for each (dataset, model, settings) - the newest wins. Rows for
-    different models or different settings are all kept side by side; that is the point of the file.
+    Because results.csv is append-only, the same dataset could appear more than once (if it was
+    re-run), so we keep only the last row for each dataset.
 
-    path : the results csv file.
+    model : which model's results to read (default: seanet).
+    path : read this exact file instead (overrides model); handy for tests.
     returns : a DataFrame of results (empty but correctly-columned if the file is missing).
     """
-    ensure_migrated()
+    path = path or results_csv_for(model)
     if not os.path.exists(path):
         return pd.DataFrame(columns=RESULT_COLUMNS)
     df = read_our_csv(path)                                   # tolerant read (handles aligned csv)
-    keys = [c for c in ("dataset", "model", "settings") if c in df.columns]
-    if keys:
-        df = df.drop_duplicates(keys, keep="last").reset_index(drop=True)   # last row wins
+    if "dataset" in df.columns:
+        df = df.drop_duplicates("dataset", keep="last").reset_index(drop=True)   # last row wins
     return df
 
 
-def new_run_dir(command: str, model: str) -> str:
+def save_result_row(row: Dict, model: str = None, path: str = None) -> None:
     """
-    Make a fresh, datetime-stamped folder for ONE invocation's outputs.
+    Append one dataset's result row to a model's results.csv and record the dataset in its done.txt.
 
-    Every command that trains something gets its own folder, e.g.
-        results/SEA_NET/runs/2026-07-15_14-30-12_seanet_train/
-    so you can always point at "the run I did on Tuesday afternoon" instead of digging through the
-    master results.csv. The master file still gets every row too; this is an extra, per-run copy.
+    We append instead of rewriting the whole file, so the CSV-aligning tool cannot corrupt it
+    while we write. If a dataset ends up with more than one row (from a re-run), load_results
+    keeps the last one.
 
-    command : the main.py command that is running ("train", "run", "single", ...).
-    model : the model config name, e.g. "seanet".
-    returns : the created folder's path.
-    """
-    stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    path = os.path.join(RUNS_DIR, f"{stamp}_{model}_{command}")
-    os.makedirs(path, exist_ok=True)
-    return path
-
-
-def save_result_row(row: Dict, path: str = RESULTS_CSV, run_dir: Optional[str] = None) -> None:
-    """
-    Append one finished run to results.csv, record its key in done.txt, and (optionally) copy the
-    row into this invocation's own run folder.
-
-    We append instead of rewriting the whole file, so the CSV-aligning tool cannot corrupt it while
-    we write. If a run ends up with more than one row (from a re-run), load_results keeps the last.
-
-    row : a results-row dict from score_model. Must carry "dataset"; "model" and "settings" are
-          expected (they are the resume key). "run_at" is stamped here if the caller did not.
-    path : the results csv file.
-    run_dir : optional per-invocation folder (from new_run_dir) to also write the row into.
+    row : a results-row dict from train_one / score_model.
+    model : which model's folder to write into (default: seanet).
+    path : write this exact file instead (overrides model).
     returns : nothing.
     """
-    ensure_migrated()
-    row = dict(row)
-    row.setdefault("run_at", _now())                          # stamp the row if it is not stamped yet
+    path = path or results_csv_for(model)
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    df = pd.DataFrame([row]).reindex(columns=RESULT_COLUMNS)  # put columns in the fixed order
-    df.to_csv(path, mode="a", header=not os.path.exists(path), index=False)   # append (header if new)
-
-    if run_dir is not None:                                   # this invocation's own copy
-        run_csv = os.path.join(run_dir, "results.csv")
-        df.to_csv(run_csv, mode="a", header=not os.path.exists(run_csv), index=False)
-
-    model, settings = row.get("model"), row.get("settings")
-    if model and settings:                                    # remember it is done (per model+settings)
-        mark_done(model, settings, row["dataset"])
+    df = pd.DataFrame([row]).reindex(columns=RESULT_COLUMNS)   # put columns in the fixed order
+    df.to_csv(path, mode="a", header=not os.path.exists(path), index=False)   # append (header only if new file)
+    mark_done(row["dataset"], model)                          # remember it is done (in the same model's list)
 
 
 # --------------------------------------------------------------------------------------
-# 2. best_results.csv - one row per dataset: which model won it, and when
-# --------------------------------------------------------------------------------------
-def build_best_results(results_path: str = RESULTS_CSV, out: str = BEST_CSV,
-                       verbose: bool = False) -> pd.DataFrame:
-    """
-    Reduce results.csv to ONE row per dataset: the model that scored best on it.
-
-    This is the "which model should I actually use, and when did I prove it" tracking table. It reads
-    every model's rows and picks, per dataset, the highest test_acc (ties broken by the lower
-    test_loss, i.e. the more confident model). The winning row keeps its model, settings and run_at,
-    so a result is always traceable back to the recipe and the day that produced it.
-
-    results_path : the results csv to read.
-    out : where to write best_results.csv.
-    verbose : print a one-line confirmation.
-    returns : the best-per-dataset DataFrame (also saved to `out`).
-    """
-    res = load_results(results_path)
-    if res.empty:
-        return pd.DataFrame()
-
-    res = res.copy()
-    for col in ("test_acc", "test_loss"):                     # the sort keys must be numeric
-        if col in res.columns:
-            res[col] = pd.to_numeric(res[col], errors="coerce")
-
-    # highest accuracy first; if two models tie on accuracy, the lower test_loss wins
-    res = res.sort_values(["test_acc", "test_loss"], ascending=[False, True], na_position="last")
-    best = res.drop_duplicates("dataset", keep="first").copy()
-
-    n_models = res.groupby("dataset")["model"].nunique()      # how many models were compared per dataset
-    best["models_compared"] = best["dataset"].map(n_models)
-    best = best.rename(columns={"model": "best_model"})
-
-    columns = ["dataset", "best_model", "settings", "run_at", "models_compared",
-               "test_acc", "test_bal_acc", "test_auroc", "test_loss", "test_aopcr", "test_ndcg",
-               "params", "model_size_mb", "train_time_s"]
-    best = best.reindex(columns=[c for c in columns if c in best.columns])
-    best = best.sort_values("dataset").reset_index(drop=True)
-
-    os.makedirs(os.path.dirname(out), exist_ok=True)
-    best.to_csv(out, index=False)
-    if verbose:
-        wins = best["best_model"].value_counts().to_dict()
-        print(f"  best_results: {len(best)} datasets | wins per model: {wins}")
-        print(f"  wrote {out}")
-    return best
-
-
-# --------------------------------------------------------------------------------------
-# 3. Comparing our numbers to MILLET
+# 2. Comparing our numbers to MILLET
 # --------------------------------------------------------------------------------------
 def millet_baseline(metric_csv: str) -> pd.Series:
     """
@@ -376,34 +210,11 @@ def _outcome(diff: float, band: float) -> str:
     return "tie"
 
 
-def _rows_to_compare(results_path: str, model: Optional[str]) -> pd.DataFrame:
+def build_comparison(model: str = None, results_path: str = None, out: str = None,
+                     verbose: bool = True) -> pd.DataFrame:
     """
-    Choose which of our rows go into the MILLET comparison: one row per dataset.
-
-    model : a model config name -> compare exactly that model (an honest single-model table, which
-            is what a paper reports). None -> compare the best model per dataset (from
-            build_best_results), and the table then carries a "model" column saying which one won,
-            so a mixed table can never be mistaken for a single model's numbers.
-    returns : a DataFrame with a "model" column and one row per dataset.
-    """
-    if model is not None:
-        res = load_results(results_path)
-        res = res[res["model"] == model].copy()
-        # a model may have rows under several settings ids (e.g. before and after tuning);
-        # keep its newest row per dataset so the table reflects the current recipe.
-        if "run_at" in res.columns:
-            res = res.sort_values("run_at").drop_duplicates("dataset", keep="last")
-        return res
-    best = build_best_results(results_path, verbose=False)
-    if best.empty:
-        return best
-    return best.rename(columns={"best_model": "model"})
-
-
-def build_comparison(results_path: str = RESULTS_CSV, out: str = COMPARISON_CSV,
-                     verbose: bool = True, model: Optional[str] = None) -> pd.DataFrame:
-    """
-    Join our UCR results to the MILLET baseline by dataset name and write comparison_vs_millet.csv.
+    Join one model's UCR results to the MILLET baseline by dataset name and write its
+    comparison_vs_millet.csv (inside that model's own folder).
 
     Every UCR dataset we have a result for shows up:
       - the 85 that the paper also reports  -> get millet_acc / millet_aopcr + win/tie/loss.
@@ -411,19 +222,15 @@ def build_comparison(results_path: str = RESULTS_CSV, out: str = COMPARISON_CSV,
     WebTraffic is left out here on purpose (it is not a UCR dataset; it is checked separately by
     `python main.py webtraffic`).
 
-    results_path : the results csv to read.
-    out : where to write the comparison csv.
+    model : which model to compare (default: seanet).
+    results_path : the results csv to read (overrides the model-derived path).
+    out : where to write the comparison csv (overrides the model-derived path).
     verbose : if True, also print the win/tie/loss summary.
-    model : compare only this model's rows (recommended for a paper table). None = best model per
-            dataset; the "model" column then says which model each row came from.
     returns : the comparison DataFrame (also saved to `out`).
     """
-    res = _rows_to_compare(results_path, model)
-    if res.empty:
-        if verbose:
-            print("No results yet - run the sweep first (nothing to compare).")
-        return pd.DataFrame()
-
+    results_path = results_path or results_csv_for(model)
+    out = out or comparison_csv_for(model)
+    res = load_results(model=model, path=results_path)
     ucr_set = set(UCR_128_DATASETS)
     res = res[res["dataset"].isin(ucr_set)].copy()            # keep UCR datasets only (drop WebTraffic)
 
@@ -440,9 +247,6 @@ def build_comparison(results_path: str = RESULTS_CSV, out: str = COMPARISON_CSV,
         o_aopcr = float(r["test_aopcr"]) if pd.notna(r["test_aopcr"]) else np.nan
         rows.append({
             "dataset": name,
-            "model": r.get("model"),
-            "settings": r.get("settings"),
-            "run_at": r.get("run_at"),
             "ours_acc": round(o_acc, 4),
             "millet_acc": round(m_acc, 4) if has_baseline else np.nan,
             "acc_diff": round(o_acc - m_acc, 4) if has_baseline else np.nan,
@@ -466,26 +270,23 @@ def build_comparison(results_path: str = RESULTS_CSV, out: str = COMPARISON_CSV,
         cmp.to_csv(out, index=False)
 
     if verbose:
-        _print_comparison_summary(cmp, out, model)
+        _print_comparison_summary(cmp, out)
     return cmp
 
 
-def _print_comparison_summary(cmp: pd.DataFrame, out: str, model: Optional[str] = None) -> None:
+def _print_comparison_summary(cmp: pd.DataFrame, out: str) -> None:
     """
     Print a short win/tie/loss summary over the datasets that have a MILLET baseline.
 
     cmp : the comparison DataFrame from build_comparison.
     out : the path the comparison was written to (just for the printed message).
-    model : the model filter that was used (None = best-per-dataset), so the print says what it is.
     returns : nothing.
     """
     if cmp.empty:                                             # nothing run yet
         print("No UCR results yet - run the sweep first (nothing to compare).")
         return
-    which = f"model '{model}'" if model else "best model per dataset"
     overlap = cmp[cmp["acc_outcome"] != "no_baseline"]        # only the datasets with a baseline
     n_no_base = int((cmp["acc_outcome"] == "no_baseline").sum())
-    print(f"Comparing: {which}")
     print(f"UCR datasets evaluated: {len(cmp)}  "
           f"(with MILLET baseline: {len(overlap)}, without: {n_no_base})")
     if len(overlap) > 0:
@@ -502,18 +303,81 @@ def _print_comparison_summary(cmp: pd.DataFrame, out: str, model: Optional[str] 
     print(f"  wrote {out}")
 
 
-def sweep_status(model: str, settings: str, datasets: List[str]) -> Dict:
-    """
-    Say how far a given model+settings has got through a list of datasets.
+# --------------------------------------------------------------------------------------
+# 3. Comparing several models (pooling heads) to each other
+# --------------------------------------------------------------------------------------
+MODEL_COMPARISON_CSV = os.path.join(RESULTS_ROOT, "model_comparison.csv")   # the cross-model ranking
 
-    Used by the sweep to print "resuming: 41 done, 88 to go" before it starts, so a long run is
-    never a mystery.
 
-    model, settings : the recipe being swept.
-    datasets : the full list of dataset names the sweep intends to cover.
-    returns : {"done": [...], "todo": [...]}.
+def discover_result_models() -> list:
     """
-    done = load_done()
-    finished = [d for d in datasets if done_key(model, settings, d) in done]
-    todo = [d for d in datasets if done_key(model, settings, d) not in done]
-    return {"done": finished, "todo": todo}
+    List the model names that have a results folder with a results.csv, so we can compare them.
+
+    Looks for results/SEA_NET/<name>/results.csv. Shared folders (figures/, interpretation/, logs/)
+    are skipped because they have no results.csv.
+
+    returns : a sorted list of model names (empty if nothing has been swept yet).
+    """
+    if not os.path.isdir(RESULTS_ROOT):
+        return []
+    return [name for name in sorted(os.listdir(RESULTS_ROOT))
+            if os.path.exists(os.path.join(RESULTS_ROOT, name, "results.csv"))]
+
+
+def compare_models(models: list = None, out: str = MODEL_COMPARISON_CSV, verbose: bool = True) -> pd.DataFrame:
+    """
+    Build a head-to-head table ACROSS models (e.g. the pooling heads): one row per model with its
+    mean accuracy / AOPCR and its win/tie/loss record against the MILLET baseline, over the UCR
+    datasets. This is the "which pooling wins overall" table.
+
+    It reuses build_comparison(model=...) per model (which also refreshes each model's own
+    comparison_vs_millet.csv), so the per-model and cross-model numbers always agree.
+
+    models : which models to include (default: every model with a results folder).
+    out : where to write the table (default: results/SEA_NET/model_comparison.csv).
+    verbose : if True, print the ranking.
+    returns : the cross-model DataFrame (also saved to `out`), best mean accuracy first.
+    """
+    models = models if models is not None else discover_result_models()
+    rows = []
+    for m in models:
+        cmp = build_comparison(model=m, verbose=False)        # also (re)writes that model's comparison csv
+        if cmp.empty:
+            continue
+        overlap = cmp[cmp["acc_outcome"] != "no_baseline"]    # only datasets the paper also reports
+        av = overlap["acc_outcome"].value_counts()
+        pv = overlap["aopcr_outcome"].value_counts()
+        rows.append({
+            "model": m,
+            "n_datasets": int(len(cmp)),
+            "n_with_baseline": int(len(overlap)),
+            "mean_acc": round(float(cmp["ours_acc"].mean()), 4),
+            "mean_aopcr": round(float(cmp["ours_aopcr"].mean()), 4),
+            "acc_win_tie_loss": f"{av.get('win', 0)}/{av.get('tie', 0)}/{av.get('loss', 0)}",
+            "acc_ours_vs_millet": (f"{overlap['ours_acc'].mean():.4f} / {overlap['millet_acc'].mean():.4f}"
+                                   if len(overlap) else ""),
+            "aopcr_win_tie_loss": f"{pv.get('win', 0)}/{pv.get('tie', 0)}/{pv.get('loss', 0)}",
+            "aopcr_ours_vs_millet": (f"{overlap['ours_aopcr'].mean():.3f} / {overlap['millet_aopcr'].mean():.3f}"
+                                     if len(overlap) else ""),
+        })
+    df = pd.DataFrame(rows)
+    if not df.empty:
+        df = df.sort_values("mean_acc", ascending=False).reset_index(drop=True)
+        os.makedirs(os.path.dirname(out), exist_ok=True)
+        df.to_csv(out, index=False)
+    if verbose:
+        _print_model_comparison(df, out)
+    return df
+
+
+def _print_model_comparison(df: pd.DataFrame, out: str) -> None:
+    """Print the cross-model head-to-head ranking (best mean accuracy first)."""
+    if df.empty:
+        print("No model results yet - run `python main.py train --model <name>` first.")
+        return
+    print(f"Cross-model comparison over {len(df)} model(s) (best mean UCR accuracy first):")
+    print(f"  {'model':22s} {'mean_acc':>9s} {'acc W/T/L':>11s} {'mean_aopcr':>11s} {'aopcr W/T/L':>12s}")
+    for _, r in df.iterrows():
+        print(f"  {r['model']:22s} {r['mean_acc']:>9.4f} {r['acc_win_tie_loss']:>11s} "
+              f"{r['mean_aopcr']:>11.4f} {r['aopcr_win_tie_loss']:>12s}")
+    print(f"  wrote {out}")

@@ -1,0 +1,2 @@
+model,n_datasets,n_with_baseline,mean_acc,mean_aopcr,acc_win_tie_loss,acc_ours_vs_millet,aopcr_win_tie_loss,aopcr_ours_vs_millet
+seanet,128,85,0.8286,0.6521,26/14/45,0.8294 / 0.8445,4/0/81,0.572 / 4.553
