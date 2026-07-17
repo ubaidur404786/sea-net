@@ -2,33 +2,44 @@
 seanet/logs.py - save a copy of everything printed to a dated log file.
 
 What this file is for:
-    Every command (smoke, single, train, run, interpret, optuna, ...) prints its progress and
-    results to the terminal. This little helper ALSO writes that same text to a file under
-    results/SEA_NET/logs/, named with the command and the date-time - so after a run you have a
-    permanent record of what happened (handy for long sweeps and for runs on Grid5000).
+    Every command (train, single, run, interpret, optuna, ...) prints its progress and results to
+    the terminal. This little helper ALSO writes that same text to a file - so after a run you have
+    a permanent record of what happened (handy for long sweeps and for runs on Grid5000).
 
     It works like the Unix "tee" command: text goes to the screen AND to the file at the same time.
 
-    Smoke runs are throwaway pipeline checks (usually done on your laptop), so their logs go into a
-    separate results/SEA_NET/logs/smoke/ folder that .gitignore excludes. Real training logs stay in
-    results/SEA_NET/logs/ and ARE committed, so the Grid5000 training record travels with the repo.
+Where the log goes:
+    A log belongs to the MODEL it was run for, so it is saved next to that model's results:
+
+        results/SEA_NET/mstcn_sep_additive/logs/train_2026-07-17_14-02-11.log
+
+    Every run gets its own file, named with the command plus the date and time, so nothing is ever
+    overwritten - run the same model ten times and you keep all ten records, in order.
+
+    Commands that belong to no particular model (summary, report) go to the shared folder
+    results/SEA_NET/logs/ instead.
+
+    Smoke runs are throwaway pipeline checks (usually on your laptop), so their logs go into a
+    logs/smoke/ subfolder that .gitignore excludes. Real training logs ARE committed, so the
+    Grid5000 training record travels with the repo.
 
 How to use it (see main.py):
-    start_logging("train")            # a real run -> logs/train_<date-time>.log (committed)
-    start_logging("single", smoke=True)   # a smoke run -> logs/smoke/single_<date-time>.log (ignored)
-    ... run the command ...
+    start_logging("train", model_id="mstcn_sep_additive")     # -> <model>/logs/train_<date-time>.log
+    start_logging("report")                                   # -> results/SEA_NET/logs/report_<date-time>.log
+    start_logging("run", model_id=..., smoke=True)            # -> <model>/logs/smoke/run_<date-time>.log
 
 The one class here (Tee) just forwards each write() to two places. Nothing clever.
 
 Related files:
-    - main.py -> calls start_logging(command) once, right before running the chosen command.
+    - seanet/results.py -> logs_dir(model_id) / SHARED_LOGS_DIR (the folders used here).
+    - main.py           -> calls start_logging() once, right before running the chosen command.
 """
 import os
 import sys
 from datetime import datetime
+from typing import Optional
 
-# where the log files go (relative to the repo root, which main.py has already cd'd into)
-LOGS_DIR = os.path.join("results", "SEA_NET", "logs")
+from seanet.results import SHARED_LOGS_DIR, logs_dir
 
 
 class Tee:
@@ -53,26 +64,39 @@ class Tee:
         self.logfile.flush()
 
 
-def start_logging(command: str, smoke: bool = False) -> str:
+def log_dir_for(model_id: Optional[str] = None, smoke: bool = False) -> str:
     """
-    Begin saving all terminal output to results/SEA_NET/logs/<command>_<date-time>.log.
+    Work out which folder a log file belongs in.
+
+    model_id : the model this run is for (e.g. "mstcn_sep_additive"); None for commands that belong
+               to no model (summary, report), which use the shared results/SEA_NET/logs/ folder.
+    smoke : if True, use the logs/smoke/ subfolder (git-ignored - throwaway checks are not kept).
+    returns : the folder path.
+    """
+    base = logs_dir(model_id) if model_id else SHARED_LOGS_DIR
+    return os.path.join(base, "smoke") if smoke else base
+
+
+def start_logging(command: str, model_id: Optional[str] = None, smoke: bool = False) -> str:
+    """
+    Begin saving all terminal output to <log folder>/<command>_<date-time>.log.
 
     We replace sys.stdout with a Tee, so every print() from here on is written to both the screen
     and the file. tqdm progress bars stay on the terminal only (they write to stderr, which we leave
     alone), so the log file stays clean and readable.
 
     command : the command name, used in the file name (e.g. "train", "optuna").
-    smoke : if True, write into the logs/smoke/ subfolder instead (git-ignored, so throwaway smoke
-            checks never get committed; real training logs go straight in logs/ and are kept).
+    model_id : the model this run is for; None puts the log in the shared folder (see log_dir_for).
+    smoke : if True, write into the logs/smoke/ subfolder instead.
     returns : the path of the log file that was opened.
     """
-    # real logs -> logs/ (committed);  smoke logs -> logs/smoke/ (ignored). See .gitignore.
-    logs_dir = os.path.join(LOGS_DIR, "smoke") if smoke else LOGS_DIR
-    os.makedirs(logs_dir, exist_ok=True)                       # make the logs folder if needed
+    folder = log_dir_for(model_id, smoke)
+    os.makedirs(folder, exist_ok=True)                         # make the logs folder if needed
     stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")       # date-time, so each run has its own file
-    path = os.path.join(logs_dir, f"{command}_{stamp}.log")
+    path = os.path.join(folder, f"{command}_{stamp}.log")
     logfile = open(path, "w", encoding="utf-8")
     sys.stdout = Tee(sys.stdout, logfile)                      # from now on, print() also writes to the file
-    print(f"[log] command '{command}' started at {stamp}")
+    print(f"[log] command '{command}' started at {stamp}"
+          + (f" for model '{model_id}'" if model_id else ""))
     print(f"[log] a copy of everything below is being saved to: {path}\n")
     return path

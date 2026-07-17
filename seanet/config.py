@@ -12,6 +12,9 @@ What this file is for:
         cfg.seed                         -> 0
         cfg.model_config.training.learning_rate   -> 0.00125
 
+    It also names the model: model_folder_name(cfg) -> "mstcn_sep_additive" (encoder + pooling).
+    That name is the folder all of this model's results go in - see seanet/results.py.
+
 Input:
     The path to main.yaml (and, indirectly, the model file it points at).
 Output:
@@ -29,8 +32,6 @@ Why a SimpleNamespace and not a plain dict:
     types.SimpleNamespace lets you write cfg.model_config.training.learning_rate, which reads like
     normal Python. It is part of the standard library, so there is nothing new to learn.
 """
-import hashlib
-import json
 import os
 from types import SimpleNamespace
 from typing import Dict, Optional
@@ -310,46 +311,35 @@ def to_flat_dict(cfg, prefix: str = "") -> Dict:
 
 
 # --------------------------------------------------------------------------------------
-# Settings fingerprint: "is this the same experiment?" in 8 characters.
+# The model id: what a model IS, in one name.
 #
-# A results row is only allowed to satisfy the resume check ("already trained, skip it") when the
-# model AND the settings that produced it are the same. Comparing every hyperparameter each time
-# would be slow and fiddly, so we hash them once into a short id, e.g. "a3f1c9", and store it in
-# every results row. Change the learning rate (or the encoder width, or the seed) and the id changes,
-# so that model retrains across all the datasets instead of silently mixing old and new numbers.
+# A model in this project is always "one encoder + one pooling head". So we name it after exactly
+# those two things: mstcn_sep + additive -> "mstcn_sep_additive". That name is the folder its
+# results live in (results/SEA_NET/mstcn_sep_additive/), which means:
+#   - the folder name tells you what the model is, without opening any file,
+#   - two different configs that build the SAME network share one results folder (they are the same
+#     experiment), and re-running just updates those rows,
+#   - the config file name (seanet.yaml, seanet_acp.yaml, ...) is free to be a friendly shortcut.
 # --------------------------------------------------------------------------------------
-# Only these parts of the config decide the fingerprint. `optuna`, `records`, `use_params`, `mlflow`
-# and `output` are excluded on purpose: they are bookkeeping, not model settings, so editing them
-# must NOT invalidate finished results.
-FINGERPRINT_BLOCKS = ("encoder", "pooling", "training")
-
-
-def settings_fingerprint(cfg) -> str:
+def model_folder_name(cfg) -> str:
     """
-    Build the short id that says which settings produced a result.
+    Build the model id: "<encoder type>_<pooling type>", e.g. "mstcn_sep_additive".
 
-    It covers everything that changes what gets trained: the model's encoder / pooling / training
-    blocks (as resolved, so an Optuna-best recipe fingerprints differently from the default), plus
-    the run's seed and preprocessing block from main.yaml.
+    This is the name of the folder that holds this model's results, logs and figures. Every model
+    config maps to a unique one:
+        seanet.yaml            -> mstcn_sep_additive
+        seanet_acp.yaml        -> mstcn_sep_adaptive_classwise
+        seanet_conjunctive.yaml-> mstcn_sep_conjunctive
+        millet.yaml            -> inceptiontime_conjunctive
 
-    Note n_epochs / patience are included, so a --smoke run (3 epochs) can never be mistaken for a
-    real result - but smoke runs are not saved anyway, so this only matters as a safety net.
-
-    cfg : a loaded config (from load_config).
-    returns : an 8-character hex id, e.g. "a3f1c9d2".
+    cfg : a loaded config (from load_config), or a model_config on its own.
+    returns : the model id string.
     """
-    flat: Dict = {}
-    model_cfg = getattr(cfg, "model_config", None)
-    for block in FINGERPRINT_BLOCKS:
-        node = getattr(model_cfg, block, None) if model_cfg is not None else None
-        if node is not None:
-            flat.update(to_flat_dict(node, prefix=f"{block}."))
-    flat["seed"] = getattr(cfg, "seed", None)
-    preprocessing = getattr(cfg, "preprocessing", None)
-    if preprocessing is not None:
-        flat.update(to_flat_dict(preprocessing, prefix="preprocessing."))
-
-    # sort_keys + default=str make the hash stable: the same settings always give the same id,
-    # whatever order PyYAML happened to read the file in.
-    payload = json.dumps(flat, sort_keys=True, default=str)
-    return hashlib.sha1(payload.encode("utf-8")).hexdigest()[:8]
+    # accept either the whole config or just its model_config part, so callers do not have to care
+    model_cfg = getattr(cfg, "model_config", cfg)
+    encoder = getattr(getattr(model_cfg, "encoder", None), "type", None)
+    pooling = getattr(getattr(model_cfg, "pooling", None), "type", None)
+    if not encoder or not pooling:
+        raise ValueError("The model config must define both encoder.type and pooling.type "
+                         f"(got encoder={encoder!r}, pooling={pooling!r}).")
+    return f"{encoder}_{pooling}"

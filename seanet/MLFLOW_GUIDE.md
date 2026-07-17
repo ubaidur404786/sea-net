@@ -45,11 +45,16 @@ root (`SEA_NET/`, the folder that contains `main.py`):
 |---|---|---|
 | MLflow runs + trials + versioned models + metrics | `mlflow.db` (SQLite file) | every training command + `optuna` |
 | Saved model weights (per versioned model) | `mlartifacts/` | training commands (when `log_model_weights: true`) |
-| Best hyperparameters found | `configs/models/<model>.best.yaml` | `optuna` |
-| Run logs (a dated copy of the terminal output) | `results/SEA_NET/logs/<command>_<date-time>.log` | **every** command |
-| Metrics table (accuracy, AOPCR, NDCG, ...) | `results/SEA_NET/results.csv` | `single`, `train`, `run` |
-| Paper-ready figures + summary tables | `results/SEA_NET/figures/`, `results/SEA_NET/summary.*` | `report` |
-| Interpretability figures | `results/SEA_NET/interpretation/<dataset>/<date-time>/` | `interpret` |
+| Best hyperparameters found | `configs/models/<model>.yaml` (the `records.optuna_best` block) | `optuna` |
+| Run logs (a dated copy of the terminal output) | `results/SEA_NET/<model_id>/logs/<command>_<date-time>.log` | **every** command |
+| Metrics table (accuracy, loss, AOPCR, NDCG, ...) | `results/SEA_NET/<model_id>/results.csv` | `single`, `train`, `run` |
+| Comparison vs MILLET + headline means | `results/SEA_NET/<model_id>/comparison_vs_millet.csv`, `summary.*` | `results`, `report` |
+| Figures | `results/SEA_NET/<model_id>/figures/` | `report` |
+| Cross-model ranking | `results/SEA_NET/model_comparison.csv` + `figures/model_comparison.png` | `results`, `report` |
+| Interpretability figures | `results/SEA_NET/<model_id>/interpretation/WebTraffic/<date-time>/` | `interpret` |
+
+`<model_id>` is `<encoder>_<pooling>`, e.g. `mstcn_sep_additive` for `--model seanet`. Every model
+keeps its own copy of all of the above, so two models never mix their numbers up.
 
 Every command writes a dated log file, so **smoke, train, optuna and the rest all leave a permanent
 record** of exactly what was printed — useful for the long sweeps you run on Grid5000.
@@ -82,8 +87,9 @@ Then open **http://127.0.0.1:5000** in your browser and:
 **To pick the best Optuna hyperparameters:**
 1. In the runs table, click the **`val_loss`** column header to **sort ascending**.
 2. The **top row is the best trial** — click it to see the exact hyperparameters. The same winning
-   values are also written to `configs/models/<model>.best.yaml`, which every future run loads
-   automatically, so you don't have to copy them by hand.
+   values are also written into `configs/models/<model>.yaml` itself, in the `records.optuna_best`
+   block at the bottom, so you don't have to copy them by hand. The `use_params` setting at the top
+   of that file decides whether a run trains with them (`default` / `optuna_best` / `auto`).
 
 ---
 
@@ -113,10 +119,11 @@ scp user@access.grid5000.fr:~/sea-net/mlflow.db ./
 # (optional) the saved model weights, if you want to reload models later
 scp -r user@access.grid5000.fr:~/sea-net/mlartifacts ./
 
-# (optional) best hyperparameters, run logs, and the metrics table
-scp user@access.grid5000.fr:~/sea-net/configs/models/seanet.best.yaml ./configs/models/
-scp -r user@access.grid5000.fr:~/sea-net/results/SEA_NET/logs ./results/SEA_NET/
-scp user@access.grid5000.fr:~/sea-net/results/SEA_NET/results.csv ./results/SEA_NET/
+# (optional) the tuned hyperparameters (they live inside the model config now)
+scp user@access.grid5000.fr:~/sea-net/configs/models/seanet.yaml ./configs/models/
+
+# (optional) one model's whole results folder: results.csv, done list, logs, figures, summary
+scp -r user@access.grid5000.fr:~/sea-net/results/SEA_NET/mstcn_sep_additive ./results/SEA_NET/
 ```
 
 `rsync` is better for repeat copies (it only sends what changed):
@@ -135,7 +142,8 @@ mlflow ui --backend-store-uri sqlite:///mlflow.db    # open http://127.0.0.1:500
 ```
 
 That's it — the runs and models you produced on the cluster now show up in your local MLflow web page,
-and `seanet.best.yaml` makes your next local `python main.py run` use the tuned hyperparameters.
+and the copied `seanet.yaml` (with its `records.optuna_best` block) makes your next local
+`python main.py run` able to use the tuned hyperparameters.
 
 > Tip: if you copy only `mlflow.db` (not `mlartifacts/`), you can still see every run, its params and
 > all its metrics, and compare the versioned models — you just can't reload the saved weights.

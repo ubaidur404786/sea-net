@@ -34,18 +34,25 @@ seed: 0
 # device to train on. "auto" picks cuda -> mps -> cpu; you can also force "cpu" or "cuda".
 device: auto
 
-# where our output files (results.csv, done.txt, ...) are written
+# where our output files are written. Each model gets its OWN folder under here, named after what
+# the model is: "<encoder>_<pooling>", e.g. results/SEA_NET/mstcn_sep_additive/. That folder holds
+# that model's results.csv, done_train_dataset.txt, logs, figures and interpretation figures, so two
+# models can never mix their numbers up. See seanet/results.py.
 output:
   results_dir: results/SEA_NET
 
 # interpretability: MILLET-style per-sample explanation figures.
-# These are produced by "python main.py interpret" - running that command IS the on/off switch
-# (the spec's generate_interpretation). The settings below control what it draws.
+# These are produced by "python main.py interpret" - running that command IS the on/off switch.
+#
+# Why WebTraffic: it is the only dataset that ships per-timestep ground truth, so it is the only one
+# where the figure can shade the truly important region and let you CHECK that the model highlighted
+# the right points. On a UCR dataset the same picture would be unverifiable.
+# Why only correctly-predicted samples: a figure is meant to show what good evidence looks like -
+# which points the model leaned on when it got the answer right.
 interpretability:
-  dataset: WebTraffic       # which dataset to explain (the spec's default_dataset)
-  figures_per_class: 2      # how many example figures to draw per class
-  figures_per_test: 4       # how many extra figures to draw from the start of the test set
-  output_dir: results/SEA_NET/interpretation
+  dataset: WebTraffic       # which dataset to explain (WebTraffic is the one with ground truth)
+  n_classes: 3              # cover the first N classes (0, 1, 2)
+  per_class: 1              # how many correctly-predicted examples per class -> 3 figures per run
 
 # mlflow: your automatic "lab notebook". EVERY training/evaluation run (run / single / webtraffic /
 # train) AND every Optuna trial is recorded here: its inputs (hyperparameters), its results (train /

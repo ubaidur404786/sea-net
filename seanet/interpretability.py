@@ -19,6 +19,17 @@ What this file is for:
       6. histograms of those contribution values (true vs predicted);
       7. a plain-English guidance box explaining the colours and why the AOPCR is high or low.
 
+Which samples we draw, and why (see select_correct_samples):
+    Only samples the model predicted CORRECTLY, for the first three classes - three figures per run.
+    A correct prediction shows what good evidence looks like, which is the thing worth comparing
+    between models, and three small figures keep every model's folder the same easy-to-scan size.
+
+Which dataset we draw, and why (see main.py's "interpret" command):
+    WebTraffic only. It is the only dataset that ships per-timestep ground truth, so it is the only
+    one where we can shade the truly important region in green and CHECK whether the model's
+    highlighted points are the right ones. On a UCR dataset the same picture would be unverifiable -
+    pretty, but no evidence of anything - so we do not draw it.
+
 Where the numbers come from (the model output dict):
     - bag_logits      (n_clz,)     -> softmax -> class probabilities (panel 2, guidance).
     - interpretation  (n_clz, T)   -> the true-class and predicted-class rows -> importance for
@@ -28,7 +39,7 @@ Where the numbers come from (the model output dict):
 Related files:
     - seanet/train.py  -> fit_model_from_config() gives us the trained model to explain.
     - main.py ("interpret" command) -> trains a model then calls generate_interpretations().
-    - configs/main.yaml -> the "interpretability" block picks dataset / figure counts / output_dir.
+    - configs/main.yaml -> the "interpretability" block picks the dataset / how many classes.
 """
 import os
 from typing import Dict, List, Optional
@@ -262,43 +273,67 @@ def make_sample_figure(model, dataset, idx: int, out_dir: str, dataset_name: str
     return path
 
 
-def select_sample_indices(dataset, figures_per_class: int, figures_per_test: int) -> List[int]:
+def _predicted_class(model, dataset, idx: int) -> int:
     """
-    Choose which test series to draw: a few examples per class, plus a few from the start of the set.
+    Ask the model which class it predicts for one test series.
 
+    We need this to pick only the samples the model got RIGHT (see select_correct_samples). It is a
+    single forward pass: the pooling head's bag_logits is a score per class, and the highest score
+    is the prediction.
+
+    model : a trained SeaNetModel.  dataset : the test dataset.  idx : which series.
+    returns : the predicted class index.
+    """
+    bag = dataset[idx]["bag"]
+    with torch.no_grad():
+        out = model([bag])                                   # the model takes a LIST of bags (MIL style)
+    return int(torch.argmax(out["bag_logits"][0]))
+
+
+def select_correct_samples(model, dataset, n_classes: int = 3, per_class: int = 1) -> List[int]:
+    """
+    Pick the test series to explain: ones the model predicted CORRECTLY, for the first few classes.
+
+    Why only correct ones: a figure is meant to show what good evidence looks like - which points
+    the model leaned on when it got the answer right. A wrong prediction explains a mistake, which
+    is interesting but is not what we want to compare between models.
+
+    Why only the first few classes: three figures per run is enough to eyeball a model, and it keeps
+    every model's interpretation folder the same small size, so they are easy to compare side by side.
+
+    model : a trained SeaNetModel.
     dataset : the test dataset.
-    figures_per_class : how many examples to take from each class.
-    figures_per_test : how many extra series to take from the start of the dataset.
-    returns : a list of unique dataset indices, in a sensible order.
+    n_classes : how many classes to cover, counting from class 0 (default 3).
+    per_class : how many correctly-predicted examples to take from each of those classes.
+    returns : a list of dataset indices (may be shorter than n_classes * per_class if the model got
+              every sample of some class wrong - we draw what we can rather than failing).
     """
     targets = torch.as_tensor(dataset.targets)
-    idxs: List[int] = []
-    for clz in range(dataset.n_clz):                         # a few of each class (per-class figures)
-        clz_idxs = (targets == clz).nonzero(as_tuple=True)[0].tolist()
-        idxs.extend(clz_idxs[:figures_per_class])
-    idxs.extend(range(min(figures_per_test, len(dataset))))  # a few from the start (per-test figures)
-
-    seen = set()                                             # drop duplicates but keep the order
-    unique = []
-    for i in idxs:
-        i = int(i)
-        if i not in seen:
-            seen.add(i)
-            unique.append(i)
-    return unique
+    chosen: List[int] = []
+    for clz in range(min(n_classes, dataset.n_clz)):         # classes 0, 1, 2 (or fewer if binary)
+        found = 0
+        for idx in (targets == clz).nonzero(as_tuple=True)[0].tolist():
+            if found >= per_class:                           # got enough examples of this class
+                break
+            if _predicted_class(model, dataset, int(idx)) == clz:   # keep it only if the model was right
+                chosen.append(int(idx))
+                found += 1
+        if found == 0:
+            print(f"    note: no correctly-predicted test sample for class {clz} - skipping it.")
+    return chosen
 
 
-def generate_interpretations(model, dataset, out_dir: str, figures_per_class: int = 2,
-                             figures_per_test: int = 4, dataset_name: str = "dataset",
-                             limit: Optional[int] = None, fixed_name: Optional[str] = None) -> List[str]:
+def generate_interpretations(model, dataset, out_dir: str, n_classes: int = 3, per_class: int = 1,
+                             dataset_name: str = "dataset", limit: Optional[int] = None,
+                             fixed_name: Optional[str] = None) -> List[str]:
     """
-    Draw explanation figures for a selection of test series and save them.
+    Draw explanation figures for the correctly-predicted samples of the first few classes.
 
     model : a trained SeaNetModel.
     dataset : the test dataset.
     out_dir : folder to save the figures in.
-    figures_per_class : how many example figures per class.
-    figures_per_test : how many extra per-test-sample figures.
+    n_classes : how many classes to cover, from class 0 (default 3).
+    per_class : how many correctly-predicted examples per class (default 1 -> 3 figures in total).
     dataset_name : dataset name (used in titles and file names).
     limit : if given, only draw this many figures (used by the smoke preview to draw just one).
     fixed_name : if given, save under this single file name (overwrites) - used by the smoke preview
@@ -306,7 +341,7 @@ def generate_interpretations(model, dataset, out_dir: str, figures_per_class: in
     returns : the list of saved figure paths.
     """
     os.makedirs(out_dir, exist_ok=True)
-    idxs = select_sample_indices(dataset, figures_per_class, figures_per_test)
+    idxs = select_correct_samples(model, dataset, n_classes=n_classes, per_class=per_class)
     if limit is not None:
         idxs = idxs[:limit]
     return [make_sample_figure(model, dataset, idx, out_dir, dataset_name, filename=fixed_name)

@@ -41,9 +41,11 @@ __pycache__/
 
 # SMOKE-TEST outputs only. Smoke runs (python main.py ... --smoke) are throwaway 3-epoch pipeline
 # checks, usually run on your laptop, so their outputs are ignored. REAL training outputs ARE kept and
-# committed - real interpretation figures (interpretation/<dataset>/<date-time>/) and real run logs
-# (logs/<command>_<date-time>.log) - so a Grid5000 training run's record travels with the repo.
-/results/SEA_NET/interpretation/*/smoke/
+# committed - real interpretation figures and real run logs - so a Grid5000 training run's record
+# travels with the repo. Each model has its own folder (results/SEA_NET/<encoder>_<pooling>/), hence
+# the wildcard: it covers every model, including ones added later.
+/results/SEA_NET/*/logs/smoke/
+/results/SEA_NET/*/interpretation/*/smoke/
 /results/SEA_NET/logs/smoke/
 
 # Internal notes / leftovers not needed in the public repo.

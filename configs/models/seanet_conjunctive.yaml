@@ -1,8 +1,9 @@
 # seanet_conjunctive.yaml - SEA-Net encoder + MILLET's Conjunctive pooling head.
 #
 # A copy of seanet.yaml with ONLY the pooling head changed to `conjunctive` (MILLET's proposed
-# baseline), so you can Optuna-tune / benchmark Conjunctive on the SAME SEA-Net encoder as every other
-# head - a fair comparison. Run with:
+# baseline), so you can sweep / Optuna-tune Conjunctive on the SAME SEA-Net encoder as every other
+# head - a fair comparison. Its results go to results/SEA_NET/mstcn_sep_conjunctive/. Run with:
+#   python main.py train  --model seanet_conjunctive
 #   python main.py run    --model seanet_conjunctive --dataset WebTraffic
 #   python main.py optuna --model seanet_conjunctive --dataset WebTraffic
 
