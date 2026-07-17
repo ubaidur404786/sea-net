@@ -318,6 +318,88 @@ each failure (FAILED), and when everything is done. Laptop can be closed the who
 
 ---
 
+## Step 8 — Launch AUTOMATICALLY (batch job) + the git update/pull workflow
+
+This is the hands-off way: edit code on the laptop, push it, pull it on the server, and let
+OAR start the run **by itself** when a node is free — even with your laptop closed.
+
+### Interactive vs batch (why we switch)
+
+`oarsub -I` (interactive) is NOT automatic: it freezes your terminal until a node is free,
+you must stay connected, and closing the laptop loses it. If the cluster is busy you might
+wait many hours staring at:
+
+```
+# Interactive mode: waiting...
+# [..] Start prediction: <tomorrow>
+```
+
+Instead, submit a **batch** job (drop `-I`, pass a script). OAR runs the script for you the
+moment a node frees up. You get your prompt back right away and can log off.
+
+### The full automatic flow
+
+**1) On the laptop — save and push your code:**
+```bash
+git add -A
+git commit -m "what I changed"
+git push
+```
+
+**2) On the frontend — get that code and turn the env on:**
+```bash
+cd ~/projects/sea-net
+git pull
+module load conda
+conda activate seanet
+```
+
+**3) Submit the batch job (it starts on its own, laptop can be closed):**
+```bash
+mkdir -p logs
+oarsub -q default -p chuc -l walltime=4:00:00 \
+       -O logs/run_all.out -E logs/run_all.err \
+       ~/projects/sea-net/scripts/run_all.sh
+```
+- no `-I` = OAR runs the script for you.
+- `-O` / `-E` = save normal output / error output to fixed files we can watch.
+- prints an `OAR_JOB_ID` and returns your prompt immediately.
+
+**4) Watch it / track on phone:**
+```bash
+oarstat -u                    # Waiting or Running?
+tail -f logs/run_all.out      # live output once it starts
+
+# phone tracking (own tmux; tail -F waits for the file, so start it any time):
+tmux new -s notify
+bash scripts/notify.sh logs/run_all.out
+# Ctrl+b then d to detach
+```
+
+> **Want it to start sooner** (chuc often busy)? Use besteffort — fills gaps, starts fast,
+> can be killed, but `run_all.sh` resumes so it is safe:
+> ```bash
+> oarsub -t besteffort -q besteffort -p chuc -l walltime=4:00:00 \
+>        -O logs/run_all.out -E logs/run_all.err \
+>        ~/projects/sea-net/scripts/run_all.sh
+> ```
+
+> **Do a smoke test first the same way** (replace the script):
+> ```bash
+> oarsub -t besteffort -q besteffort -p chuc -l walltime=0:30:00 \
+>        -O logs/test.out -E logs/test.err \
+>        ~/projects/sea-net/scripts/test_run.sh
+> ```
+
+### Useful job commands
+```bash
+oarstat -u            # my jobs and their state
+oardel <job_id>       # cancel a job (e.g. an interactive one stuck waiting)
+cat logs/run_all.err  # read errors if something failed
+```
+
+---
+
 ## Quick cheat-sheet (copy-paste order)
 
 ```bash
