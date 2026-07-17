@@ -337,6 +337,25 @@ wait many hours staring at:
 Instead, submit a **batch** job (drop `-I`, pass a script). OAR runs the script for you the
 moment a node frees up. You get your prompt back right away and can log off.
 
+### Will my run survive if the internet / laptop drops? (IMPORTANT)
+
+Your connection is: **laptop → (Wi-Fi / mobile hotspot) → frontend → node.** If the hotspot
+drops or the laptop sleeps, your SSH dies. What happens next depends on HOW you launched:
+
+| How you launched | Hotspot drops / laptop closes → |
+|---|---|
+| `oarsub -I` then ran the script by hand (no tmux) | ❌ SSH dies → job dies → training **stops** |
+| `oarsub -I` **inside `tmux` on the frontend** | ✅ tmux keeps it alive → training **continues** |
+| **besteffort / batch** job (`oarsub ... script.sh`) | ✅ runs on the node by itself → training **continues** |
+
+So a plain interactive run is **not** safe against a disconnect. For an unattended run
+(hotspot may drop, laptop may sleep), use **besteffort** — that is exactly what it is for.
+Either way our run is **resumable**: after any stop, run `run_all.sh` again and it continues
+from where it left off (only the dataset it was mid-way through is repeated).
+
+The phone tracker (`notify.sh`) runs on the frontend, so put it inside `tmux` too — then it
+keeps pinging your phone even after your laptop disconnects.
+
 ### The full automatic flow
 
 **1) On the laptop — save and push your code:**
@@ -354,40 +373,38 @@ module load conda
 conda activate seanet
 ```
 
-**3) Submit the batch job (it starts on its own, laptop can be closed):**
+**3) Submit the besteffort job (survives a disconnect, laptop can be closed):**
 ```bash
 mkdir -p logs
-oarsub -q default -p chuc -l walltime=4:00:00 \
-       -O logs/run_all.out -E logs/run_all.err \
+oarsub -t besteffort -q besteffort -p chuc -l walltime=12:00:00 \
+       -E logs/run_all.err \
        ~/projects/sea-net/scripts/run_all.sh
 ```
-- no `-I` = OAR runs the script for you.
-- `-O` / `-E` = save normal output / error output to fixed files we can watch.
-- prints an `OAR_JOB_ID` and returns your prompt immediately.
+- no `-I` = OAR runs the script for you, independent of your SSH.
+- `run_all.sh` writes its own combined log to `logs/run_all.log` (that is the file the phone
+  tracker watches), so we only need `-E` here to also capture any OAR-level errors.
+- prints an `OAR_JOB_ID` and returns your prompt immediately. `run_all.sh` is resumable, so
+  if besteffort gets killed just submit the same line again.
 
 **4) Watch it / track on phone:**
 ```bash
 oarstat -u                    # Waiting or Running?
-tail -f logs/run_all.out      # live output once it starts
+tail -f logs/run_all.log      # live output once it starts
 
 # phone tracking (own tmux; tail -F waits for the file, so start it any time):
 tmux new -s notify
-bash scripts/notify.sh logs/run_all.out
+bash scripts/notify.sh logs/run_all.log
 # Ctrl+b then d to detach
 ```
 
-> **Want it to start sooner** (chuc often busy)? Use besteffort — fills gaps, starts fast,
-> can be killed, but `run_all.sh` resumes so it is safe:
-> ```bash
-> oarsub -t besteffort -q besteffort -p chuc -l walltime=4:00:00 \
->        -O logs/run_all.out -E logs/run_all.err \
->        ~/projects/sea-net/scripts/run_all.sh
-> ```
+> **Prefer a guaranteed (non-killable) slot instead of besteffort?** Drop `-t besteffort`
+> and `-q besteffort` and it becomes a normal batch job (waits its turn, then runs to the
+> end): `oarsub -q default -p chuc -l walltime=4:00:00 -E logs/run_all.err ~/projects/sea-net/scripts/run_all.sh`
 
 > **Do a smoke test first the same way** (replace the script):
 > ```bash
 > oarsub -t besteffort -q besteffort -p chuc -l walltime=0:30:00 \
->        -O logs/test.out -E logs/test.err \
+>        -E logs/test.err \
 >        ~/projects/sea-net/scripts/test_run.sh
 > ```
 

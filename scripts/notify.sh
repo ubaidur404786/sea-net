@@ -64,7 +64,9 @@ tail -n0 -F "$LOGFILE" | while read -r line; do
       ;;
     *DONE*)
       count=$((count + 1))
-      if [ $((count % EVERY)) -eq 0 ]; then
+      # ping on the VERY FIRST finished dataset (so you quickly see it is really tracking),
+      # then only every EVERY-th one after that (so your phone is not flooded).
+      if [ "$count" -eq 1 ] || [ $((count % EVERY)) -eq 0 ]; then
         send "progress [$count done]: $line"
       fi
       ;;
