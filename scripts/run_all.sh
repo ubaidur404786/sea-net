@@ -14,19 +14,28 @@ source scripts/env.sh        # turn the environment on
 MODELS="seanet seanet_acp seanet_classwise seanet_softmax seanet_conjunctive millet fcn resnet"
 
 mkdir -p logs                # keep all log files in one folder
-STAMP=$(date +%Y%m%d_%H%M%S) # same time-stamp for every log file of this run
+
+# ONE fixed log file for the whole run. We use a fixed name (not a time-stamp) so the phone
+# tracker (scripts/notify.sh) always knows which file to watch - no guessing.
+# ">" empties it at the start so each new run begins with a clean log.
+# (The app also saves its own detailed per-model logs under results/SEA_NET/<model>/logs/.)
+LOG="logs/run_all.log"
+: > "$LOG"
+
+# helper: print a line to the screen AND add it to the log file
+say() { echo "$1" | tee -a "$LOG"; }
 
 for m in $MODELS; do
-  echo ""
-  echo "############################################################"
-  echo "# MODEL: $m   (started $(date))"
-  echo "############################################################"
-  # tee = show on screen AND save to a log file. "2>&1" also saves error messages.
+  say ""
+  say "############################################################"
+  say "# MODEL: $m   (started $(date))"
+  say "############################################################"
+  # tee -a = show on screen AND append to the same log. "2>&1" also saves error messages.
   # We do NOT stop the loop if one model fails: we still try the next model.
-  python main.py train --model "$m" 2>&1 | tee "logs/train_${m}_${STAMP}.log"
+  python main.py train --model "$m" 2>&1 | tee -a "$LOG"
 done
 
-echo ""
-echo "=== ALL MODELS DONE ($(date)) ==="
-echo "Next: python main.py results   (comparison table)"
-echo "      python main.py report    (all figures)"
+say ""
+say "=== ALL MODELS DONE ($(date)) ==="
+say "Next: python main.py results   (comparison table)"
+say "      python main.py report    (all figures)"

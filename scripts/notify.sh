@@ -24,13 +24,15 @@ else
   exit 1
 fi
 
-LOGFILE="$1"     # the log file to watch, e.g. logs/train_seanet_20260717_120000.log
+# which log to watch. Default is the fixed file run_all.sh writes to, so you don't have
+# to guess a name. You can still pass a different file: ./scripts/notify.sh some.log
+LOGFILE="${1:-logs/run_all.log}"
 
-if [ -z "$LOGFILE" ]; then
-  echo "usage: ./scripts/notify.sh <logfile>"
-  echo "example: ./scripts/notify.sh logs/train_seanet_20260717_120000.log"
-  exit 1
-fi
+# how often to send a "progress" ping. The full run finishes ~1000 datasets, so sending
+# every single one would flood your phone. We send one progress line every EVERY datasets.
+# Default is 25. For a quick TEST you can make it ping every dataset like this:
+#   NOTIFY_EVERY=1 bash scripts/notify.sh
+EVERY="${NOTIFY_EVERY:-25}"
 
 # small helper that posts one text message to your bot
 send() {
@@ -38,15 +40,33 @@ send() {
        -d chat_id="${CHAT_ID}" --data-urlencode text="$1" >/dev/null
 }
 
+# make sure the log file exists before we watch it, so tail never fails if the run
+# has not started yet (the folder may not exist on a fresh checkout).
+mkdir -p "$(dirname "$LOGFILE")"
+touch "$LOGFILE"
+
 send "SEA-Net tracker started, watching $(basename "$LOGFILE")"
 
-# tail -F follows the file even if it is created a bit later or rotated.
-# We only forward the IMPORTANT lines (DONE / FAILED / model headers) so your phone
-# does not get spammed with every single line.
+# tail -F follows the file even if it does not exist yet (it waits for it) or is recreated.
+# -n0 means "start from the end", so we only get NEW lines from now on.
+#
+# What we forward to your phone (and what we skip):
+#   - a model header  (MODEL:)            -> always send  (tells you model X of 8 started)
+#   - a failure       (FAILED)            -> always send  (you want to know immediately)
+#   - the final line  (ALL MODELS DONE)   -> always send
+#   - a finished dataset (DONE)           -> send only every EVERY-th one, as a progress ping
+#     (we count them so your phone gets ~40 progress pings, not ~1000)
+count=0
 tail -n0 -F "$LOGFILE" | while read -r line; do
   case "$line" in
-    *DONE*|*FAILED*|*"MODEL:"*|*"ALL MODELS DONE"*)
+    *"MODEL:"*|*"ALL MODELS DONE"*|*FAILED*)
       send "$line"
+      ;;
+    *DONE*)
+      count=$((count + 1))
+      if [ $((count % EVERY)) -eq 0 ]; then
+        send "progress [$count done]: $line"
+      fi
       ;;
   esac
 done
