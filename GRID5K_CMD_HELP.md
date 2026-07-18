@@ -429,7 +429,7 @@ module load conda
 conda activate seanet
 
 # 3) get a GPU node (interactive, 4h)
-oarsub -I -l gpu=1,walltime=4:00:00
+oarsub -I -l gpu=1,walltime=6:00:00
 
 # 4) on the node: test first, then the real run
 cd ~/projects/sea-net
