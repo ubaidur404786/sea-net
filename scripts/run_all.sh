@@ -20,17 +20,28 @@
 cd "$(dirname "$0")/.."      # go to the project root
 source scripts/env.sh        # turn the environment on (prints python + torch/cuda check)
 
-# the models to run, in order. These names match files in configs/models/<name>.yaml.
+# Which models to run. These names match files in configs/models/<name>.yaml.
 # (transformer is only a placeholder, so it is left out on purpose.)
-MODELS="seanet seanet_acp seanet_classwise seanet_softmax seanet_conjunctive millet fcn resnet"
+#
+# By default we run ALL of them. But you can also pass the models you want as arguments:
+#     bash scripts/run_all.sh seanet seanet_acp
+# That is how we SPLIT the work over two nodes: give each node a different half. It is safe
+# because every model writes to its own folder (results/SEA_NET/<model>/), so two nodes
+# running DIFFERENT models never touch the same files.
+if [ "$#" -gt 0 ]; then
+  MODELS="$*"                # the models given on the command line
+else
+  MODELS="seanet seanet_acp seanet_classwise seanet_softmax seanet_conjunctive millet fcn resnet"
+fi
 
 mkdir -p logs                # keep all log files in one folder
 
-# ONE fixed log file for the whole run. A fixed name (not a time-stamp) means the phone
-# watcher always knows which file to read - no guessing.
+# The log file for THIS run. We name it after the first model so two nodes running different
+# halves write to two different logs (instead of scribbling over each other).
 # ">" empties it at the start so each new run begins with a clean log.
 # (The app also saves its own detailed per-model logs under results/SEA_NET/<model>/logs/.)
-LOG="logs/run_all.log"
+TAG=$(echo "$MODELS" | awk '{print $1}')
+LOG="logs/run_all_${TAG}.log"
 : > "$LOG"
 
 # helper: print a line to the screen AND add it to the log file
