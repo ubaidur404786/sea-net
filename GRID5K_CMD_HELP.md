@@ -1,22 +1,31 @@
-# Grid5000 Command Help — SEA-Net (Lille)
+# Grid5000 Command Help — SEA-Net (Lille + Sophia)
 
-This is a start-to-end guide for running SEA-Net on the Grid5000 **Lille** server.
+This is a start-to-end guide for running SEA-Net on Grid5000.
 It is written so that next time you can just follow the steps without thinking hard.
+
+Steps 0–8 are written for **Lille**. Step 9 shows what is different on **Sophia**
+(that is where the full run actually finished). Step 10 is figures + reports.
 
 Everything here is tested against **your real server environment**:
 
-| Thing | Value on Lille (`flille`) |
-|---|---|
-| Load conda | `module load conda` (Grid5000 conda 23.5.0) |
-| Activate env | `conda activate seanet` |
-| Env path | `~/miniforge3/envs/seanet` |
-| Python | 3.10.20 |
-| torch | 2.0.1+cu118 (built for CUDA 11.8) |
-| Project folder | `~/projects/sea-net` |
+| Thing | Lille (`flille`) | Sophia (`fsophia`) |
+|---|---|---|
+| Load conda | `module load conda` (needed) | already on, `(base)` is active |
+| Activate env | `conda activate seanet` | `conda activate seanet` |
+| Env path | `~/miniforge3/envs/seanet` | `~/miniforge3/envs/seanet` |
+| Python | 3.10.20 | 3.10.20 |
+| torch | 2.0.1+cu118 | 2.0.1+cu118 |
+| Cluster to ask for | `-p chuc` | `-p "cluster='esterel40'"` |
+| Project folder | `~/projects/sea-net` | `~/projects/sea-net` |
 
-> **Golden rule:** the *code* is the same on the laptop and the server, but the
-> *environment* is different. On the server there is **no `~/.bashrc`** and **no conda on
-> the PATH**, so you must load conda every time with `module load conda`.
+> **Golden rule 1:** the *code* is the same on the laptop and the server, but the
+> *environment* is different. On Lille there is **no `~/.bashrc`** and **no conda on
+> the PATH**, so you must load conda with `module load conda`. `scripts/env.sh` handles
+> both sites for you, so prefer `source scripts/env.sh` over typing it by hand.
+
+> **Golden rule 2:** each site has its **own home folder**. Lille and Sophia do NOT share
+> files. So on a new site you must `git clone`/`git pull` again, `mkdir -p logs` again, and
+> recreate `scripts/telegram_secrets.sh` again (it is git-ignored, so git never copies it).
 
 ---
 
@@ -417,6 +426,242 @@ cat logs/run_all.err  # read errors if something failed
 
 ---
 
+## Step 9 — Running on the SOPHIA site (2 nodes at once) ✅ this is what worked
+
+When Lille had no free nodes we moved to Sophia. Three things are different there.
+
+### 9a. What is different on Sophia
+
+| | Lille | Sophia |
+|---|---|---|
+| conda | `module load conda` first | already active as `(base)` |
+| Ask for a cluster | `-p chuc` (short name works) | `-p "cluster='esterel40'"` (SQL form **required**) |
+| Home folder | Lille's own home | a **different** home — nothing carries over |
+
+If you type `-p esterel` on Sophia you get `Bad resource request (column esterel does not
+exist)`. Sophia's OAR wants the full SQL form with quotes.
+
+### 9b. First time on a new site (do this once)
+
+```bash
+cd ~/projects/sea-net
+git checkout -b seanetv2 origin/seanetv2   # only if you are on the wrong branch
+git config core.fileMode false             # stop chmod +x from looking like a code change
+git pull
+chmod +x scripts/*.sh                      # or the job dies with "Permission denied"
+mkdir -p logs                              # or OAR cannot create the -E error file -> job state F
+```
+
+Recreate the phone secrets (git-ignored, so it is NOT in the repo):
+
+```bash
+cat > scripts/telegram_secrets.sh <<'EOF'
+TOKEN="your-bot-token-here"
+CHAT_ID="your-chat-id-here"
+EOF
+chmod 600 scripts/telegram_secrets.sh
+```
+
+### 9c. Check a node really has a GPU
+
+```bash
+oarnodes --sql "gpu_count > 0" | grep network_address | sort -u
+```
+
+Whatever node names appear in that list have GPUs. `esterel40` and `esterel43` were in it.
+
+### 9d. Split the 8 models over 2 nodes (the actual working commands)
+
+`run_all.sh` accepts a list of models. Give each node a **different half** — that is safe
+because every model writes into its own folder `results/SEA_NET/<model>/`, so two nodes
+never touch the same file.
+
+```bash
+cd ~/projects/sea-net
+mkdir -p logs
+
+# Job A - first half, on esterel40
+oarsub -t besteffort -q besteffort -p "cluster='esterel40'" -l host=1,walltime=12:00:00 \
+  -E logs/jobA.err \
+  "$HOME/projects/sea-net/scripts/run_all.sh seanet seanet_acp seanet_classwise seanet_softmax"
+
+# Job B - second half, on esterel43
+oarsub -t besteffort -q besteffort -p "cluster='esterel43'" -l host=1,walltime=12:00:00 \
+  -E logs/jobB.err \
+  "$HOME/projects/sea-net/scripts/run_all.sh seanet_conjunctive millet fcn resnet"
+```
+
+Each job writes its own log, named after its **first** model:
+`logs/run_all_seanet.log` and `logs/run_all_seanet_conjunctive.log`.
+
+### 9e. Verify (wait ~30 seconds after submitting)
+
+```bash
+oarstat -u                                     # both jobs should be R (running), not F
+head -5 logs/run_all_seanet.log                # look for: cuda available: True
+head -5 logs/run_all_seanet_conjunctive.log
+cat logs/jobA.err logs/jobB.err                # should exist and be empty
+```
+
+### 9f. Phone tracking for both jobs
+
+```bash
+nohup env NOTIFY_EVERY=1 bash scripts/notify.sh logs/run_all_seanet.log > logs/notifyA.out 2>&1 &
+nohup env NOTIFY_EVERY=1 bash scripts/notify.sh logs/run_all_seanet_conjunctive.log > logs/notifyB.out 2>&1 &
+```
+
+`nohup ... &` = keep running after you log out, so you can close the laptop.
+
+> ⚠️ **One warning about running 2 jobs at once:** both write to the same `mlflow.db`
+> (SQLite). SQLite allows only one writer at a time, so you may see a "database is locked"
+> message. It does not lose your results (the CSVs are the real source of truth) but if it
+> gets noisy, run the two jobs one after the other instead.
+
+---
+
+## Step 10 — Figures, tables and reports (after training finishes)
+
+Training only saves **numbers** (`results.csv` per model). This step turns the numbers into
+**tables and PNG figures**. It is fast and needs **no GPU** — run it on the **frontend**.
+
+### 10a. Turn the environment on (frontend)
+
+```bash
+cd ~/projects/sea-net
+source scripts/env.sh
+```
+
+`cuda available: False` here is normal — the frontend has no GPU, and drawing figures
+does not need one.
+
+### 10b. Check everything really finished
+
+```bash
+tail -3 logs/run_all_seanet.log                # should end with "=== ALL MODELS DONE ... ==="
+tail -3 logs/run_all_seanet_conjunctive.log
+ls results/SEA_NET/                            # one folder per model
+wc -l results/SEA_NET/*/results.csv            # rows = datasets finished (+1 header line)
+```
+
+Each model should have roughly the same number of rows. If one is much smaller, that model
+did not finish — resubmit its job before making figures.
+
+### 10c. Build the dataset overview table (needed for one figure)
+
+```bash
+python main.py summary --all
+```
+
+This writes `results/SEA_NET/data_summary.csv` (size, length and number of classes of every
+dataset). `report` uses it to draw `data_summary.png`. If you skip this, everything else
+still works — you just don't get that one figure.
+
+### 10d. Build the comparison tables
+
+```bash
+python main.py results
+```
+
+What it does, per model: reads that model's `results.csv`, lines it up against MILLET's
+published numbers on the **85 datasets MILLET published** (the only fair one-to-one
+comparison), and writes:
+
+```
+results/SEA_NET/<model>/comparison_vs_millet.csv   # one row per dataset: us vs MILLET
+results/SEA_NET/<model>/summary.csv + summary.md   # that model's means + win/tie/loss
+results/SEA_NET/model_comparison.csv               # THE ranking table: which model wins
+```
+
+`model_comparison.csv` is the one to look at first — it answers "did our new pooling heads
+beat MILLET Conjunctive?".
+
+For just one model:
+
+```bash
+python main.py results --model seanet_acp
+```
+
+### 10e. Draw every figure
+
+```bash
+python main.py report
+```
+
+This runs `results` again internally (so the tables and figures can never disagree) and then
+draws the PNGs. It uses matplotlib's `Agg` backend, which draws straight to a file instead of
+opening a window — that is why it works fine over SSH with no screen.
+
+Per model, into `results/SEA_NET/<model>/figures/`:
+
+| File | What it shows |
+|---|---|
+| `results.png` | the model alone: accuracy / loss / AOPCR spread, accuracy vs series length |
+| `acc_scatter.png` | our accuracy vs MILLET's, one dot per dataset — **above** the line = we win |
+| `loss_scatter.png` | our loss vs MILLET's — **below** the line = we win (lower loss is better) |
+| `aopcr_scatter.png` | our AOPCR vs MILLET's — **above** the line = we win |
+| `win_tie_loss.png` | win / tie / loss bars for accuracy, loss and AOPCR |
+| `means.png` | our mean vs MILLET's mean, all three metrics side by side |
+| `acc_diff.png` | per-dataset accuracy gap, sorted (green = we win) |
+
+Once, into `results/SEA_NET/figures/`:
+
+| File | What it shows |
+|---|---|
+| `model_comparison.png` | **every** model's mean accuracy / loss / AOPCR next to MILLET's |
+| `data_summary.png` | overview of the datasets (from step 10c) |
+
+At the end it prints the ranking and the full list of files it wrote.
+
+### 10f. Per-sample explanation figures (optional)
+
+The figures above compare *scores*. This one shows *why* the model made one prediction —
+which time steps it looked at:
+
+```bash
+python main.py interpret --model seanet
+```
+
+### 10g. Look at everything
+
+```bash
+cat results/SEA_NET/model_comparison.csv        # the ranking
+cat results/SEA_NET/seanet_acp/summary.md       # one model's summary, nicely formatted
+find results/SEA_NET -name "*.png" | sort       # every figure that was drawn
+```
+
+### 10h. Copy the figures to your laptop
+
+PNGs cannot be viewed over plain SSH, so pull them down. Run this **on your laptop**, not on
+the server (`fsophia` = Sophia; use `flille` for Lille):
+
+```bash
+# everything: tables + figures
+scp -r urehman@access.grid5000.fr:fsophia/projects/sea-net/results/SEA_NET ./results_from_grid5000
+
+# or just the one summary figure
+scp urehman@access.grid5000.fr:fsophia/projects/sea-net/results/SEA_NET/figures/model_comparison.png ./
+```
+
+And the MLflow database, to browse every run in a web page:
+
+```bash
+scp urehman@access.grid5000.fr:fsophia/projects/sea-net/mlflow.db ./
+mlflow ui --backend-store-uri sqlite:///mlflow.db     # open http://127.0.0.1:5000
+```
+
+### 10i. Save the results into git
+
+Run on the **server**, so the numbers are backed up and your laptop can pull them:
+
+```bash
+cd ~/projects/sea-net
+git add results/SEA_NET
+git commit -m "results: full sweep for all 8 models (Sophia, 2 nodes)"
+git push
+```
+
+---
+
 ## Quick cheat-sheet (copy-paste order)
 
 ```bash
@@ -441,6 +686,20 @@ oarsub -t besteffort -l gpu=1,walltime=24:00:00 "$HOME/projects/sea-net/scripts/
 
 # 5) phone tracking (frontend, in its own tmux)
 bash scripts/notify.sh logs/train_seanet_<stamp>.log
+
+# --- SOPHIA, 2 nodes, hands-off (what actually worked) ---
+cd ~/projects/sea-net && mkdir -p logs && chmod +x scripts/*.sh
+oarsub -t besteffort -q besteffort -p "cluster='esterel40'" -l host=1,walltime=12:00:00 \
+  -E logs/jobA.err "$HOME/projects/sea-net/scripts/run_all.sh seanet seanet_acp seanet_classwise seanet_softmax"
+oarsub -t besteffort -q besteffort -p "cluster='esterel43'" -l host=1,walltime=12:00:00 \
+  -E logs/jobB.err "$HOME/projects/sea-net/scripts/run_all.sh seanet_conjunctive millet fcn resnet"
+oarstat -u
+
+# 6) AFTER training: tables + figures (frontend, no GPU needed)
+source scripts/env.sh
+python main.py summary --all      # dataset overview table
+python main.py results            # comparison tables + model_comparison.csv
+python main.py report             # every figure
 ```
 
 ---
@@ -460,3 +719,21 @@ bash scripts/notify.sh logs/train_seanet_<stamp>.log
 - **`module: command not found` inside a besteffort script** → the scripts start with
   `#!/bin/bash -l` (login shell) exactly to avoid this; make sure you didn't change that
   first line.
+- **`Permission denied` in `logs/jobA.err`, job goes to state F instantly** → the scripts
+  lost their execute bit. Fix: `chmod +x scripts/*.sh` (and `git config core.fileMode false`
+  so git stops treating that as a change).
+- **Job goes to state F instantly and `logs/jobA.err` does not even exist** → the `logs/`
+  folder is missing, so OAR could not create the `-E` file. Fix: `mkdir -p logs`.
+- **`Bad resource request (column esterel does not exist)`** → you are on Sophia. Use the
+  SQL form: `-p "cluster='esterel40'"`, not `-p esterel`.
+- **`fatal: Not possible to fast-forward`** → you are on the wrong branch on that site.
+  Fix: `git checkout -b seanetv2 origin/seanetv2`.
+- **`Your local changes to scripts/env.sh would be overwritten`** → `chmod +x` changed the
+  file-mode bits. Fix: `git config core.fileMode false` then `git checkout -- scripts/env.sh`.
+- **git asks for the token on every pull** → run once:
+  `git config --global credential.helper store` and `git config --global pull.rebase false`,
+  then pull once and type the token; after that it is remembered.
+- **`python main.py report` says "No model has any results yet"** → you are in the wrong
+  folder, or training wrote to a different site's home. Check `ls results/SEA_NET/`.
+- **`database is locked`** → two jobs writing `mlflow.db` at the same time. Harmless for the
+  CSV results; run the jobs one after the other if you want it clean.
