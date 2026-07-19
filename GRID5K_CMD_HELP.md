@@ -737,3 +737,10 @@ python main.py report             # every figure
   folder, or training wrote to a different site's home. Check `ls results/SEA_NET/`.
 - **`database is locked`** → two jobs writing `mlflow.db` at the same time. Harmless for the
   CSV results; run the jobs one after the other if you want it clean.
+- **`Your local changes ... would be overwritten by merge`** → you edited a file on the laptop
+  AND the server changed the same file. Commit yours first, then pull:
+  `git add <file>` + `git commit -m "..."`, then `git pull origin seanetv2`.
+- **`CONFLICT (content): Merge conflict in <file>`** → both sides changed the same lines.
+  Open the file and look for the three conflict marker lines git inserted (a line of `<`, a
+  line of `=`, and a line of `>`). Keep the text you want, delete all three marker lines,
+  then `git add <file>` and `git commit`.
