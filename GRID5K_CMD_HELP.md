@@ -460,3 +460,8 @@ bash scripts/notify.sh logs/train_seanet_<stamp>.log
 - **`module: command not found` inside a besteffort script** → the scripts start with
   `#!/bin/bash -l` (login shell) exactly to avoid this; make sure you didn't change that
   first line.
+
+
+
+
+
