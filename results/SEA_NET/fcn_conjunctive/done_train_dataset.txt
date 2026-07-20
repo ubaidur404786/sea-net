@@ -36,7 +36,6 @@ Haptics
 Herring
 InlineSkate
 InsectWingbeatSound
-ItalyPowerDemand
 LargeKitchenAppliances
 Lightning2
 Lightning7
@@ -89,7 +88,6 @@ AllGestureWiimoteX
 AllGestureWiimoteY
 AllGestureWiimoteZ
 BME
-Chinatown
 Crop
 DodgerLoopDay
 DodgerLoopGame
@@ -111,7 +109,6 @@ GunPointOldVersusYoung
 HouseTwenty
 InsectEPGRegularTrain
 InsectEPGSmallTrain
-MelbournePedestrian
 MixedShapesRegularTrain
 MixedShapesSmallTrain
 PLAID
@@ -125,5 +122,4 @@ SemgHandGenderCh2
 SemgHandMovementCh2
 SemgHandSubjectCh2
 ShakeGestureWiimoteZ
-SmoothSubspace
 UMD

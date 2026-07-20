@@ -32,7 +32,7 @@ LOGFILE="${1:-logs/run_all.log}"
 # every single one would flood your phone. We send one progress line every EVERY datasets.
 # Default is 25. For a quick TEST you can make it ping every dataset like this:
 #   NOTIFY_EVERY=1 bash scripts/notify.sh
-EVERY="${NOTIFY_EVERY:-25}"
+EVERY="${NOTIFY_EVERY:1}"
 
 # small helper that posts one text message to your bot
 send() {

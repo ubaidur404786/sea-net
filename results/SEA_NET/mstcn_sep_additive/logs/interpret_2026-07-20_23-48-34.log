@@ -1,0 +1,8 @@
+[log] command 'interpret' started at 2026-07-20_23-48-34 for model 'mstcn_sep_additive'
+[log] a copy of everything below is being saved to: results/SEA_NET/mstcn_sep_additive/logs/interpret_2026-07-20_23-48-34.log
+
+=== interpret: model=mstcn_sep_additive (config seanet) dataset=WebTraffic device=cpu mode=full ===
+    stage 1/3: loading data ...
+    stage 2/3: training on 400 series (val=100, C=10, T=201, batch=16) ...
+
+[log] finished; full output saved to results/SEA_NET/mstcn_sep_additive/logs/interpret_2026-07-20_23-48-34.log

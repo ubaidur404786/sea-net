@@ -69,7 +69,7 @@ Do this **every time** you open a new shell on the server:
 
 ```bash
 module load conda
-conda activate seanet
+conda activate /home/urehman/miniforge3/envs/seanet
 ```
 
 Check it worked:
