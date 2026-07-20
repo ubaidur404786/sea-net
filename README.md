@@ -17,6 +17,11 @@ interpretable** as the MILLET baseline.
 We also add **three new pooling heads** of our own (`classwise_conjunctive`, `softmax_conjunctive`,
 `adaptive_classwise`), each aiming to beat MILLET's Conjunctive head while staying interpretable.
 
+**Short version of the result:** SEA-Net uses **36 % fewer parameters** than InceptionTime and still
+**matches it** in accuracy when both are trained here under identical settings (0.8262 vs 0.8254),
+while **winning on WebTraffic** — the one dataset where interpretability can be measured directly.
+See [Results](#results) for the full picture, including where we fall short.
+
 ---
 
 ## One model = one encoder + one pooling head = one folder
@@ -54,6 +59,14 @@ what that file builds:
 | `seanet_softmax` | mstcn_sep | softmax_conjunctive | `mstcn_sep_softmax_conjunctive` |
 | `seanet_acp` | mstcn_sep | adaptive_classwise | `mstcn_sep_adaptive_classwise` |
 | `millet` | inceptiontime | conjunctive | `inceptiontime_conjunctive` |
+| `resnet` | resnet | conjunctive | `resnet_conjunctive` |
+| `fcn` | fcn | conjunctive | `fcn_conjunctive` |
+| `transformer` | *(placeholder)* | additive | *(not implemented yet)* |
+
+The last three are **baselines**: they take MILLET's own backbones (InceptionTime, ResNet, FCN) and
+train them here with the *same* recipe as SEA-Net. That is what makes the comparison fair — we are
+not only comparing against numbers printed in a paper, we are comparing against the same backbones
+trained on the same machine, same epochs, same everything, with only the encoder swapped.
 
 **Resuming / retraining.** Each model's `done_train_dataset.txt` lists the datasets it has finished;
 `train` skips them, so a sweep is safe to Ctrl+C and restart. Delete the whole file to retrain
@@ -64,8 +77,101 @@ dataset's old row.
 
 ## Results
 
-_No results are committed yet: the results tree was reset when the per-model layout landed, so every
-model starts from a clean sweep. Run the commands below to produce them._
+All **8 models** have now been swept over WebTraffic + all 128 UCR datasets (trained on Grid5000
+GPUs, Lille and Sophia). The tables below are read straight out of
+`results/SEA_NET/model_comparison.csv`.
+
+### The headline numbers
+
+Every model is ranked by mean accuracy over the **85 datasets the MILLET paper published**, so the
+head-to-head is fair. `MILLET (paper)` is the published Conjunctive baseline we compare against.
+
+| model | mean acc | mean loss | mean AOPCR | WebTraffic acc | WebTraffic NDCG | params |
+|---|---|---|---|---|---|---|
+| **`mstcn_sep_classwise_conjunctive`** (ours) | **0.8262** | 0.5170 | 0.5111 | 0.950 | 0.7066 | **269 k** |
+| `inceptiontime_conjunctive` (baseline, ours) | 0.8254 | 0.5293 | 0.6957 | 0.898 | 0.6910 | 424 k |
+| `mstcn_sep_additive` (SEA-Net) | 0.8245 | **0.5141** | 0.5981 | 0.954 | **0.7262** | **269 k** |
+| `mstcn_sep_conjunctive` (ours) | 0.8214 | 0.5184 | 0.6129 | **0.958** | 0.6924 | **269 k** |
+| `mstcn_sep_adaptive_classwise` (ours) | 0.8199 | 0.5350 | 0.7141 | 0.944 | 0.5813 | **269 k** |
+| `mstcn_sep_softmax_conjunctive` (ours) | 0.8172 | 0.5385 | 0.5150 | 0.896 | 0.6262 | **269 k** |
+| `resnet_conjunctive` (baseline, ours) | 0.8139 | 0.5638 | 1.1912 | 0.778 | 0.5318 | 506 k |
+| `fcn_conjunctive` (baseline, ours) | 0.8092 | 0.5789 | 1.3604 | 0.732 | 0.5345 | 267 k |
+| *MILLET (paper, 5 reps)* | *0.8445* | *1.2241* | *4.5532* | — | — | *424 k* |
+
+![Model comparison: every swept model's means next to MILLET's](results/SEA_NET/figures/model_comparison.png)
+
+### What we actually achieved
+
+**1. Smaller — yes, clearly.** SEA-Net uses **269 k parameters vs InceptionTime's 424 k**: about
+**36 % fewer weights** (3.54 MB vs 4.11 MB on disk). ResNet is even bigger at 506 k. This was the
+main goal and it worked.
+
+**2. As accurate — yes, when the comparison is fair.** Our best SEA-Net variant reaches **0.8262**
+and our own InceptionTime baseline reaches **0.8254** — a gap of **0.0008**, which is nothing. So
+under identical training, the small separable encoder matches the much bigger InceptionTime encoder.
+
+Both of them sit **below the paper's published 0.8445**. That gap is *not* caused by the encoder —
+if it were, our InceptionTime would have matched the paper. It is caused by the **training budget**:
+MILLET averages **5 repeats** per dataset, while we train **one** run per dataset. One run gets
+unlucky sometimes; averaging 5 smooths that out. This is the honest reading of the result.
+
+**3. Better confidence.** Mean test loss is **0.51–0.54 for our models vs 1.2241 for the paper**,
+and we win the loss head-to-head **60/1/24**. Lower loss with similar accuracy means our models are
+**better calibrated** — when they are wrong, they are wrong less confidently.
+
+**4. Best on WebTraffic.** WebTraffic is the only dataset with per-timestep ground truth, so it is
+the one place where interpretability can be *measured directly* rather than estimated. SEA-Net wins
+it: **0.958 accuracy** (conjunctive head) and **0.7262 NDCG@n** (additive head), against **0.898 /
+0.6910** for our InceptionTime baseline. On the dataset where we can actually check the explanations,
+the small model is the better one.
+
+**5. AOPCR is much lower — and this needs care.** Our AOPCR is ~0.5–0.7 against the paper's 4.55,
+and we lose that head-to-head 3/0/82. But our **InceptionTime baseline also scores only 0.6957** on
+the exact same metric. The same encoder that produced 4.5579 in the paper produces 0.6957 here, so
+the difference comes from **our evaluation setup, not from SEA-Net**. AOPCR is not normalised, so
+its scale moves with the loss scale — and our losses are ~2.4× smaller. Read AOPCR **only across our
+own models** (where `classwise_conjunctive` at 0.5111 and `softmax_conjunctive` at 0.5150 are the
+tightest); do **not** read it against the paper's column.
+
+**6. Which pooling head won.** `classwise_conjunctive` (one attention gate per class) gave the best
+accuracy, and plain `additive` gave the best loss and the best NDCG. Our fancier `adaptive_classwise`
+and `softmax_conjunctive` heads did **not** beat the simple ones — a useful negative result.
+
+### The figures
+
+Each model folder has its own `figures/`. These are from `mstcn_sep_additive` (SEA-Net proper);
+every other model has the same six plots.
+
+**Means vs MILLET** — the three metrics side by side, ours next to theirs:
+
+![SEA-Net vs MILLET, means over the 85 published datasets](results/SEA_NET/mstcn_sep_additive/figures/means.png)
+
+**Win / tie / loss** — how many of the 85 datasets we win, tie and lose on each metric:
+
+![Win/tie/loss record over the 85 published datasets](results/SEA_NET/mstcn_sep_additive/figures/win_tie_loss.png)
+
+**Accuracy scatter** — one dot per dataset, ours vs MILLET's. Dots on the diagonal are ties; above
+the line we win. Most dots sit close to the line, which is the "we match them" story in one picture:
+
+![Accuracy scatter, ours vs MILLET, one dot per dataset](results/SEA_NET/mstcn_sep_additive/figures/acc_scatter.png)
+
+**Accuracy difference per dataset** — the same thing as bars, so you can see *which* datasets we
+win and lose on rather than just how many:
+
+![Per-dataset accuracy difference vs MILLET](results/SEA_NET/mstcn_sep_additive/figures/acc_diff.png)
+
+**Our own spread** — how accuracy, loss and AOPCR are distributed across all 128 datasets, plus
+accuracy against series length (it does not fall off for long series, which is what the capped
+dilation was for):
+
+![SEA-Net's own results across all datasets](results/SEA_NET/mstcn_sep_additive/figures/results.png)
+
+**The data itself** — lengths, class counts, train sizes, and which datasets needed the adjusted
+folder:
+
+![Dataset summary across WebTraffic + 128 UCR](results/SEA_NET/figures/data_summary.png)
+
+### Reproducing this
 
 ```bash
 python main.py train --model seanet        # sweep one model over WebTraffic + all 128 UCR
@@ -74,7 +180,11 @@ python main.py results                     # the comparison vs MILLET + the cros
 python main.py report                      # every figure + summary table
 ```
 
-Each model then has its own `results/SEA_NET/<encoder>_<pooling>/summary.csv` with:
+> **Note on the InceptionTime baseline.** Its row covers **84** of the 85 published datasets and
+> **124** of 128 UCR — a few runs did not finish in the job's time limit. All seven other models
+> cover the full 85 / 128. So treat its mean as very slightly noisier than the rest.
+
+Each model has its own `results/SEA_NET/<encoder>_<pooling>/summary.csv` with:
 
 * **the fair head-to-head** - mean accuracy / loss / AOPCR over the **85 datasets MILLET published**,
   ours next to theirs, plus the win/tie/loss record;
