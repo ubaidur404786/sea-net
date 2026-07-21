@@ -12,8 +12,9 @@ What this file is for:
         cfg.seed                         -> 0
         cfg.model_config.training.learning_rate   -> 0.00125
 
-    It also names the model: model_folder_name(cfg) -> "mstcn_sep_additive" (encoder + pooling).
-    That name is the folder all of this model's results go in - see seanet/results.py.
+    It also names the model: model_folder_name(cfg) -> "seanet__mstcn_sep_additive"
+    (config file name + encoder + pooling). That name is the folder all of this model's results go
+    in - see seanet/results.py.
 
 Input:
     The path to main.yaml (and, indirectly, the model file it points at).
@@ -311,35 +312,46 @@ def to_flat_dict(cfg, prefix: str = "") -> Dict:
 
 
 # --------------------------------------------------------------------------------------
-# The model id: what a model IS, in one name.
+# The model id: what a model IS, in one UNIQUE name.
 #
-# A model in this project is always "one encoder + one pooling head". So we name it after exactly
-# those two things: mstcn_sep + additive -> "mstcn_sep_additive". That name is the folder its
-# results live in (results/SEA_NET/mstcn_sep_additive/), which means:
-#   - the folder name tells you what the model is, without opening any file,
-#   - two different configs that build the SAME network share one results folder (they are the same
-#     experiment), and re-running just updates those rows,
-#   - the config file name (seanet.yaml, seanet_acp.yaml, ...) is free to be a friendly shortcut.
+# The name has two parts joined by a double underscore: "<config file name>__<encoder>_<pooling>",
+# e.g. "seanet_slim__mstcn_sep_classwise_conjunctive". That name is the folder its results live in
+# (results/SEA_NET/seanet_slim__mstcn_sep_classwise_conjunctive/).
+#
+# Why the config file name is in front:
+#   Two different config files can build the SAME encoder+pooling pair but still be different
+#   experiments - e.g. seanet_slim (d=32) and seanet_classwise (d=128) are both mstcn_sep +
+#   classwise_conjunctive. If we named the folder after the encoder+pooling ALONE, those two would
+#   share one folder and overwrite each other's results (and one would wrongly show as "already
+#   done" for the other). Putting the config file name first gives every config its OWN folder, so
+#   the name can never clash. The encoder_pooling part stays so you can still read what the network
+#   IS at a glance.
 # --------------------------------------------------------------------------------------
 def model_folder_name(cfg) -> str:
     """
-    Build the model id: "<encoder type>_<pooling type>", e.g. "mstcn_sep_additive".
+    Build the unique model id: "<config file name>__<encoder type>_<pooling type>",
+    e.g. "seanet_slim__mstcn_sep_classwise_conjunctive".
 
-    This is the name of the folder that holds this model's results, logs and figures. Every model
-    config maps to a unique one:
-        seanet.yaml            -> mstcn_sep_additive
-        seanet_acp.yaml        -> mstcn_sep_adaptive_classwise
-        seanet_conjunctive.yaml-> mstcn_sep_conjunctive
-        millet.yaml            -> inceptiontime_conjunctive
+    This is the name of the folder that holds this model's results, logs and figures. Every config
+    file maps to its own unique one:
+        seanet.yaml             -> seanet__mstcn_sep_additive
+        seanet_slim.yaml        -> seanet_slim__mstcn_sep_classwise_conjunctive
+        seanet_classwise.yaml   -> seanet_classwise__mstcn_sep_classwise_conjunctive
+        seanet_acp.yaml         -> seanet_acp__mstcn_sep_adaptive_classwise
+        millet.yaml             -> millet__inceptiontime_conjunctive
 
-    cfg : a loaded config (from load_config), or a model_config on its own.
+    cfg : a loaded config (from load_config). It must carry cfg.model (the config file name), because
+          that is the part of the name that guarantees uniqueness.
     returns : the model id string.
     """
-    # accept either the whole config or just its model_config part, so callers do not have to care
     model_cfg = getattr(cfg, "model_config", cfg)
     encoder = getattr(getattr(model_cfg, "encoder", None), "type", None)
     pooling = getattr(getattr(model_cfg, "pooling", None), "type", None)
     if not encoder or not pooling:
         raise ValueError("The model config must define both encoder.type and pooling.type "
                          f"(got encoder={encoder!r}, pooling={pooling!r}).")
-    return f"{encoder}_{pooling}"
+    config_name = getattr(cfg, "model", None)                 # the config file name, e.g. "seanet_slim"
+    if not config_name:
+        raise ValueError("model_folder_name needs the full config (with cfg.model set) so the "
+                         "folder name can start with the config file name.")
+    return f"{config_name}__{encoder}_{pooling}"

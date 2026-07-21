@@ -22,19 +22,22 @@ What "--model" means:
     It is the name of a config file under configs/models/, WITHOUT the .yaml - e.g. "--model seanet"
     reads configs/models/seanet.yaml. That file says which encoder and which pooling head to use.
 
-One model = one encoder + one pooling head = one results folder:
-    A model is named after what it IS: "<encoder>_<pooling>". So configs/models/seanet.yaml (encoder
-    mstcn_sep + pooling additive) writes everything into results/SEA_NET/mstcn_sep_additive/ - its
-    results.csv, its done_train_dataset.txt, its logs, its figures, its interpretation figures.
-    Nothing is shared, so you can sweep several pooling heads and compare them fairly afterwards
-    with "python main.py results" / "python main.py report".
+One config file = one results folder, with a UNIQUE name:
+    A model's folder is named "<config file name>__<encoder>_<pooling>". So configs/models/seanet.yaml
+    (encoder mstcn_sep + pooling additive) writes everything into
+    results/SEA_NET/seanet__mstcn_sep_additive/ - its results.csv, its done_train_dataset.txt, its
+    logs, its figures, its interpretation figures. The config file name is in front so two configs
+    that build the same encoder+pooling (e.g. seanet_slim vs seanet_classwise) never share a folder.
+    Nothing is shared, so you can sweep several models and compare them fairly afterwards with
+    "python main.py results" / "python main.py report".
 
 How resuming works:
     Each model has its own results/SEA_NET/<model>/done_train_dataset.txt listing the datasets it
     has finished. "train" skips anything in that list, so it is safe to stop with Ctrl+C and start
-    again. To retrain: delete the whole file (all datasets) or delete one name from it (just that
-    dataset). A retrained dataset REPLACES its old row in results.csv, so the table always holds
-    the newest numbers.
+    again. To retrain: delete the whole file (all datasets), delete one name from it (just that
+    dataset), or set run.re_train: true in configs/main.yaml. A retrained dataset only OVERWRITES
+    its old row in results.csv if the new run beats the old accuracy (save_result_row keeps the
+    better result), so the table always holds the best numbers we have seen.
 
 Related files:
     - seanet/data.py    -> loading, summaries (used by "summary").
@@ -129,8 +132,8 @@ def _resolve_model(args):
     Load the config a command will run with, and work out the model id it writes under.
 
     Every model-specific command resolves its model exactly the same way, so that reading lives here
-    once: the --config file, the --model override, and the "<encoder>_<pooling>" id that names the
-    results folder. main() calls this BEFORE start_logging, so the log lands in the right folder.
+    once: the --config file, the --model override, and the "<config>__<encoder>_<pooling>" id that
+    names the results folder. main() calls this BEFORE start_logging, so the log lands right.
 
     args : the parsed command-line arguments.
     returns : (cfg, model_id).
@@ -155,6 +158,32 @@ def _run_context(args):
     device = get_device() if cfg.device == "auto" else torch.device(cfg.device)
     smoke = bool(getattr(args, "smoke", False)) or bool(getattr(cfg.run, "smoke", False))
     return cfg, model_id, device, smoke
+
+
+def _skip_if_done(cfg, model_id, name, smoke):
+    """
+    Decide whether to skip a dataset that is already finished for this model, and print why.
+
+    Normally we skip a dataset that is already in the model's done list (so a run is not wasted redoing
+    it). But main.yaml has a "run.re_train" switch: when it is true we train again anyway, and
+    save_result_row REPLACES the old row - so you can re-check a model without hand-editing the done
+    file. Smoke runs are never saved, so they always train and never count as "done".
+
+    cfg : the loaded config.  model_id : the model folder id.  name : dataset name.
+    smoke : True = a throwaway check (never skips).
+    returns : True if the caller should skip this dataset (and has already printed the reason).
+    """
+    if smoke or not result_exists(model_id, name):              # nothing done yet -> just train
+        return False
+    re_train = bool(getattr(cfg.run, "re_train", False))        # the main.yaml switch
+    if re_train:                                                 # train again, and say so
+        print(f"\n{name} already done for {model_id}, but run.re_train is true -> training again "
+              f"(its row in results.csv will be replaced).")
+        return False
+    print(f"\n{name} already done for {model_id} -> skip\n"
+          f"  (set 're_train: true' in configs/main.yaml to train it again, or delete the line\n"
+          f"   '{name}' from {done_txt(model_id)}.)")
+    return True
 
 
 def _start_mlflow(cfg, model_id, smoke):
@@ -198,7 +227,10 @@ def _train_and_save(name, cfg, model_id, device, smoke, command, mlf, log_weight
     row["encoder"] = cfg.model_config.encoder.type
     row["pooling"] = cfg.model_config.pooling.type
     if not smoke:                                            # smoke runs are throwaway, never saved
-        save_result_row(model_id, row)
+        saved = save_result_row(model_id, row)
+        if not saved:                                       # keep-the-better rule: old row was higher
+            print(f"  kept the previous result for {name}: this run's test_acc "
+                  f"{row['test_acc']:.4f} did not beat it, so results.csv was left unchanged.")
     return row
 
 
@@ -338,9 +370,7 @@ def cmd_single(args):
     """
     cfg, model_id, device, smoke = _run_context(args)
     name = args.dataset
-    if result_exists(model_id, name) and not smoke:          # already finished -> do not redo it
-        print(f"{name} already done for {model_id} -> skip\n"
-              f"  (delete the line '{name}' from {done_txt(model_id)} to train it again)")
+    if _skip_if_done(cfg, model_id, name, smoke):            # already finished (and re_train is off)
         return
 
     print(f"=== single: model={model_id} (config {cfg.model}) dataset={name} device={device} "
@@ -417,9 +447,7 @@ def cmd_run(args):
     if cfg.run.mode != "single":                                # only "single" is wired up so far
         raise SystemExit(f"run mode {cfg.run.mode!r} is not supported yet (use mode: single).")
 
-    if result_exists(model_id, dataset) and not smoke:          # already finished -> do not redo it
-        print(f"\n{dataset} already done for {model_id} -> skip\n"
-              f"  (delete the line '{dataset}' from {done_txt(model_id)} to train it again)")
+    if _skip_if_done(cfg, model_id, dataset, smoke):            # already finished (and re_train is off)
         return
 
     mlf, log_weights = _start_mlflow(cfg, model_id, smoke)

@@ -52,8 +52,16 @@ DATA_SUMMARY_FIG = os.path.join(SHARED_FIGURES_DIR, "data_summary.png")
 
 # The MILLET baseline models: an encoder MILLET published, with MILLET's own pooling head. Anything
 # else is one of OUR new pooling heads, drawn in orange so it stands out in the comparison figure.
+# We list only the "<encoder>_<pooling>" part here, because a model id now starts with the config
+# file name (e.g. "seanet__mstcn_sep_additive"); is_baseline() strips that prefix before comparing,
+# so adding a new config file never means editing this set.
 BASELINE_MODELS = {"inceptiontime_conjunctive", "fcn_conjunctive", "resnet_conjunctive",
                    "mstcn_sep_conjunctive", "mstcn_sep_additive"}
+
+
+def is_baseline(model_id: str) -> bool:
+    """True if a model id's encoder_pooling part is one of MILLET's baseline combinations."""
+    return model_id.split("__")[-1] in BASELINE_MODELS       # drop the "<config>__" prefix first
 
 OURS_COLOUR = "steelblue"
 MILLET_COLOUR = "indianred"
@@ -265,7 +273,7 @@ def plot_model_comparison(cross: pd.DataFrame, figdir: str = SHARED_FIGURES_DIR)
         s = cross.dropna(subset=[col]).sort_values(col, ascending=bool(lower))   # best first
         names = list(s["model"]) + ["MILLET"]
         values = list(s[col]) + [float(s[f"mean_{metric}_millet"].iloc[0])]
-        colours = [OURS_COLOUR if m in BASELINE_MODELS else "darkorange" for m in s["model"]]
+        colours = [OURS_COLOUR if is_baseline(m) else "darkorange" for m in s["model"]]
         colours.append(MILLET_COLOUR)
         bars = a.bar(range(len(names)), values, color=colours)
         a.set_xticks(range(len(names)))

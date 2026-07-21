@@ -8,11 +8,12 @@ What this file is for:
       2. Compare our UCR numbers to the MILLET paper's numbers, dataset by dataset, and say where
          we win / tie / lose on accuracy, loss and AOPCR.
 
-One model = one encoder + one pooling head = ONE FOLDER
-------------------------------------------------------
-A model is named after what it is: "<encoder>_<pooling>", e.g. "mstcn_sep_additive" (see
-seanet/config.model_folder_name). Everything that model produces lives in its own folder, so two
-models can never mix their numbers up:
+One config file = ONE FOLDER, with a unique name
+------------------------------------------------
+A model's folder is named "<config file name>__<encoder>_<pooling>", e.g.
+"seanet__mstcn_sep_additive" (see seanet/config.model_folder_name). The config file name is in front
+so two configs that build the same encoder+pooling never share a folder. Everything a model produces
+lives in its own folder, so two models can never mix their numbers up:
 
     results/SEA_NET/
       data_summary.csv           <- shared: facts about the DATA, not about any model
@@ -20,8 +21,8 @@ models can never mix their numbers up:
       figures/                   <- shared: the cross-model figure
       logs/                      <- shared: logs of commands that belong to no model (summary, report)
 
-      mstcn_sep_additive/                <- ONE model
-        results.csv                      <- one row per dataset (UPDATED in place, see save_result_row)
+      seanet__mstcn_sep_additive/        <- ONE model
+        results.csv                      <- one row per dataset (best accuracy kept, see save_result_row)
         done_train_dataset.txt           <- the "what is finished" list (the resume switch)
         comparison_vs_millet.csv         <- our numbers next to MILLET's, per dataset
         summary.csv / summary.md         <- the headline means (over the 85, and overall)
@@ -29,7 +30,7 @@ models can never mix their numbers up:
         figures/                         <- this model's figures
         interpretation/                  <- this model's explanation figures
 
-      mstcn_sep_adaptive_classwise/      <- another model, same layout
+      seanet_acp__mstcn_sep_adaptive_classwise/   <- another model, same layout
         ...
 
 How resuming works (done_train_dataset.txt)
@@ -38,7 +39,9 @@ That file is a plain list of dataset names, one per line. `python main.py train`
 already in it. So:
   - delete the whole file      -> the model trains every dataset again from the start,
   - delete one name from it    -> only that dataset is trained again, and its row in results.csv is
-                                  REPLACED with the new numbers (save_result_row updates in place).
+                                  updated ONLY IF the new run beats the old accuracy (save_result_row
+                                  keeps the better result; a worse re-run is logged to MLflow but the
+                                  .csv is left unchanged).
 
 Files it reads:
     - results/UCR/InceptionTime/{test_acc,test_loss,test_aopcr}.csv : the MILLET paper's published
@@ -266,14 +269,19 @@ def load_results(model_id: str, path: Optional[str] = None) -> pd.DataFrame:
     return df
 
 
-def save_result_row(model_id: str, row: Dict, path: Optional[str] = None) -> None:
+def save_result_row(model_id: str, row: Dict, path: Optional[str] = None) -> bool:
     """
-    Save one dataset's result into a model's results.csv, REPLACING that dataset's old row.
+    Save one dataset's result into a model's results.csv, but only if it BEATS the old accuracy.
 
-    This is an "upsert": read the table, drop any existing row for this dataset, add the new one,
-    sort it back into MILLET's order, and write the whole file out again. That is what makes
-    "delete a name from done_train_dataset.txt, re-run, get updated numbers" work - the dataset ends
-    up with exactly one row, holding its newest result.
+    Rule (keep the better result): if this dataset already has a row, we overwrite it only when the
+    new run's test_acc is HIGHER. A worse-or-equal re-run leaves the old, better numbers in place.
+    So results.csv always holds the best accuracy we have ever seen for this dataset. The run is
+    still marked done, and MLflow still logged it, so nothing is thrown away - the .csv just never
+    goes backwards. (The first time a dataset is trained there is no old row, so it is always saved.)
+
+    When we do save, it is an "upsert": read the table, drop this dataset's old row, add the new one,
+    sort it back into MILLET's order, and write the whole file out again - so the dataset ends up
+    with exactly one row.
 
     The write is atomic: we write a temporary file first and then rename it over the real one. A
     rename either happens completely or not at all, so an interrupted (or externally re-aligned)
@@ -282,7 +290,7 @@ def save_result_row(model_id: str, row: Dict, path: Optional[str] = None) -> Non
     model_id : which model's folder to write into.
     row : a results-row dict from score_model (a "run_datetime" is added if missing).
     path : write this exact file instead (overrides model_id).
-    returns : nothing.
+    returns : True if the new row was saved, False if the old (better-or-equal) row was kept.
     """
     path = path or results_csv(model_id)
     os.makedirs(os.path.dirname(path), exist_ok=True)
@@ -291,6 +299,16 @@ def save_result_row(model_id: str, row: Dict, path: Optional[str] = None) -> Non
     row.setdefault("run_datetime", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
 
     df = load_results(model_id, path=path)                    # what is already there
+
+    # keep-the-better check: is there already a row for this dataset with an accuracy we did not beat?
+    old = df[df["dataset"] == row["dataset"]] if len(df) else df
+    if len(old):
+        old_acc = pd.to_numeric(old["test_acc"].iloc[0], errors="coerce")
+        new_acc = pd.to_numeric(row.get("test_acc"), errors="coerce")
+        if pd.notna(old_acc) and pd.notna(new_acc) and new_acc <= old_acc:
+            mark_done(model_id, row["dataset"])               # it IS finished, we just did not improve
+            return False                                      # leave the old, better row untouched
+
     df = df[df["dataset"] != row["dataset"]] if len(df) else df          # drop this dataset's old row
     df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)         # add the new one
     df = df.reindex(columns=RESULT_COLUMNS)                   # fixed column order
@@ -305,6 +323,7 @@ def save_result_row(model_id: str, row: Dict, path: Optional[str] = None) -> Non
     os.replace(tmp, path)
 
     mark_done(model_id, row["dataset"])                       # remember it is done
+    return True
 
 
 # --------------------------------------------------------------------------------------

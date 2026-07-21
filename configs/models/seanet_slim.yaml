@@ -1,0 +1,74 @@
+# seanet_slim.yaml - a SMALL SEA-Net: the same mstcn_sep encoder but much narrower.
+#
+# Goal: shrink the model a lot (fewer parameters) and see how much accuracy we keep on WebTraffic.
+# The only real change vs seanet_classwise.yaml is the encoder width d (128 -> 32) and depth
+# (6 -> 4 blocks). Almost all parameters live in the d x d pointwise conv, so d is the big lever:
+# d=128 -> ~178k params, d=32 -> ~20k params (about 9x smaller). We keep the classwise_conjunctive
+# pooling head because that gave us the best results so far (test_acc 0.934), and we keep the exact
+# same training recipe, so any accuracy change comes ONLY from the smaller encoder (a fair test).
+#
+# Run it with:
+#   python main.py run --model seanet_slim                     (WebTraffic by default)
+#   python main.py run --model seanet_slim --dataset Coffee --smoke
+#
+# To sweep the size: change encoder.d to 64 or 16 and re-run. That is the whole experiment for step 1.
+
+name: seanet_slim
+
+# use the encoder/pooling/training blocks below exactly as written (no Optuna record yet, and we want
+# to measure THIS small model, so we force the default recipe instead of 'auto').
+use_params: default
+
+# ---- the encoder: same mstcn_sep, just narrow and a bit shallower ----
+encoder:
+  type: mstcn_sep        # our "Multi-Scale separable TCN" encoder (unchanged code)
+  d: 32                  # channel width: the big size knob (was 128). try 64 / 32 / 16 to sweep.
+  n_blocks: 4            # a little shallower than the 6-block default (was 6)
+  dropout: 0.2           # dropout inside the encoder blocks
+  max_dilation: 16       # dilation grows 1,2,4,8 (capped at 16) - keeps each view local
+  kernels: [5, 11, 23]   # the three depthwise kernel sizes, summed in every block (kept the same)
+
+# ---- the pooling head: our best one so far (one sigmoid gate PER CLASS) ----
+pooling:
+  type: classwise_conjunctive
+  d_attn: 8                     # width of the small attention MLP
+  dropout: 0.2
+  positional_encoding: true
+
+# ---- the training recipe (identical to seanet_classwise.yaml, so the test is fair) ----
+training:
+  n_epochs: 400          # max epochs (early stopping usually stops sooner)
+  patience: 60           # stop if the watched loss has not improved for this many epochs
+  max_batch: 16          # batch size = clamp(n_train // 10, 2, max_batch)
+  learning_rate: 0.00125 # 1.25e-3
+  weight_decay: 0.00012  # 1.2e-4
+  label_smoothing: 0.13  # softens the labels a little (helps avoid over-confident mistakes)
+  lambda_entropy: 0.01   # strength of the attention "focus" penalty (0 turns it off)
+  min_train_for_val: 100 # need at least this many train series to hold out a validation set
+  val_frac: 0.2          # size of the validation split (20%)
+  optimizer: adam        # the only optimizer wired up right now
+
+# ---- Optuna search (optional): a SMALL-MODEL search, so d stays in the low range ----
+# Run with:  python main.py optuna --model seanet_slim
+optuna:
+  enabled: true
+  n_trials: 30
+  timeout: null
+  sampler: tpe
+  pruner: median
+  save_best_parameters: true
+  search_space:
+    training:
+      learning_rate: {type: float, low: 0.0003, high: 0.005, log: true}
+      weight_decay: {type: float, low: 0.00001, high: 0.0005, log: true}
+      label_smoothing: {type: float, low: 0.0, high: 0.2}
+      lambda_entropy: {type: float, low: 0.0, high: 0.05}
+      max_batch: {type: categorical, choices: [8, 16, 32]}
+    encoder:
+      d: {type: categorical, choices: [16, 32, 64]}     # keep the model small on purpose
+      n_blocks: {type: int, low: 3, high: 6}
+      dropout: {type: float, low: 0.1, high: 0.4}
+      max_dilation: {type: categorical, choices: [8, 16, 32]}
+    pooling:
+      d_attn: {type: categorical, choices: [4, 8, 16, 32]}
+      dropout: {type: float, low: 0.1, high: 0.4}

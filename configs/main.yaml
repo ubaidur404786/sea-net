@@ -18,13 +18,19 @@ run:
   mode: single          # single = train + evaluate one dataset (the only mode for now)
   dataset: WebTraffic   # the dataset to use when mode is "single"
   smoke: false          # true = quick 3-epoch check (for testing the pipeline, NOT a real result)
+  re_train: false       # false = if this dataset is already done for this model, skip it (the normal,
+                        #         safe behaviour). true = train it AGAIN even if it is already done, and
+                        #         REPLACE its old row in results.csv with the new numbers. Turn this on
+                        #         when you just want to re-check a model's accuracy without hand-deleting
+                        #         the dataset's line from done_train_dataset.txt. (MLflow still keeps the
+                        #         old run too, so you never lose the previous result.)
 
 # preprocessing: how each series is turned into "instances" for the MIL model.
 #   single_point   = one instance is one timestep (MILLET's original setup; NDCG works here).
 #   sliding_window = one instance is a window of the series; window_size / window_stride control it
 #                    (NDCG is skipped in this mode - windows have no per-timestep ground truth).
 preprocessing:
-  instance_type: sliding_window   # single_point | sliding_window
+  instance_type: single_point   # single_point | sliding_window
   window_size: 5
   window_stride: 5
 
