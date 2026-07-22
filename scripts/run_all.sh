@@ -31,7 +31,8 @@ source scripts/env.sh        # turn the environment on (prints python + torch/cu
 if [ "$#" -gt 0 ]; then
   MODELS="$*"                # the models given on the command line
 else
-  MODELS="seanet seanet_acp seanet_classwise seanet_softmax seanet_conjunctive millet fcn resnet"
+  # MODELS="seanet seanet_acp seanet_classwise seanet_softmax seanet_conjunctive millet fcn resnet"
+  MODELS="seanet_gated"
 fi
 
 mkdir -p logs                # keep all log files in one folder
