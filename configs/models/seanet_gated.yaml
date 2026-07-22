@@ -1,0 +1,73 @@
+# seanet_gated.yaml - the slim encoder PLUS a self-gating summary step.
+#
+# This is a copy of the slim d=64 setup (which scored test_acc 0.916 on WebTraffic), with ONE change:
+# the encoder is now "mstcn_sep_gated". After the normal encoder makes per-timestep features, a small
+# SummaryGate squeezes the whole series into one vector, turns it into a per-channel gate in [0,1], and
+# re-weights every timestep by it - so the whole-series summary decides which feature channels matter.
+# Everything else (width, depth, pooling head, training recipe) is kept identical, so any accuracy change
+# comes ONLY from the gate (a fair test). Cost is tiny: one Linear(d, d) ~= 4k extra params at d=64.
+#
+# Run it with:
+#   python main.py run --model seanet_gated                    (WebTraffic by default)
+#
+# To compare summary types: change encoder.summary to mean / last / max and re-run.
+
+name: seanet_gated
+
+use_params: default        # measure THIS model as written (no Optuna record yet)
+
+# ---- the encoder: slim mstcn_sep + the self-gating summary ----
+encoder:
+  type: mstcn_sep_gated   # slim encoder followed by one SummaryGate
+  d: 64                   # same width as the 0.916 slim run
+  n_blocks: 4             # same depth
+  dropout: 0.2            # dropout inside the encoder blocks
+  max_dilation: 16        # dilation grows 1,2,4,8 (capped at 16)
+  kernels: [5, 11, 23]    # the three depthwise kernel sizes, summed in every block
+  summary: max            # how the gate summarises time: max | mean | last (max is the robust default)
+
+# ---- the pooling head: same as the 0.916 run (one sigmoid gate per class) ----
+pooling:
+  type: classwise_conjunctive
+  d_attn: 8
+  dropout: 0.2
+  positional_encoding: true
+
+# ---- the training recipe (identical to the slim run, so the test is fair) ----
+training:
+  n_epochs: 400
+  patience: 60
+  max_batch: 16
+  learning_rate: 0.00125
+  weight_decay: 0.00012
+  label_smoothing: 0.13
+  lambda_entropy: 0.01
+  min_train_for_val: 100
+  val_frac: 0.2
+  optimizer: adam
+
+# ---- Optuna search (optional): same small-model space, plus the summary type ----
+# Run with:  python main.py optuna --model seanet_gated
+optuna:
+  enabled: true
+  n_trials: 30
+  timeout: null
+  sampler: tpe
+  pruner: median
+  save_best_parameters: true
+  search_space:
+    training:
+      learning_rate: {type: float, low: 0.0003, high: 0.005, log: true}
+      weight_decay: {type: float, low: 0.00001, high: 0.0005, log: true}
+      label_smoothing: {type: float, low: 0.0, high: 0.2}
+      lambda_entropy: {type: float, low: 0.0, high: 0.05}
+      max_batch: {type: categorical, choices: [8, 16, 32]}
+    encoder:
+      d: {type: categorical, choices: [32, 64]}
+      n_blocks: {type: int, low: 3, high: 6}
+      dropout: {type: float, low: 0.1, high: 0.4}
+      max_dilation: {type: categorical, choices: [8, 16, 32]}
+      summary: {type: categorical, choices: [max, mean, last]}
+    pooling:
+      d_attn: {type: categorical, choices: [4, 8, 16, 32]}
+      dropout: {type: float, low: 0.1, high: 0.4}

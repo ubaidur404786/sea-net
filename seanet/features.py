@@ -128,6 +128,81 @@ class MSTCNSepEncoder(nn.Module):
 
 
 # --------------------------------------------------------------------------------------
+# Self-gating "summary" version of the encoder.
+#
+# Idea (from our own brainstorm): after the encoder makes per-timestep features H (B, d, T), build ONE
+# summary vector s (B, d) for the whole series, turn it into a per-channel gate in [0, 1], and multiply
+# every timestep by that gate. So the whole-series summary decides "which feature channels matter" and
+# turns the useful ones up and the useless ones down. This is cheap (one Linear(d, d)) and it does NOT
+# collapse time, so the output is still (B, d, T) and every MIL pooling head still works unchanged.
+# --------------------------------------------------------------------------------------
+class SummaryGate(nn.Module):
+    """
+    Pool the features over time into one summary vector, make a per-channel gate from it, and use that
+    gate to re-weight every timestep.
+
+        s      = summarise_over_time(H)        # (B, d): one number per channel for the whole series
+        gate   = sigmoid(W s)                  # (B, d): a weight in [0,1] for each channel
+        H_out  = H * gate                       # (B, d, T): scale every timestep by its channel gate
+        H_out  = LayerNorm(H_out)               # keep the values in a stable range after scaling
+
+    summary : how to squeeze time into one vector -
+        "max"  -> take the strongest value each channel reaches anywhere (good for spikes / needle-in-haystack)
+        "mean" -> the average level of each channel (good for smooth trends)
+        "last" -> just the last timestep. NOTE: our conv uses symmetric padding (not causal), so the last
+                  point is only a LOCAL view, not a true whole-series summary - "max"/"mean" are the
+                  robust choices. "last" is here only so we can compare all three like you asked.
+    """
+
+    def __init__(self, d: int, summary: str = "max"):
+        """
+        d : number of channels (same as the encoder width).
+        summary : "max" | "mean" | "last" - how to pool over time.
+        """
+        super().__init__()
+        self.summary = summary
+        self.to_gate = nn.Linear(d, d)        # turns the summary vector into a per-channel gate
+        self.norm = nn.LayerNorm(d)           # normalise channels after gating (stops values drifting)
+
+    def _summarise(self, h: torch.Tensor) -> torch.Tensor:
+        """h : (B, d, T) -> (B, d) one summary value per channel."""
+        if self.summary == "mean":
+            return h.mean(dim=2)
+        if self.summary == "last":
+            return h[:, :, -1]
+        return h.max(dim=2).values            # default "max": strongest value each channel reaches
+
+    def forward(self, h: torch.Tensor) -> torch.Tensor:
+        """h : (B, d, T) -> (B, d, T) gated features (same shape, so pooling is unaffected)."""
+        s = self._summarise(h)                # (B, d) whole-series summary
+        gate = torch.sigmoid(self.to_gate(s)) # (B, d) per-channel weight in [0,1]
+        h = h * gate.unsqueeze(-1)            # (B, d, T) re-weight every timestep by its channel gate
+        # LayerNorm needs channels last: (B, d, T) -> (B, T, d) -> norm -> back to (B, d, T)
+        return self.norm(h.transpose(1, 2)).transpose(1, 2)
+
+
+class MSTCNSepGatedEncoder(nn.Module):
+    """
+    The slim MSTCN-separable encoder followed by one SummaryGate. Output is still (B, d, T), and it
+    exposes .d_out = d, so it drops into the registry exactly like the plain encoder.
+    """
+
+    def __init__(self, n_in: int = 1, d: int = SEA_D, n_blocks: int = SEA_N_BLOCKS,
+                 dropout: float = SEA_DROPOUT, max_dilation: int = SEA_MAX_DILATION,
+                 kernels: Tuple[int, ...] = SEA_KERNELS, summary: str = "max"):
+        """Same arguments as MSTCNSepEncoder, plus `summary` for the gate (see SummaryGate)."""
+        super().__init__()
+        self.d_out = d
+        # reuse the existing encoder as the backbone, then add the gate on top
+        self.backbone = MSTCNSepEncoder(n_in, d, n_blocks, dropout, max_dilation, kernels)
+        self.gate = SummaryGate(d, summary=summary)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """x : (B, n_in, T) -> (B, d, T) gated per-timestep features."""
+        return self.gate(self.backbone(x))
+
+
+# --------------------------------------------------------------------------------------
 # The encoder registry (name -> builder). This is what makes encoders swappable by config.
 # --------------------------------------------------------------------------------------
 # A "builder" is a function that takes (encoder_cfg, n_in) and returns an encoder module with .d_out.
@@ -164,6 +239,20 @@ def _build_mstcn_sep(cfg, n_in: int) -> nn.Module:
         dropout=cfg.dropout,
         max_dilation=cfg.max_dilation,
         kernels=tuple(cfg.kernels),
+    )
+
+
+@register_encoder("mstcn_sep_gated")
+def _build_mstcn_sep_gated(cfg, n_in: int) -> nn.Module:
+    """Build the self-gating SEA-Net encoder. Same config as mstcn_sep plus an optional `summary`."""
+    return MSTCNSepGatedEncoder(
+        n_in=n_in,
+        d=cfg.d,
+        n_blocks=cfg.n_blocks,
+        dropout=cfg.dropout,
+        max_dilation=cfg.max_dilation,
+        kernels=tuple(cfg.kernels),
+        summary=getattr(cfg, "summary", "max"),   # default to "max" if the config does not name it
     )
 
 
