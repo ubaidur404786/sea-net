@@ -81,8 +81,8 @@ optuna:
 records:
   default:
     metrics:
-      test_acc: 0.92
-      test_loss: 0.3049
-      test_auroc: 0.9966
+      test_acc: 0.93
+      test_loss: 0.3591
+      test_auroc: 0.995
       dataset: WebTraffic
-      recorded: '2026-07-22 11:39:02'
+      recorded: '2026-07-22 11:52:06'
