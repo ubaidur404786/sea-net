@@ -207,6 +207,83 @@ class MSTCNSepGatedEncoder(nn.Module):
 
 
 # --------------------------------------------------------------------------------------
+# Spike/trend dual-branch encoder.
+#
+# Idea (from our brainstorm): class evidence in a time series comes in two very different shapes -
+#   - a TREND: a slow, smooth pattern over many timesteps (rising / falling / flat).
+#   - a SPIKE: a sharp jump at just one or two timesteps ("needle in a haystack").
+# One normal conv stack is biased toward smooth patterns, so it can miss tiny spikes. So we run TWO
+# small branches side by side: the usual mstcn_sep for trends, and a cheap "spike" branch that first
+# removes the smooth part of the signal so only the sudden changes are left. We glue the two together
+# with a 1x1 conv, then re-use the same SummaryGate. Output stays (B, d, T), so pooling is unchanged.
+# --------------------------------------------------------------------------------------
+class SpikeBranch(nn.Module):
+    """
+    A tiny branch that highlights sharp, local changes (spikes).
+
+    How it works: first take a local average of the signal (a smooth version of it). Subtract that from
+    the raw signal - what is left is the "high-pass" part: near zero on smooth stretches, but large right
+    where the signal jumps. Then a small conv turns that spike signal into d_spike feature channels.
+
+        smooth   = local_average(x)            # a blurred copy of the series
+        highpass = x - smooth                   # ~0 on smooth parts, big at sudden jumps (the spikes)
+        out      = ReLU(BN(Conv1d(highpass)))   # small features that describe the spikes
+    """
+
+    def __init__(self, n_in: int = 1, d_spike: int = 16, smooth_kernel: int = 5):
+        """
+        n_in : input channels (1 here).
+        d_spike : how many spike feature channels to make (small on purpose).
+        smooth_kernel : window size of the local average (odd, so the length stays the same).
+        """
+        super().__init__()
+        # AvgPool1d with stride 1 = a moving average; padding keeps the length T the same.
+        self.smooth = nn.AvgPool1d(kernel_size=smooth_kernel, stride=1, padding=smooth_kernel // 2)
+        self.conv = nn.Sequential(
+            nn.Conv1d(n_in, d_spike, kernel_size=3, padding=1),   # small k=3 conv: looks at a tiny window
+            nn.BatchNorm1d(d_spike),
+            nn.ReLU(),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """x : (B, n_in, T) -> (B, d_spike, T) spike features."""
+        highpass = x - self.smooth(x)         # remove the smooth part, keep the sudden changes
+        return self.conv(highpass)
+
+
+class MSTCNSepSpikeTrendEncoder(nn.Module):
+    """
+    Two branches (trend + spike), mixed and then self-gated. Output is (B, d, T) with .d_out = d, so it
+    slots into the registry like every other encoder.
+
+        trend  = mstcn_sep(x)                  # (B, d, T)        smooth / long-range features
+        spike  = SpikeBranch(x)                # (B, d_spike, T)  sharp / local features
+        h      = Conv1d_1x1( concat[trend, spike] )   # (B, d, T)  mix the two back to d channels
+        out    = SummaryGate(h)                # (B, d, T)        same self-gating as before
+    """
+
+    def __init__(self, n_in: int = 1, d: int = SEA_D, n_blocks: int = SEA_N_BLOCKS,
+                 dropout: float = SEA_DROPOUT, max_dilation: int = SEA_MAX_DILATION,
+                 kernels: Tuple[int, ...] = SEA_KERNELS, summary: str = "last",
+                 d_spike: int = 16, smooth_kernel: int = 5):
+        """Same arguments as the gated encoder, plus d_spike / smooth_kernel for the spike branch."""
+        super().__init__()
+        self.d_out = d
+        self.trend = MSTCNSepEncoder(n_in, d, n_blocks, dropout, max_dilation, kernels)
+        self.spike = SpikeBranch(n_in, d_spike, smooth_kernel)
+        self.mix = nn.Conv1d(d + d_spike, d, kernel_size=1)   # 1x1 conv: combine both branches back to d
+        self.gate = SummaryGate(d, summary=summary)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """x : (B, n_in, T) -> (B, d, T) gated features from both branches."""
+        t = self.trend(x)                     # (B, d, T) trend features
+        s = self.spike(x)                     # (B, d_spike, T) spike features
+        h = torch.cat([t, s], dim=1)          # (B, d + d_spike, T) stack the two branches
+        h = self.mix(h)                       # (B, d, T) mix them back to d channels
+        return self.gate(h)                   # (B, d, T) self-gate, same as before
+
+
+# --------------------------------------------------------------------------------------
 # The encoder registry (name -> builder). This is what makes encoders swappable by config.
 # --------------------------------------------------------------------------------------
 # A "builder" is a function that takes (encoder_cfg, n_in) and returns an encoder module with .d_out.
@@ -257,6 +334,22 @@ def _build_mstcn_sep_gated(cfg, n_in: int) -> nn.Module:
         max_dilation=cfg.max_dilation,
         kernels=tuple(cfg.kernels),
         summary=getattr(cfg, "summary", "max"),   # default to "max" if the config does not name it
+    )
+
+
+@register_encoder("mstcn_sep_spiketrend")
+def _build_mstcn_sep_spiketrend(cfg, n_in: int) -> nn.Module:
+    """Build the spike/trend dual-branch encoder. Same config as mstcn_sep_gated plus d_spike/smooth_kernel."""
+    return MSTCNSepSpikeTrendEncoder(
+        n_in=n_in,
+        d=cfg.d,
+        n_blocks=cfg.n_blocks,
+        dropout=cfg.dropout,
+        max_dilation=cfg.max_dilation,
+        kernels=tuple(cfg.kernels),
+        summary=getattr(cfg, "summary", "last"),      # last was the best gate summary on WebTraffic
+        d_spike=getattr(cfg, "d_spike", 16),          # size of the spike branch (small on purpose)
+        smooth_kernel=getattr(cfg, "smooth_kernel", 5),   # window of the local average in the spike branch
     )
 
 

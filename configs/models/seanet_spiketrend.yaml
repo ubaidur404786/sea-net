@@ -1,0 +1,95 @@
+# seanet_spiketrend.yaml - the gated model PLUS a second "spike" branch.
+#
+# This is a copy of the winning gated setup (summary=last, acc 0.924, ndcg 0.741), with ONE change:
+# the encoder is now "mstcn_sep_spiketrend". It runs TWO branches side by side -
+#   - trend branch: the usual mstcn_sep (smooth, long-range patterns)
+#   - spike branch: a cheap high-pass filter (x minus its local average) + a small conv, which lights
+#     up only where the signal jumps sharply (1-2 point spikes / needle-in-haystack evidence)
+# then mixes them with a 1x1 conv and self-gates as before. The idea: some classes are shown by a
+# trend, others by a spike, so give the model a branch for each. Extra cost is small (~5k params).
+# Everything else (width, depth, pooling, training recipe) is identical, so any change is due to the
+# spike branch (a fair test).
+#
+# Run it with:
+#   python main.py run --model seanet_spiketrend               (WebTraffic by default)
+#
+# Knobs to try later: encoder.d_spike (8/16/32) and encoder.smooth_kernel (3/5/9).
+
+name: seanet_spiketrend
+
+use_params: default        # measure THIS model as written (no Optuna record yet)
+
+# ---- the encoder: trend branch + spike branch + self-gate ----
+encoder:
+  type: mstcn_sep_spiketrend
+  d: 64                   # width of the trend branch (same as the gated run)
+  n_blocks: 4             # depth of the trend branch
+  dropout: 0.2
+  max_dilation: 16
+  kernels: [5, 11, 23]
+  summary: last           # the gate summary that won: max | mean | last
+  d_spike: 16             # how many spike feature channels (small on purpose)
+  smooth_kernel: 5        # window of the local average in the spike branch (odd, keeps length T)
+
+# ---- the pooling head: same as the winning run ----
+pooling:
+  type: classwise_conjunctive
+  d_attn: 8
+  dropout: 0.2
+  positional_encoding: true
+
+# ---- the training recipe (identical to the gated run, so the test is fair) ----
+training:
+  n_epochs: 400
+  patience: 60
+  max_batch: 16
+  learning_rate: 0.00125
+  weight_decay: 0.00012
+  label_smoothing: 0.13
+  lambda_entropy: 0.01
+  min_train_for_val: 100
+  val_frac: 0.2
+  optimizer: adam
+
+# ---- Optuna search (optional): the gated space plus the spike-branch knobs ----
+# Run with:  python main.py optuna --model seanet_spiketrend
+optuna:
+  enabled: true
+  n_trials: 30
+  timeout: null
+  sampler: tpe
+  pruner: median
+  save_best_parameters: true
+  search_space:
+    training:
+      learning_rate: {type: float, low: 0.0003, high: 0.005, log: true}
+      weight_decay: {type: float, low: 0.00001, high: 0.0005, log: true}
+      label_smoothing: {type: float, low: 0.0, high: 0.2}
+      lambda_entropy: {type: float, low: 0.0, high: 0.05}
+      max_batch: {type: categorical, choices: [8, 16, 32]}
+    encoder:
+      d: {type: categorical, choices: [32, 64]}
+      n_blocks: {type: int, low: 3, high: 6}
+      dropout: {type: float, low: 0.1, high: 0.4}
+      max_dilation: {type: categorical, choices: [8, 16, 32]}
+      summary: {type: categorical, choices: [max, mean, last]}
+      d_spike: {type: categorical, choices: [8, 16, 32]}
+      smooth_kernel: {type: categorical, choices: [3, 5, 9]}
+    pooling:
+      d_attn: {type: categorical, choices: [4, 8, 16, 32]}
+      dropout: {type: float, low: 0.1, high: 0.4}
+
+# ===== AUTO-FILLED RESULTS (managed by main.py - do not edit below this line) =====
+# These records let you compare the DEFAULT recipe against Optuna's BEST without opening MLflow,
+# and (with `use_params: auto`) train with whichever scored higher. They are filled in for you:
+#   records.default     : metrics from our last real `python main.py run` (default recipe).
+#   records.optuna_best : the params Optuna found + their metrics (`python main.py optuna`).
+
+records:
+  default:
+    metrics:
+      test_acc: 0.904
+      test_loss: 0.3954
+      test_auroc: 0.9954
+      dataset: WebTraffic
+      recorded: '2026-07-22 18:01:09'
