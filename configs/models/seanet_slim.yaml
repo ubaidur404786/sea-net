@@ -22,7 +22,7 @@ use_params: default
 # ---- the encoder: same mstcn_sep, just narrow and a bit shallower ----
 encoder:
   type: mstcn_sep        # our "Multi-Scale separable TCN" encoder (unchanged code)
-  d: 32                  # channel width: the big size knob (was 128). try 64 / 32 / 16 to sweep.
+  d: 64                  # channel width: the big size knob (was 128). try 64 / 32 / 16 to sweep.
   n_blocks: 4            # a little shallower than the 6-block default (was 6)
   dropout: 0.2           # dropout inside the encoder blocks
   max_dilation: 16       # dilation grows 1,2,4,8 (capped at 16) - keeps each view local

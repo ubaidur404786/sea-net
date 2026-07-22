@@ -241,6 +241,31 @@ def read_records(model_name: str) -> Dict:
     return _read_yaml(path).get("records") or {}
 
 
+def _to_yaml_safe(obj):
+    """
+    Turn NumPy / torch numbers into plain Python numbers so yaml.safe_dump can write them.
+
+    Our metrics (test_acc, test_loss, ...) come out of pandas / torch, so they are often NumPy
+    scalars like np.float64(0.9). yaml.safe_dump only knows the basic Python types and raises
+    "cannot represent an object" on a NumPy scalar. NumPy and torch scalars all have a .item()
+    method that hands back the plain Python value (0.9 as a real float), so we call that. We walk
+    dicts and lists too, so every value deep inside the records block is cleaned.
+
+    obj : anything (a dict, list, number, string, ...).
+    returns : the same data with NumPy/torch scalars replaced by plain Python numbers.
+    """
+    if isinstance(obj, dict):
+        return {k: _to_yaml_safe(v) for k, v in obj.items()}
+    if isinstance(obj, (list, tuple)):
+        return [_to_yaml_safe(v) for v in obj]
+    if hasattr(obj, "item") and not isinstance(obj, (str, bytes)):   # NumPy/torch scalar -> Python number
+        try:
+            return obj.item()
+        except Exception:
+            return obj
+    return obj
+
+
 def write_records(model_name: str, records: Dict) -> str:
     """
     Rewrite the auto-managed "records" block at the bottom of a model yaml, keeping the rest verbatim.
@@ -258,7 +283,8 @@ def write_records(model_name: str, records: Dict) -> str:
         text = f.read()
     idx = text.find(RECORDS_MARKER)
     head = (text[:idx] if idx != -1 else text).rstrip()          # keep everything above the marker
-    body = yaml.safe_dump({"records": records}, default_flow_style=False, sort_keys=False)
+    # clean NumPy/torch numbers first, or yaml.safe_dump would raise "cannot represent an object"
+    body = yaml.safe_dump({"records": _to_yaml_safe(records)}, default_flow_style=False, sort_keys=False)
     with open(path, "w") as f:
         f.write(head + "\n\n" + RECORDS_MARKER + "\n" + _RECORDS_HELP + "\n" + body)
     return path

@@ -1,0 +1,152 @@
+[log] command 'run' started at 2026-07-21_16-20-53 for model 'seanet_slim__mstcn_sep_classwise_conjunctive'
+[log] a copy of everything below is being saved to: results\SEA_NET\seanet_slim__mstcn_sep_classwise_conjunctive\logs\run_2026-07-21_16-20-53.log
+
+=== run: model=seanet_slim__mstcn_sep_classwise_conjunctive (config seanet_slim) dataset=WebTraffic device=cuda mode=full ===
+resolved config:
+  model = seanet_slim
+  run.mode = single
+  run.dataset = WebTraffic
+  run.smoke = False
+  run.re_train = False
+  preprocessing.instance_type = single_point
+  preprocessing.window_size = 5
+  preprocessing.window_stride = 5
+  seed = 0
+  device = auto
+  output.results_dir = results/SEA_NET
+  interpretability.dataset = WebTraffic
+  interpretability.n_classes = 3
+  interpretability.per_class = 1
+  mlflow.enabled = True
+  mlflow.experiment_name = SEA-Net
+  mlflow.tracking_uri = sqlite:///mlflow.db
+  mlflow.log_model_weights = True
+  model_config.name = seanet_slim
+  model_config.use_params = default
+  model_config.encoder.type = mstcn_sep
+  model_config.encoder.d = 32
+  model_config.encoder.n_blocks = 4
+  model_config.encoder.dropout = 0.2
+  model_config.encoder.max_dilation = 16
+  model_config.encoder.kernels = [5, 11, 23]
+  model_config.pooling.type = classwise_conjunctive
+  model_config.pooling.d_attn = 8
+  model_config.pooling.dropout = 0.2
+  model_config.pooling.positional_encoding = True
+  model_config.training.n_epochs = 400
+  model_config.training.patience = 60
+  model_config.training.max_batch = 16
+  model_config.training.learning_rate = 0.00125
+  model_config.training.weight_decay = 0.00012
+  model_config.training.label_smoothing = 0.13
+  model_config.training.lambda_entropy = 0.01
+  model_config.training.min_train_for_val = 100
+  model_config.training.val_frac = 0.2
+  model_config.training.optimizer = adam
+  model_config.optuna.enabled = True
+  model_config.optuna.n_trials = 30
+  model_config.optuna.timeout = None
+  model_config.optuna.sampler = tpe
+  model_config.optuna.pruner = median
+  model_config.optuna.save_best_parameters = True
+  model_config.optuna.search_space.training.learning_rate.type = float
+  model_config.optuna.search_space.training.learning_rate.low = 0.0003
+  model_config.optuna.search_space.training.learning_rate.high = 0.005
+  model_config.optuna.search_space.training.learning_rate.log = True
+  model_config.optuna.search_space.training.weight_decay.type = float
+  model_config.optuna.search_space.training.weight_decay.low = 1e-05
+  model_config.optuna.search_space.training.weight_decay.high = 0.0005
+  model_config.optuna.search_space.training.weight_decay.log = True
+  model_config.optuna.search_space.training.label_smoothing.type = float
+  model_config.optuna.search_space.training.label_smoothing.low = 0.0
+  model_config.optuna.search_space.training.label_smoothing.high = 0.2
+  model_config.optuna.search_space.training.lambda_entropy.type = float
+  model_config.optuna.search_space.training.lambda_entropy.low = 0.0
+  model_config.optuna.search_space.training.lambda_entropy.high = 0.05
+  model_config.optuna.search_space.training.max_batch.type = categorical
+  model_config.optuna.search_space.training.max_batch.choices = [8, 16, 32]
+  model_config.optuna.search_space.encoder.d.type = categorical
+  model_config.optuna.search_space.encoder.d.choices = [16, 32, 64]
+  model_config.optuna.search_space.encoder.n_blocks.type = int
+  model_config.optuna.search_space.encoder.n_blocks.low = 3
+  model_config.optuna.search_space.encoder.n_blocks.high = 6
+  model_config.optuna.search_space.encoder.dropout.type = float
+  model_config.optuna.search_space.encoder.dropout.low = 0.1
+  model_config.optuna.search_space.encoder.dropout.high = 0.4
+  model_config.optuna.search_space.encoder.max_dilation.type = categorical
+  model_config.optuna.search_space.encoder.max_dilation.choices = [8, 16, 32]
+  model_config.optuna.search_space.pooling.d_attn.type = categorical
+  model_config.optuna.search_space.pooling.d_attn.choices = [4, 8, 16, 32]
+  model_config.optuna.search_space.pooling.dropout.type = float
+  model_config.optuna.search_space.pooling.dropout.low = 0.1
+  model_config.optuna.search_space.pooling.dropout.high = 0.4
+[params] using DEFAULT recipe (no Optuna record yet - run 'python main.py optuna --model seanet_slim').
+  [mlflow] logging runs to experiment 'SEA-Net_seanet_slim__mstcn_sep_classwise_conjunctive_2026-07-21' at sqlite:///mlflow.db
+  [mlflow] browse later with:  mlflow ui --backend-store-uri sqlite:///mlflow.db
+    stage 1/3: loading data ...
+    stage 2/3: training on 400 series (val=100, C=10, T=1008, batch=16) ...
+    stage 3/3: scoring on 500 test series (accuracy + AOPCR + NDCG) ...
+    [mlflow] versioned model 'seanet_slim__mstcn_sep_classwise_conjunctive' (id=m-f606ce0e226f40d280a79df8a5ad1ac2) params={'model_size_mb': '0.7312', 'n_model_params': '20652', 'name': 'seanet_slim'}
+    [mlflow] logged run 'seanet_slim_WebTraffic'  (train_acc=1.0000 val_acc=0.8900 test_acc=0.9000 test_loss=0.4345)
+
+=== seanet_slim__mstcn_sep_classwise_conjunctive on WebTraffic ===
+  params          : 20652
+  model_size_mb   : 0.7312
+  n_train         : 400
+  n_val           : 100
+  n_test          : 500
+  series_length   : 1008
+  n_classes       : 10
+  test_acc        : 0.9
+  test_loss       : 0.4345
+  test_aopcr      : 2.3277
+  test_ndcg       : 0.7274
+  train_time_s    : 502.02
+
+  saved -> results\SEA_NET\seanet_slim__mstcn_sep_classwise_conjunctive\results.csv
+Traceback (most recent call last):
+  File "D:\Documents\Intership TSC\Projects\SEA_NET\main.py", line 696, in main
+    args.func(args)      # call the function set by set_defaults for the chosen command
+  File "D:\Documents\Intership TSC\Projects\SEA_NET\main.py", line 466, in cmd_run
+    record_metrics(cfg.model, "default", {
+  File "D:\Documents\Intership TSC\Projects\SEA_NET\seanet\config.py", line 283, in record_metrics
+    return write_records(model_name, records)
+  File "D:\Documents\Intership TSC\Projects\SEA_NET\seanet\config.py", line 261, in write_records
+    body = yaml.safe_dump({"records": records}, default_flow_style=False, sort_keys=False)
+  File "C:\Users\HP\anaconda3\envs\millet\lib\site-packages\yaml\__init__.py", line 269, in safe_dump
+    return dump_all([data], stream, Dumper=SafeDumper, **kwds)
+  File "C:\Users\HP\anaconda3\envs\millet\lib\site-packages\yaml\__init__.py", line 241, in dump_all
+    dumper.represent(data)
+  File "C:\Users\HP\anaconda3\envs\millet\lib\site-packages\yaml\representer.py", line 27, in represent
+    node = self.represent_data(data)
+  File "C:\Users\HP\anaconda3\envs\millet\lib\site-packages\yaml\representer.py", line 48, in represent_data
+    node = self.yaml_representers[data_types[0]](self, data)
+  File "C:\Users\HP\anaconda3\envs\millet\lib\site-packages\yaml\representer.py", line 207, in represent_dict
+    return self.represent_mapping('tag:yaml.org,2002:map', data)
+  File "C:\Users\HP\anaconda3\envs\millet\lib\site-packages\yaml\representer.py", line 118, in represent_mapping
+    node_value = self.represent_data(item_value)
+  File "C:\Users\HP\anaconda3\envs\millet\lib\site-packages\yaml\representer.py", line 48, in represent_data
+    node = self.yaml_representers[data_types[0]](self, data)
+  File "C:\Users\HP\anaconda3\envs\millet\lib\site-packages\yaml\representer.py", line 207, in represent_dict
+    return self.represent_mapping('tag:yaml.org,2002:map', data)
+  File "C:\Users\HP\anaconda3\envs\millet\lib\site-packages\yaml\representer.py", line 118, in represent_mapping
+    node_value = self.represent_data(item_value)
+  File "C:\Users\HP\anaconda3\envs\millet\lib\site-packages\yaml\representer.py", line 48, in represent_data
+    node = self.yaml_representers[data_types[0]](self, data)
+  File "C:\Users\HP\anaconda3\envs\millet\lib\site-packages\yaml\representer.py", line 207, in represent_dict
+    return self.represent_mapping('tag:yaml.org,2002:map', data)
+  File "C:\Users\HP\anaconda3\envs\millet\lib\site-packages\yaml\representer.py", line 118, in represent_mapping
+    node_value = self.represent_data(item_value)
+  File "C:\Users\HP\anaconda3\envs\millet\lib\site-packages\yaml\representer.py", line 48, in represent_data
+    node = self.yaml_representers[data_types[0]](self, data)
+  File "C:\Users\HP\anaconda3\envs\millet\lib\site-packages\yaml\representer.py", line 207, in represent_dict
+    return self.represent_mapping('tag:yaml.org,2002:map', data)
+  File "C:\Users\HP\anaconda3\envs\millet\lib\site-packages\yaml\representer.py", line 118, in represent_mapping
+    node_value = self.represent_data(item_value)
+  File "C:\Users\HP\anaconda3\envs\millet\lib\site-packages\yaml\representer.py", line 58, in represent_data
+    node = self.yaml_representers[None](self, data)
+  File "C:\Users\HP\anaconda3\envs\millet\lib\site-packages\yaml\representer.py", line 231, in represent_undefined
+    raise RepresenterError("cannot represent an object", data)
+yaml.representer.RepresenterError: ('cannot represent an object', 0.9)
+
+[log] finished; full output saved to results\SEA_NET\seanet_slim__mstcn_sep_classwise_conjunctive\logs\run_2026-07-21_16-20-53.log
