@@ -1,0 +1,71 @@
+[log] command 'optuna' started at 2026-07-22_11-18-10 for model 'seanet_slim__mstcn_sep_classwise_conjunctive'
+[log] a copy of everything below is being saved to: results/SEA_NET/seanet_slim__mstcn_sep_classwise_conjunctive/logs/optuna_2026-07-22_11-18-10.log
+
+=== optuna: model=seanet_slim__mstcn_sep_classwise_conjunctive (config seanet_slim) device=cuda ===
+  [mlflow] logging runs to experiment 'SEA-Net_seanet_slim_2026-07-22' at sqlite:///mlflow.db
+  [mlflow] browse later with:  mlflow ui --backend-store-uri sqlite:///mlflow.db
+=== optuna: model=seanet_slim dataset=WebTraffic device=cuda mode=full ===
+trials=30 sampler=tpe pruner=median | tuning: ['training.learning_rate', 'training.weight_decay', 'training.label_smoothing', 'training.lambda_entropy', 'training.max_batch', 'encoder.d', 'encoder.n_blocks', 'encoder.dropout', 'encoder.max_dilation', 'pooling.d_attn', 'pooling.dropout']
+objective: minimise validation loss (lower is better)
+
+  trial  0: training.learning_rate=0.001405, training.weight_decay=0.00016409, training.label_smoothing=0.12055, training.lambda_entropy=0.027244, training.max_batch=16, encoder.d=32, encoder.n_blocks=6, encoder.dropout=0.25867, encoder.max_dilation=16, pooling.d_attn=16, pooling.dropout=0.361
+           -> val_loss=0.9990
+  trial  1: training.learning_rate=0.0047081, training.weight_decay=0.0002279, training.label_smoothing=0.092296, training.lambda_entropy=0.039026, training.max_batch=16, encoder.d=16, encoder.n_blocks=4, encoder.dropout=0.33227, encoder.max_dilation=16, pooling.d_attn=32, pooling.dropout=0.30455
+           -> val_loss=1.2702
+  trial  2: training.learning_rate=0.00082487, training.weight_decay=5.5272e-05, training.label_smoothing=0.13953, training.lambda_entropy=0.0030113, training.max_batch=16, encoder.d=64, encoder.n_blocks=5, encoder.dropout=0.23158, encoder.max_dilation=8, pooling.d_attn=8, pooling.dropout=0.17333
+           -> val_loss=0.9187
+  trial  3: training.learning_rate=0.0004692, training.weight_decay=1.54e-05, training.label_smoothing=0.13127, training.lambda_entropy=0.0069091, training.max_batch=32, encoder.d=32, encoder.n_blocks=6, encoder.dropout=0.2406, encoder.max_dilation=8, pooling.d_attn=32, pooling.dropout=0.13562
+           -> val_loss=1.0580
+  trial  4: training.learning_rate=0.00073392, training.weight_decay=5.0562e-05, training.label_smoothing=0.012829, training.lambda_entropy=0.034624, training.max_batch=8, encoder.d=64, encoder.n_blocks=4, encoder.dropout=0.30022, encoder.max_dilation=16, pooling.d_attn=32, pooling.dropout=0.10141
+           -> val_loss=0.4789
+  trial  5: training.learning_rate=0.0020198, training.weight_decay=2.8756e-05, training.label_smoothing=0.14704, training.lambda_entropy=0.048109, training.max_batch=32, encoder.d=64, encoder.n_blocks=4, encoder.dropout=0.35392, encoder.max_dilation=32, pooling.d_attn=32, pooling.dropout=0.30776
+  trial  6: training.learning_rate=0.0023082, training.weight_decay=7.1078e-05, training.label_smoothing=0.19122, training.lambda_entropy=0.0322, training.max_batch=16, encoder.d=32, encoder.n_blocks=5, encoder.dropout=0.22863, encoder.max_dilation=32, pooling.d_attn=16, pooling.dropout=0.22943
+  trial  7: training.learning_rate=0.0037374, training.weight_decay=4.2119e-05, training.label_smoothing=0.087173, training.lambda_entropy=0.044596, training.max_batch=8, encoder.d=64, encoder.n_blocks=3, encoder.dropout=0.36044, encoder.max_dilation=16, pooling.d_attn=4, pooling.dropout=0.12075
+  trial  8: training.learning_rate=0.0021344, training.weight_decay=5.896e-05, training.label_smoothing=0.14441, training.lambda_entropy=0.043319, training.max_batch=8, encoder.d=32, encoder.n_blocks=5, encoder.dropout=0.1163, encoder.max_dilation=32, pooling.d_attn=16, pooling.dropout=0.10955
+  trial  9: training.learning_rate=0.00047682, training.weight_decay=0.00011373, training.label_smoothing=0.11545, training.lambda_entropy=0.011895, training.max_batch=8, encoder.d=32, encoder.n_blocks=4, encoder.dropout=0.16295, encoder.max_dilation=16, pooling.d_attn=4, pooling.dropout=0.23032
+  trial 10: training.learning_rate=0.00031766, training.weight_decay=0.00043958, training.label_smoothing=0.0041538, training.lambda_entropy=0.019942, training.max_batch=8, encoder.d=16, encoder.n_blocks=3, encoder.dropout=0.30784, encoder.max_dilation=16, pooling.d_attn=8, pooling.dropout=0.37508
+  trial 11: training.learning_rate=0.00088134, training.weight_decay=2.4754e-05, training.label_smoothing=0.017332, training.lambda_entropy=0.00071375, training.max_batch=16, encoder.d=64, encoder.n_blocks=5, encoder.dropout=0.28497, encoder.max_dilation=8, pooling.d_attn=8, pooling.dropout=0.18162
+  trial 12: training.learning_rate=0.00091337, training.weight_decay=1.0187e-05, training.label_smoothing=0.043154, training.lambda_entropy=0.019808, training.max_batch=8, encoder.d=64, encoder.n_blocks=5, encoder.dropout=0.39919, encoder.max_dilation=8, pooling.d_attn=8, pooling.dropout=0.17846
+  trial 13: training.learning_rate=0.00080815, training.weight_decay=8.5291e-05, training.label_smoothing=0.053485, training.lambda_entropy=0.033442, training.max_batch=16, encoder.d=64, encoder.n_blocks=4, encoder.dropout=0.1969, encoder.max_dilation=8, pooling.d_attn=32, pooling.dropout=0.16148
+           -> val_loss=0.6704
+  trial 14: training.learning_rate=0.00064267, training.weight_decay=0.00010142, training.label_smoothing=0.047558, training.lambda_entropy=0.034041, training.max_batch=32, encoder.d=64, encoder.n_blocks=4, encoder.dropout=0.18358, encoder.max_dilation=8, pooling.d_attn=32, pooling.dropout=0.10137
+  trial 15: training.learning_rate=0.0013489, training.weight_decay=3.2339e-05, training.label_smoothing=0.043901, training.lambda_entropy=0.025881, training.max_batch=16, encoder.d=64, encoder.n_blocks=3, encoder.dropout=0.19206, encoder.max_dilation=16, pooling.d_attn=32, pooling.dropout=0.15066
+  trial 16: training.learning_rate=0.0012897, training.weight_decay=0.00028563, training.label_smoothing=0.068894, training.lambda_entropy=0.038758, training.max_batch=8, encoder.d=64, encoder.n_blocks=4, encoder.dropout=0.10795, encoder.max_dilation=8, pooling.d_attn=32, pooling.dropout=0.21616
+  trial 17: training.learning_rate=0.00056788, training.weight_decay=9.698e-05, training.label_smoothing=0.023618, training.lambda_entropy=0.031522, training.max_batch=8, encoder.d=16, encoder.n_blocks=3, encoder.dropout=0.27654, encoder.max_dilation=8, pooling.d_attn=32, pooling.dropout=0.27379
+  trial 18: training.learning_rate=0.00032666, training.weight_decay=0.0001531, training.label_smoothing=0.066449, training.lambda_entropy=0.020195, training.max_batch=16, encoder.d=64, encoder.n_blocks=4, encoder.dropout=0.19166, encoder.max_dilation=16, pooling.d_attn=32, pooling.dropout=0.14744
+  trial 19: training.learning_rate=0.0010537, training.weight_decay=1.9052e-05, training.label_smoothing=0.028062, training.lambda_entropy=0.037524, training.max_batch=32, encoder.d=64, encoder.n_blocks=4, encoder.dropout=0.1585, encoder.max_dilation=32, pooling.d_attn=4, pooling.dropout=0.21306
+  trial 20: training.learning_rate=0.00069275, training.weight_decay=4.3757e-05, training.label_smoothing=0.00099181, training.lambda_entropy=0.025941, training.max_batch=8, encoder.d=16, encoder.n_blocks=3, encoder.dropout=0.30174, encoder.max_dilation=16, pooling.d_attn=32, pooling.dropout=0.15604
+  trial 21: training.learning_rate=0.00084715, training.weight_decay=4.6599e-05, training.label_smoothing=0.17835, training.lambda_entropy=0.012542, training.max_batch=16, encoder.d=64, encoder.n_blocks=5, encoder.dropout=0.21813, encoder.max_dilation=8, pooling.d_attn=8, pooling.dropout=0.18217
+  trial 22: training.learning_rate=0.00041653, training.weight_decay=7.0679e-05, training.label_smoothing=0.16496, training.lambda_entropy=0.0031232, training.max_batch=16, encoder.d=64, encoder.n_blocks=6, encoder.dropout=0.25499, encoder.max_dilation=8, pooling.d_attn=8, pooling.dropout=0.17027
+  trial 23: training.learning_rate=0.00071627, training.weight_decay=6.6998e-05, training.label_smoothing=0.093303, training.lambda_entropy=0.013352, training.max_batch=16, encoder.d=64, encoder.n_blocks=5, encoder.dropout=0.13979, encoder.max_dilation=8, pooling.d_attn=8, pooling.dropout=0.12567
+           -> val_loss=0.8019
+  trial 24: training.learning_rate=0.0006035, training.weight_decay=0.00013161, training.label_smoothing=0.096877, training.lambda_entropy=0.013745, training.max_batch=16, encoder.d=64, encoder.n_blocks=4, encoder.dropout=0.1402, encoder.max_dilation=8, pooling.d_attn=32, pooling.dropout=0.12826
+  trial 25: training.learning_rate=0.0011177, training.weight_decay=7.7399e-05, training.label_smoothing=0.068196, training.lambda_entropy=0.028866, training.max_batch=16, encoder.d=64, encoder.n_blocks=5, encoder.dropout=0.14407, encoder.max_dilation=8, pooling.d_attn=8, pooling.dropout=0.12133
+  trial 26: training.learning_rate=0.0016172, training.weight_decay=3.657e-05, training.label_smoothing=0.056853, training.lambda_entropy=0.023609, training.max_batch=16, encoder.d=64, encoder.n_blocks=4, encoder.dropout=0.12612, encoder.max_dilation=8, pooling.d_attn=4, pooling.dropout=0.19687
+  trial 27: training.learning_rate=0.0007507, training.weight_decay=0.00020524, training.label_smoothing=0.07839, training.lambda_entropy=0.034885, training.max_batch=16, encoder.d=64, encoder.n_blocks=6, encoder.dropout=0.20848, encoder.max_dilation=8, pooling.d_attn=16, pooling.dropout=0.10158
+  trial 28: training.learning_rate=0.00052922, training.weight_decay=8.3172e-05, training.label_smoothing=0.034459, training.lambda_entropy=0.016599, training.max_batch=32, encoder.d=64, encoder.n_blocks=5, encoder.dropout=0.16219, encoder.max_dilation=32, pooling.d_attn=32, pooling.dropout=0.13645
+  trial 29: training.learning_rate=0.00038312, training.weight_decay=2.2381e-05, training.label_smoothing=0.11181, training.lambda_entropy=0.043969, training.max_batch=8, encoder.d=16, encoder.n_blocks=6, encoder.dropout=0.26751, encoder.max_dilation=16, pooling.d_attn=16, pooling.dropout=0.25495
+
+best validation loss: 0.4789  (trial 4)
+best hyperparameters:
+  training.learning_rate = 0.0007339198007141648
+  training.weight_decay = 5.056155262003501e-05
+  training.label_smoothing = 0.012829499269756873
+  training.lambda_entropy = 0.034623605968500996
+  training.max_batch = 8
+  encoder.d = 64
+  encoder.n_blocks = 4
+  encoder.dropout = 0.3002231139891045
+  encoder.max_dilation = 16
+  pooling.d_attn = 32
+  pooling.dropout = 0.10140864285776413
+
+  retraining the best config on WebTraffic to record its test metrics ...
+    stage 1/3: loading data ...
+    stage 2/3: training on 400 series (val=100, C=10, T=1008, batch=8) ...
+  saved best params + metrics -> configs/models/seanet_slim.yaml  (records.optuna_best)
+  best on WebTraffic: test_acc=0.884 test_loss=0.3934 test_auroc=0.9886  (val_loss=0.4789)
+  set `use_params: auto` (or optuna_best) in configs/models/seanet_slim.yaml to train with these.
+  compare all trials in the MLflow web page:  mlflow ui --backend-store-uri sqlite:///mlflow.db
+
+[log] finished; full output saved to results/SEA_NET/seanet_slim__mstcn_sep_classwise_conjunctive/logs/optuna_2026-07-22_11-18-10.log

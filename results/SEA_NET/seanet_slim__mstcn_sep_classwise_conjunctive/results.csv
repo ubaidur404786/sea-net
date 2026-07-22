@@ -1,2 +1,2 @@
-dataset   , model      , encoder  , pooling              , seed, device, params, model_size_mb, n_train, n_val, n_test, series_length, n_classes, lambda_entropy, test_acc, test_bal_acc, test_auroc, test_loss, test_aopcr, test_ndcg, train_time_s, run_datetime
-WebTraffic, seanet_slim, mstcn_sep, classwise_conjunctive,    0, cuda  ,  20652,        0.7312,     400,   100,    500,          1008,        10,           0.01,      0.9,          0.9,     0.9896,    0.4345,     2.3277,    0.7274,       502.02, 2026-07-21 16:30:46
+dataset,model,encoder,pooling,seed,device,params,model_size_mb,n_train,n_val,n_test,series_length,n_classes,lambda_entropy,test_acc,test_bal_acc,test_auroc,test_loss,test_aopcr,test_ndcg,train_time_s,run_datetime
+WebTraffic,seanet_slim,mstcn_sep,classwise_conjunctive,0,cuda,57580,1.4843,400,100,500,1008,10,0.01,0.916,0.916,0.992,0.3826,2.4782,0.7185,90.72,2026-07-22 11:13:24

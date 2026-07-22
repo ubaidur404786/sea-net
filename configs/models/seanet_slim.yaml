@@ -72,3 +72,42 @@ optuna:
     pooling:
       d_attn: {type: categorical, choices: [4, 8, 16, 32]}
       dropout: {type: float, low: 0.1, high: 0.4}
+
+# ===== AUTO-FILLED RESULTS (managed by main.py - do not edit below this line) =====
+# These records let you compare the DEFAULT recipe against Optuna's BEST without opening MLflow,
+# and (with `use_params: auto`) train with whichever scored higher. They are filled in for you:
+#   records.default     : metrics from our last real `python main.py run` (default recipe).
+#   records.optuna_best : the params Optuna found + their metrics (`python main.py optuna`).
+
+records:
+  default:
+    metrics:
+      test_acc: 0.916
+      test_loss: 0.3826
+      test_auroc: 0.992
+      dataset: WebTraffic
+      recorded: '2026-07-22 11:13:24'
+  optuna_best:
+    params:
+      training:
+        learning_rate: 0.0007339198007141648
+        weight_decay: 5.056155262003501e-05
+        label_smoothing: 0.012829499269756873
+        lambda_entropy: 0.034623605968500996
+        max_batch: 8
+      encoder:
+        d: 64
+        n_blocks: 4
+        dropout: 0.3002231139891045
+        max_dilation: 16
+      pooling:
+        d_attn: 32
+        dropout: 0.10140864285776413
+    metrics:
+      test_acc: 0.884
+      test_loss: 0.3934
+      test_auroc: 0.9886
+      val_loss: 0.4789
+      dataset: WebTraffic
+      n_trials: 30
+      recorded: '2026-07-22 11:27:49'

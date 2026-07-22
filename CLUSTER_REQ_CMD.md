@@ -15,4 +15,6 @@ oarsub -q abaca -I -l gpu=1,walltime=4:00:00 -p "gpu_model LIKE '%H100%'"
 oarsub -q besteffort -I -l gpu=1,walltime=4:00:00 -p "gpu_model LIKE '%L40S%'"
 
 
-oarsub -q abaca -I -l gpu=1,walltime=4:00:00 -p "esterel24 or esterel25 or esterel26"
+oarsub -q abaca -I -l gpu=1,walltime=4:00:00 -p "esterel35 or esterel25 or esterel26"
+
+oarsub -q besteffort -I -l gpu=1,walltime=4:00:00 -p "esterel35 or esterel40 or esterel43"

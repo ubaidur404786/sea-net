@@ -669,6 +669,9 @@ git push
 cd ~/projects/sea-net
 tmux new -s train
 
+# tmux attach -t train (Attach to a session in same previous one)
+#tmux kill-session -t train
+
 # 2) turn env on
 module load conda
 conda activate seanet
