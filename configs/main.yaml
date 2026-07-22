@@ -15,22 +15,23 @@ model: seanet
 
 # what to run
 run:
-  mode: single          # single = train + evaluate one dataset (the only mode for now)
-  dataset: WebTraffic   # the dataset to use when mode is "single"
-  smoke: false          # true = quick 3-epoch check (for testing the pipeline, NOT a real result)
-  re_train: true       # false = if this dataset is already done for this model, skip it (the normal,
-                        #         safe behaviour). true = train it AGAIN even if it is already done, and
-                        #         REPLACE its old row in results.csv with the new numbers. Turn this on
-                        #         when you just want to re-check a model's accuracy without hand-deleting
-                        #         the dataset's line from done_train_dataset.txt. (MLflow still keeps the
-                        #         old run too, so you never lose the previous result.)
+  mode: single # single = train + evaluate one dataset (the only mode for now)
+  dataset: WebTraffic # the dataset to use when mode is "single"
+  smoke: false # true = quick 3-epoch check (for testing the pipeline, NOT a real result)
+  re_train:
+    false # false = if this dataset is already done for this model, skip it (the normal,
+    #         safe behaviour). true = train it AGAIN even if it is already done, and
+    #         REPLACE its old row in results.csv with the new numbers. Turn this on
+    #         when you just want to re-check a model's accuracy without hand-deleting
+    #         the dataset's line from done_train_dataset.txt. (MLflow still keeps the
+    #         old run too, so you never lose the previous result.)
 
 # preprocessing: how each series is turned into "instances" for the MIL model.
 #   single_point   = one instance is one timestep (MILLET's original setup; NDCG works here).
 #   sliding_window = one instance is a window of the series; window_size / window_stride control it
 #                    (NDCG is skipped in this mode - windows have no per-timestep ground truth).
 preprocessing:
-  instance_type: single_point   # single_point | sliding_window
+  instance_type: single_point # single_point | sliding_window
   window_size: 5
   window_stride: 5
 
@@ -56,9 +57,9 @@ output:
 # Why only correctly-predicted samples: a figure is meant to show what good evidence looks like -
 # which points the model leaned on when it got the answer right.
 interpretability:
-  dataset: WebTraffic       # which dataset to explain (WebTraffic is the one with ground truth)
-  n_classes: 3              # cover the first N classes (0, 1, 2)
-  per_class: 1              # how many correctly-predicted examples per class -> 3 figures per run
+  dataset: WebTraffic # which dataset to explain (WebTraffic is the one with ground truth)
+  n_classes: 3 # cover the first N classes (0, 1, 2)
+  per_class: 1 # how many correctly-predicted examples per class -> 3 figures per run
 
 # mlflow: your automatic "lab notebook". EVERY training/evaluation run (run / single / webtraffic /
 # train) AND every Optuna trial is recorded here: its inputs (hyperparameters), its results (train /
@@ -67,12 +68,13 @@ interpretability:
 #   mlflow ui --backend-store-uri sqlite:///mlflow.db      (then open http://127.0.0.1:5000)
 # See MLFLOW_GUIDE.md for how to view results locally and how to copy them back from Grid5000.
 mlflow:
-  enabled: true                     # turn all MLflow tracking on/off
-  experiment_name: SEA-Net          # runs + trials are grouped under this experiment
-  tracking_uri: "sqlite:///mlflow.db"   # a small local database file (mlflow.db) in the repo.
-  log_model_weights: true           # also save each trained model as a versioned model (Models tab +
-                                    # loading later). Set false to log only params + metrics (no weight
-                                    # files) - e.g. to save disk during the full 129-dataset "train" sweep.
+  enabled: true # turn all MLflow tracking on/off
+  experiment_name: SEA-Net # runs + trials are grouped under this experiment
+  tracking_uri: "sqlite:///mlflow.db" # a small local database file (mlflow.db) in the repo.
+  log_model_weights:
+    true # also save each trained model as a versioned model (Models tab +
+    # loading later). Set false to log only params + metrics (no weight
+    # files) - e.g. to save disk during the full 129-dataset "train" sweep.
   # NOTE: recent MLflow dropped the old "./mlruns folder" store, so we use a SQLite file instead (this
   # is also what lets us save versioned models). mlflow.db + the saved weights under mlartifacts/ are
   # git-ignored and copy cleanly from Grid5000 to your laptop. Browse with:

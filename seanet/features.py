@@ -143,8 +143,13 @@ class SummaryGate(nn.Module):
 
         s      = summarise_over_time(H)        # (B, d): one number per channel for the whole series
         gate   = sigmoid(W s)                  # (B, d): a weight in [0,1] for each channel
-        H_out  = H * gate                       # (B, d, T): scale every timestep by its channel gate
-        H_out  = LayerNorm(H_out)               # keep the values in a stable range after scaling
+        H_out  = H * (1 + gate)                 # (B, d, T): RESIDUAL gate - keep H, amplify good channels
+
+    Why residual (H * (1 + gate)) and not a plain gate or a LayerNorm: a plain multiply or a per-timestep
+    LayerNorm forces every timestep to a similar magnitude, which erased the "this timestep matters more"
+    signal and destroyed our AOPCR / NDCG interpretability. Keeping H and only amplifying (factor in [1,2])
+    preserves the per-timestep structure the MIL explanations rely on, while still letting the summary turn
+    useful channels up.
 
     summary : how to squeeze time into one vector -
         "max"  -> take the strongest value each channel reaches anywhere (good for spikes / needle-in-haystack)
@@ -162,7 +167,6 @@ class SummaryGate(nn.Module):
         super().__init__()
         self.summary = summary
         self.to_gate = nn.Linear(d, d)        # turns the summary vector into a per-channel gate
-        self.norm = nn.LayerNorm(d)           # normalise channels after gating (stops values drifting)
 
     def _summarise(self, h: torch.Tensor) -> torch.Tensor:
         """h : (B, d, T) -> (B, d) one summary value per channel."""
@@ -176,9 +180,9 @@ class SummaryGate(nn.Module):
         """h : (B, d, T) -> (B, d, T) gated features (same shape, so pooling is unaffected)."""
         s = self._summarise(h)                # (B, d) whole-series summary
         gate = torch.sigmoid(self.to_gate(s)) # (B, d) per-channel weight in [0,1]
-        h = h * gate.unsqueeze(-1)            # (B, d, T) re-weight every timestep by its channel gate
-        # LayerNorm needs channels last: (B, d, T) -> (B, T, d) -> norm -> back to (B, d, T)
-        return self.norm(h.transpose(1, 2)).transpose(1, 2)
+        # residual gate: multiplier is (1 + gate) in [1,2], so we KEEP the original features and only
+        # amplify the useful channels. This preserves per-timestep importance (needed for AOPCR/NDCG).
+        return h * (1.0 + gate.unsqueeze(-1)) # (B, d, T)
 
 
 class MSTCNSepGatedEncoder(nn.Module):
