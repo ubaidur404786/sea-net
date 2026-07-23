@@ -51,8 +51,39 @@ ALL="$SV1 $SV2 $SV3 $SV4"
 PHASE="web"                                   # default
 if [ "$1" = "web" ] || [ "$1" = "full" ]; then PHASE="$1"; shift; fi
 
-# ---- which models: any names passed as args, else ALL of them ----
-if [ "$#" -gt 0 ]; then MODELS="$*"; else MODELS="$ALL"; fi
+# ---- which models to run ----
+# You can pass:
+#   nothing          -> ALL models (every version)
+#   a version group  -> sv1 | sv2 | sv3 | sv4 | all   (expands to that whole folder)
+#   explicit names   -> sv4/seanet_recon sv4/seanet_slim_topk ...
+# IMPORTANT: do NOT type "$SV4" from your shell - that variable only exists INSIDE this script, so from
+# your terminal it is empty. Use the WORD  sv4  instead:   bash scripts/run_all.sh full sv4
+MODELS=""
+if [ "$#" -eq 0 ]; then
+  MODELS="$ALL"
+else
+  for sel in "$@"; do
+    [ -z "$sel" ] && continue                    # skip empty tokens (e.g. an unset "$SV4")
+    case "$sel" in
+      all) MODELS="$MODELS $ALL" ;;
+      sv1) MODELS="$MODELS $SV1" ;;
+      sv2) MODELS="$MODELS $SV2" ;;
+      sv3) MODELS="$MODELS $SV3" ;;
+      sv4) MODELS="$MODELS $SV4" ;;
+      *)   MODELS="$MODELS $sel" ;;              # an explicit model name like sv4/seanet_recon
+    esac
+  done
+fi
+MODELS=$(echo $MODELS | xargs)                   # collapse whitespace / newlines, trim the ends
+
+# guard: if nothing valid was selected, STOP LOUDLY instead of silently printing "ALL DONE".
+if [ -z "$MODELS" ]; then
+  echo "ERROR: no models selected (did you pass an empty \"\$SV4\"? use the word sv4 instead). Examples:"
+  echo "  bash scripts/run_all.sh full sv4                 # all sv4 models, full sweep"
+  echo "  bash scripts/run_all.sh web                      # all models, WebTraffic only"
+  echo "  bash scripts/run_all.sh full sv4/seanet_recon sv4/seanet_slim_topk"
+  exit 1
+fi
 
 mkdir -p logs
 # name the log after the phase + the first model, so two nodes / two phases never share a log file.
