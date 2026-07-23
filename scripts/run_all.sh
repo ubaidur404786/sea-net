@@ -32,10 +32,19 @@ source scripts/env.sh        # turn the environment on (prints python + torch/cu
 
 # ---- the models, grouped by VERSION (the folder each config lives in) ----
 # sv1 = paper baselines, sv2 = original SEA-Net, sv3 = pooling family, sv4 = new encoder+pooling work.
-SV1="sv1/millet sv1/fcn sv1/resnet"
-SV2="sv2/seanet"
-SV3="sv3/seanet_acp sv3/seanet_classwise sv3/seanet_conjunctive sv3/seanet_softmax"
-SV4="sv4/seanet_slim sv4/seanet_spiketrend sv4/seanet_gated_max sv4/seanet_gated_mean sv4/seanet_gated_last sv4/seanet_bottleneck sv4/seanet_inputgate sv4/seanet_recon sv4/seanet_gated_last_topk sv4/seanet_gated_last_attnmax"
+# We AUTO-DISCOVER every config in each folder, so new files (like the cross-product ones) are picked up
+# automatically - no need to hand-list them here.
+list_models() {
+  local v="$1"
+  for f in configs/models/"$v"/*.yaml; do
+    [ -e "$f" ] || continue                        # folder empty -> skip
+    echo "$v/$(basename "$f" .yaml)"
+  done
+}
+SV1=$(list_models sv1)
+SV2=$(list_models sv2)
+SV3=$(list_models sv3)
+SV4=$(list_models sv4)
 ALL="$SV1 $SV2 $SV3 $SV4"
 
 # ---- phase: "web" (WebTraffic only, fast screen) or "full" (all datasets, real sweep) ----
