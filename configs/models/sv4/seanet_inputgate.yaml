@@ -1,0 +1,38 @@
+# sv4/seanet_inputgate.yaml - encoder re-weighted by a gate built from the RAW input.
+#
+# A small conv reads the raw series and makes a per-timestep, per-channel gate; features are multiplied
+# by (1 + gate). So a sharp event in the input can switch feature channels on right where it happens
+# (this is our "input x stem" multiplicative-skip idea). Paired with our best pooling. Same recipe as
+# the gated runs, so the only change is the encoder.
+#
+# Run it (WebTraffic by default):  python main.py run --model sv4/seanet_inputgate
+
+name: seanet_inputgate
+use_params: default
+
+encoder:
+  type: mstcn_sep_inputgate
+  d: 64
+  n_blocks: 4
+  dropout: 0.2
+  max_dilation: 16
+  kernels: [5, 11, 23]
+  gate_kernel: 7          # window of the conv that reads the raw input to build the gate
+
+pooling:
+  type: classwise_conjunctive
+  d_attn: 8
+  dropout: 0.2
+  positional_encoding: true
+
+training:
+  n_epochs: 400
+  patience: 60
+  max_batch: 16
+  learning_rate: 0.00125
+  weight_decay: 0.00012
+  label_smoothing: 0.13
+  lambda_entropy: 0.01
+  min_train_for_val: 100
+  val_frac: 0.2
+  optimizer: adam

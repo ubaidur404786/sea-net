@@ -1,0 +1,37 @@
+# sv4/seanet_gated_max.yaml - self-gating encoder, gate summarises time with MAX.
+#
+# One of three gated variants (max | mean | last) kept as SEPARATE files so each summary type gets its
+# own results folder and its own row in the comparison. Only encoder.summary changes between them, so
+# the three are a fair head-to-head test. Encoder + pooling are our small-model winners (d=64).
+#
+# Run it (WebTraffic by default):  python main.py run --model sv4/seanet_gated_max
+
+name: seanet_gated_max
+use_params: default
+
+encoder:
+  type: mstcn_sep_gated
+  d: 64
+  n_blocks: 4
+  dropout: 0.2
+  max_dilation: 16
+  kernels: [5, 11, 23]
+  summary: max            # this file: MAX (strongest value each channel reaches - good for spikes)
+
+pooling:
+  type: classwise_conjunctive
+  d_attn: 8
+  dropout: 0.2
+  positional_encoding: true
+
+training:
+  n_epochs: 400
+  patience: 60
+  max_batch: 16
+  learning_rate: 0.00125
+  weight_decay: 0.00012
+  label_smoothing: 0.13
+  lambda_entropy: 0.01
+  min_train_for_val: 100
+  val_frac: 0.2
+  optimizer: adam

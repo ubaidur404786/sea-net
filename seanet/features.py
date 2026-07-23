@@ -284,6 +284,141 @@ class MSTCNSepSpikeTrendEncoder(nn.Module):
 
 
 # --------------------------------------------------------------------------------------
+# Bottleneck version of the encoder (a SMALLER model).
+#
+# Idea: almost all the parameters in a block live in the pointwise 1x1 conv Conv1d(d, d), which costs
+# d*d weights. We shrink it by FACTORISING that one conv into two cheaper 1x1 convs through a narrow
+# middle of width r:
+#     Conv1d(d, r)  ->  Conv1d(r, d)      where r = d // bottleneck_ratio   (r << d)
+# cost 2*d*r instead of d*d. With ratio 4 that is about half the block params, for a small accuracy
+# cost. Everything else (depthwise multi-scale convs, residual, unchanged length T) stays the same.
+# --------------------------------------------------------------------------------------
+class MultiScaleSepBottleneckBlock(nn.Module):
+    """Same as MultiScaleSepBlock, but the d->d pointwise conv is split into d->r->d (cheaper)."""
+
+    def __init__(self, d: int, dilation: int, dropout: float, kernels: Tuple[int, ...] = SEA_KERNELS,
+                 bottleneck_ratio: int = 4):
+        super().__init__()
+        r = max(1, d // bottleneck_ratio)                    # width of the narrow middle (r << d)
+        self.units = nn.ModuleList()
+        for _ in range(2):
+            branches = nn.ModuleList([
+                nn.Conv1d(d, d, k, padding=(k - 1) * dilation // 2, dilation=dilation, groups=d)
+                for k in kernels
+            ])
+            self.units.append(nn.ModuleDict({
+                "branches": branches,
+                # the factorised pointwise: d -> r -> d, replaces the expensive d -> d 1x1 conv
+                "reduce": nn.Conv1d(d, r, kernel_size=1),
+                "expand": nn.Conv1d(r, d, kernel_size=1),
+                "bn": nn.BatchNorm1d(d),
+            }))
+        self.act = nn.ReLU()
+        self.drop = nn.Dropout(dropout)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        y = x
+        for unit in self.units:
+            multi = sum(branch(y) for branch in unit["branches"])   # add the 3 kernel outputs
+            mixed = unit["expand"](unit["reduce"](multi))           # d -> r -> d instead of d -> d
+            y = self.drop(self.act(unit["bn"](mixed)))
+        return self.act(x + y)                               # residual, then relu
+
+
+class MSTCNSepBottleneckEncoder(nn.Module):
+    """The SEA-Net encoder but with bottleneck blocks, so it has far fewer parameters. .d_out = d."""
+
+    def __init__(self, n_in: int = 1, d: int = SEA_D, n_blocks: int = SEA_N_BLOCKS,
+                 dropout: float = SEA_DROPOUT, max_dilation: int = SEA_MAX_DILATION,
+                 kernels: Tuple[int, ...] = SEA_KERNELS, bottleneck_ratio: int = 4):
+        super().__init__()
+        self.d_out = d
+        self.stem = nn.Conv1d(n_in, d, kernel_size=7, padding=3)
+        self.blocks = nn.Sequential(*[
+            MultiScaleSepBottleneckBlock(d, dilation=min(2 ** i, max_dilation), dropout=dropout,
+                                         kernels=kernels, bottleneck_ratio=bottleneck_ratio)
+            for i in range(n_blocks)
+        ])
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.blocks(self.stem(x))
+
+
+# --------------------------------------------------------------------------------------
+# Input-gate encoder (the multiplicative "input x stem" skip idea).
+#
+# Idea (from our brainstorm): let the RAW input decide, at every timestep, which feature channels
+# matter. A small conv reads x and builds a per-timestep, per-channel gate in [0,1]; we multiply the
+# encoder features by (1 + gate). Unlike SummaryGate (ONE gate for the whole series), this gate can
+# change along time, so a sharp event in the input can switch channels on right where it happens.
+# The residual form (1 + gate, so a factor in [1,2]) keeps the original features, so per-timestep
+# importance (AOPCR / NDCG) still survives.
+# --------------------------------------------------------------------------------------
+class InputGate(nn.Module):
+    """Build a per-timestep, per-channel gate from the raw input and use it to re-weight features."""
+
+    def __init__(self, n_in: int, d: int, kernel_size: int = 7):
+        super().__init__()
+        # a small conv reads the raw input and outputs one gate value per channel per timestep
+        self.to_gate = nn.Conv1d(n_in, d, kernel_size=kernel_size, padding=kernel_size // 2)
+
+    def forward(self, x: torch.Tensor, h: torch.Tensor) -> torch.Tensor:
+        gate = torch.sigmoid(self.to_gate(x))                # (B, d, T) in [0,1], built from raw input
+        return h * (1.0 + gate)                              # residual multiplicative skip
+
+
+class MSTCNSepInputGateEncoder(nn.Module):
+    """The slim encoder, then re-weighted by a gate built from the RAW input. .d_out = d."""
+
+    def __init__(self, n_in: int = 1, d: int = SEA_D, n_blocks: int = SEA_N_BLOCKS,
+                 dropout: float = SEA_DROPOUT, max_dilation: int = SEA_MAX_DILATION,
+                 kernels: Tuple[int, ...] = SEA_KERNELS, gate_kernel: int = 7):
+        super().__init__()
+        self.d_out = d
+        self.backbone = MSTCNSepEncoder(n_in, d, n_blocks, dropout, max_dilation, kernels)
+        self.input_gate = InputGate(n_in, d, kernel_size=gate_kernel)
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        h = self.backbone(x)                                 # (B, d, T) encoder features
+        return self.input_gate(x, h)                         # gate built from the raw input x
+
+
+# --------------------------------------------------------------------------------------
+# Reconstruction-residual encoder (the "unmatched area" idea).
+#
+# Idea (from our brainstorm): the encoder learns the NORMAL / smooth shape of a series. If we try to
+# rebuild the input from those features and subtract it, what is LEFT (the residual) is the part the
+# smooth model could not explain - the surprising bits that often carry the class evidence. We turn
+# that residual into a few extra feature channels and mix them back in.
+# NOTE: there is NO extra reconstruction loss for now, so the "recon" conv is just learned end-to-end
+# (this is really a "learned residual" feature). We can add a real reconstruction loss later if it helps.
+# --------------------------------------------------------------------------------------
+class MSTCNSepReconEncoder(nn.Module):
+    """Trend features + a residual (input - rebuilt input) branch, mixed back to d channels. .d_out = d."""
+
+    def __init__(self, n_in: int = 1, d: int = SEA_D, n_blocks: int = SEA_N_BLOCKS,
+                 dropout: float = SEA_DROPOUT, max_dilation: int = SEA_MAX_DILATION,
+                 kernels: Tuple[int, ...] = SEA_KERNELS, d_res: int = 16):
+        super().__init__()
+        self.d_out = d
+        self.trend = MSTCNSepEncoder(n_in, d, n_blocks, dropout, max_dilation, kernels)
+        self.recon = nn.Conv1d(d, n_in, kernel_size=1)       # rebuild the input from the trend features
+        self.res_conv = nn.Sequential(
+            nn.Conv1d(n_in, d_res, kernel_size=3, padding=1), # small features from the residual
+            nn.BatchNorm1d(d_res),
+            nn.ReLU(),
+        )
+        self.mix = nn.Conv1d(d + d_res, d, kernel_size=1)    # combine trend + residual back to d
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        h = self.trend(x)                                    # (B, d, T) smooth / trend features
+        recon = self.recon(h)                                # (B, n_in, T) rebuilt input
+        residual = x - recon                                 # (B, n_in, T) the "unmatched area"
+        r = self.res_conv(residual)                          # (B, d_res, T) features from the surprise
+        return self.mix(torch.cat([h, r], dim=1))            # (B, d, T)
+
+
+# --------------------------------------------------------------------------------------
 # The encoder registry (name -> builder). This is what makes encoders swappable by config.
 # --------------------------------------------------------------------------------------
 # A "builder" is a function that takes (encoder_cfg, n_in) and returns an encoder module with .d_out.
@@ -350,6 +485,48 @@ def _build_mstcn_sep_spiketrend(cfg, n_in: int) -> nn.Module:
         summary=getattr(cfg, "summary", "last"),      # last was the best gate summary on WebTraffic
         d_spike=getattr(cfg, "d_spike", 16),          # size of the spike branch (small on purpose)
         smooth_kernel=getattr(cfg, "smooth_kernel", 5),   # window of the local average in the spike branch
+    )
+
+
+@register_encoder("mstcn_sep_bottleneck")
+def _build_mstcn_sep_bottleneck(cfg, n_in: int) -> nn.Module:
+    """Build the bottleneck (smaller) encoder. Same config as mstcn_sep plus optional bottleneck_ratio."""
+    return MSTCNSepBottleneckEncoder(
+        n_in=n_in,
+        d=cfg.d,
+        n_blocks=cfg.n_blocks,
+        dropout=cfg.dropout,
+        max_dilation=cfg.max_dilation,
+        kernels=tuple(cfg.kernels),
+        bottleneck_ratio=getattr(cfg, "bottleneck_ratio", 4),   # r = d // ratio (bigger ratio = smaller)
+    )
+
+
+@register_encoder("mstcn_sep_inputgate")
+def _build_mstcn_sep_inputgate(cfg, n_in: int) -> nn.Module:
+    """Build the input-gate encoder. Same config as mstcn_sep plus optional gate_kernel."""
+    return MSTCNSepInputGateEncoder(
+        n_in=n_in,
+        d=cfg.d,
+        n_blocks=cfg.n_blocks,
+        dropout=cfg.dropout,
+        max_dilation=cfg.max_dilation,
+        kernels=tuple(cfg.kernels),
+        gate_kernel=getattr(cfg, "gate_kernel", 7),   # window of the conv that reads the raw input
+    )
+
+
+@register_encoder("mstcn_sep_recon")
+def _build_mstcn_sep_recon(cfg, n_in: int) -> nn.Module:
+    """Build the reconstruction-residual encoder. Same config as mstcn_sep plus optional d_res."""
+    return MSTCNSepReconEncoder(
+        n_in=n_in,
+        d=cfg.d,
+        n_blocks=cfg.n_blocks,
+        dropout=cfg.dropout,
+        max_dilation=cfg.max_dilation,
+        kernels=tuple(cfg.kernels),
+        d_res=getattr(cfg, "d_res", 16),   # how many feature channels to make from the residual
     )
 
 

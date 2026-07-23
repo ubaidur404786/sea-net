@@ -99,7 +99,7 @@ def build_pooling(pooling_cfg, d_in: int, n_clz: int) -> nn.Module:
     # to softmax_conjunctive, and init_beta only to adaptive_classwise. Adding a knob to a new head
     # later needs no change here: just name it in the config and as a constructor argument.
     accepted = inspect.signature(pooling_cls).parameters
-    for opt in ("d_attn", "temperature", "init_beta"):
+    for opt in ("d_attn", "temperature", "init_beta", "top_frac", "init_lam"):
         if opt in accepted and hasattr(pooling_cfg, opt):
             kwargs[opt] = getattr(pooling_cfg, opt)
     return pooling_cls(d_in, n_clz, **kwargs)
@@ -287,8 +287,102 @@ class AdaptiveClasswisePooling(_AttnPoolingBase):
         }
 
 
-# Register the three new heads so a config can pick them by name (encoder + pooling are swappable
+class TopKConjunctivePooling(_AttnPoolingBase):
+    """
+    Classwise Conjunctive, but the whole-series logit averages ONLY the top-k most-supporting
+    timesteps per class (instead of all T of them).
+
+        a_j^k = sigmoid( (W_A z_j)_k )        # per-class gate
+        p_j^k = classifier(z_j)_k
+        g_j^k = a_j^k * p_j^k                 # gated evidence per timestep
+        Y^k   = mean of the k LARGEST g_j^k over time j   ,   k = ceil(top_frac * T)  (>= 1)
+
+    Why: on long series most timesteps are just background. Averaging over ALL of them dilutes a few
+    strong evidence points. Keeping only the top-k concentrates the decision on the points that matter,
+    which suits spike-like evidence AND should raise AOPCR (deleting the key points now really hurts the
+    score). top_frac = 1.0 recovers ordinary classwise Conjunctive, so it only ever adds capacity.
+    """
+
+    def __init__(self, d_in: int, n_clz: int, d_attn: int = 8, dropout: float = 0.1,
+                 apply_positional_encoding: bool = True, top_frac: float = 0.1):
+        super().__init__(d_in, n_clz, dropout=dropout, apply_positional_encoding=apply_positional_encoding)
+        self.attention_head = nn.Sequential(
+            nn.Linear(d_in, d_attn),
+            nn.Tanh(),
+            nn.Linear(d_attn, n_clz),
+            nn.Sigmoid(),
+        )
+        self.instance_classifier = nn.Linear(d_in, n_clz)
+        self.top_frac = float(top_frac)                      # fraction of timesteps to keep (0<..<=1)
+
+    def forward(self, instance_embeddings: torch.Tensor, pos=None) -> Dict[str, torch.Tensor]:
+        x = self._prepare(instance_embeddings, pos)          # (B, T, d)
+        a = self.attention_head(x)                           # (B, T, C) per-class gates
+        p = self.instance_classifier(x)                      # (B, T, C) per-time-point class logits
+        g = a * p                                            # (B, T, C) gated evidence
+        T = g.shape[1]
+        k = max(1, int(math.ceil(self.top_frac * T)))        # how many top timesteps to keep (>=1)
+        topk = torch.topk(g, k=k, dim=1).values              # (B, k, C) the k largest per class over time
+        bag_logits = topk.mean(dim=1)                        # (B, C) mean of just those top-k
+        return {
+            "bag_logits": bag_logits,
+            "interpretation": g.transpose(1, 2),             # (B, C, T) class-specific importance
+            "instance_logits": p.transpose(1, 2),
+            "attn": a.mean(dim=2, keepdim=True),             # (B, T, 1) for the focus penalty
+        }
+
+
+class AttentionMaxPooling(_AttnPoolingBase):
+    """
+    Classwise Conjunctive with a learnable blend of MEAN-over-time and MAX-over-time, per class.
+
+        g_j^k  = sigmoid( (W_A z_j)_k ) * classifier(z_j)_k   # gated evidence per timestep
+        mean^k = mean_j g_j^k          # spread-out evidence (trends)
+        max^k  = max_j  g_j^k          # single strongest point (spikes)
+        lam_k  = sigmoid(theta_k)      # per-class blend in [0,1], learned
+        Y^k    = (1 - lam_k) * mean^k + lam_k * max^k
+
+    lam_k -> 0 gives ordinary classwise Conjunctive (mean); lam_k -> 1 gives max pooling. Each class
+    learns whether its evidence is a trend or a spike. This is a simpler, "hard-max" cousin of
+    adaptive_classwise (which uses a smooth soft-argmax); kept separate so we can compare the two.
+    """
+
+    def __init__(self, d_in: int, n_clz: int, d_attn: int = 8, dropout: float = 0.1,
+                 apply_positional_encoding: bool = True, init_lam: float = 0.5):
+        super().__init__(d_in, n_clz, dropout=dropout, apply_positional_encoding=apply_positional_encoding)
+        self.attention_head = nn.Sequential(
+            nn.Linear(d_in, d_attn),
+            nn.Tanh(),
+            nn.Linear(d_attn, n_clz),
+            nn.Sigmoid(),
+        )
+        self.instance_classifier = nn.Linear(d_in, n_clz)
+        # per-class blend lam_k = sigmoid(theta_k); pick theta0 so lam starts at init_lam
+        init_lam = min(max(float(init_lam), 1e-3), 1.0 - 1e-3)
+        theta0 = math.log(init_lam / (1.0 - init_lam))       # inverse of sigmoid (the logit)
+        self.lam_param = nn.Parameter(torch.full((n_clz,), float(theta0)))
+
+    def forward(self, instance_embeddings: torch.Tensor, pos=None) -> Dict[str, torch.Tensor]:
+        x = self._prepare(instance_embeddings, pos)          # (B, T, d)
+        a = self.attention_head(x)                           # (B, T, C) per-class gates
+        p = self.instance_classifier(x)                      # (B, T, C)
+        g = a * p                                            # (B, T, C) gated evidence
+        mean_g = g.mean(dim=1)                               # (B, C) mean over time
+        max_g = g.max(dim=1).values                          # (B, C) max over time
+        lam = torch.sigmoid(self.lam_param).view(1, -1)      # (1, C) per-class blend in [0,1]
+        bag_logits = (1.0 - lam) * mean_g + lam * max_g      # (B, C)
+        return {
+            "bag_logits": bag_logits,
+            "interpretation": g.transpose(1, 2),             # (B, C, T)
+            "instance_logits": p.transpose(1, 2),
+            "attn": a.mean(dim=2, keepdim=True),             # (B, T, 1) for the focus penalty
+        }
+
+
+# Register the new heads so a config can pick them by name (encoder + pooling are swappable
 # exactly like MILLET's own). has_attn=True: each one accepts a d_attn argument from the config.
 register_pooling("classwise_conjunctive", ClasswiseConjunctivePooling, has_attn=True)
 register_pooling("softmax_conjunctive", SoftmaxConjunctivePooling, has_attn=True)
 register_pooling("adaptive_classwise", AdaptiveClasswisePooling, has_attn=True)
+register_pooling("topk_conjunctive", TopKConjunctivePooling, has_attn=True)
+register_pooling("attention_max", AttentionMaxPooling, has_attn=True)

@@ -63,6 +63,20 @@ def is_baseline(model_id: str) -> bool:
     """True if a model id's encoder_pooling part is one of MILLET's baseline combinations."""
     return model_id.split("__")[-1] in BASELINE_MODELS       # drop the "<config>__" prefix first
 
+
+def short_labels(models: List[str]) -> Dict[str, str]:
+    """
+    Give every model a short code m1, m2, ... in the order given.
+
+    Model ids are long, so a comparison figure with many models turns into a wall of text. We map each
+    full id to a tiny code and print the mapping as a legend, so the bars stay readable even with many
+    models. The order is kept stable so the SAME code means the SAME model in every panel.
+
+    models : the list of full model ids.
+    returns : {full model id -> "m1"/"m2"/...}.
+    """
+    return {m: f"m{i}" for i, m in enumerate(models, start=1)}
+
 OURS_COLOUR = "steelblue"
 MILLET_COLOUR = "indianred"
 
@@ -267,17 +281,21 @@ def plot_model_comparison(cross: pd.DataFrame, figdir: str = SHARED_FIGURES_DIR)
     """
     if cross.empty or "mean_acc_ours" not in cross.columns:
         return []
+    # Model ids are long ("<config>__<encoder>_<pooling>"), so with many models the x-axis becomes an
+    # unreadable wall of text. Instead we give every model a SHORT code (m1, m2, ...) - fixed once here
+    # so the same code means the same model in all three panels - and print a legend under the figure.
+    code = short_labels(list(cross["model"]))                # {full model id -> "m1"/"m2"/...}
     fig, ax = plt.subplots(1, 3, figsize=(13, 5))
     for a, (metric, (_csv, _band, lower)) in zip(ax, R.COMPARED_METRICS.items()):
         col = f"mean_{metric}_ours"
         s = cross.dropna(subset=[col]).sort_values(col, ascending=bool(lower))   # best first
-        names = list(s["model"]) + ["MILLET"]
+        names = [code[m] for m in s["model"]] + ["MILLET"]   # short codes on the axis
         values = list(s[col]) + [float(s[f"mean_{metric}_millet"].iloc[0])]
         colours = [OURS_COLOUR if is_baseline(m) else "darkorange" for m in s["model"]]
         colours.append(MILLET_COLOUR)
         bars = a.bar(range(len(names)), values, color=colours)
         a.set_xticks(range(len(names)))
-        a.set_xticklabels(names, rotation=35, ha="right", fontsize=7)
+        a.set_xticklabels(names, rotation=0, ha="center", fontsize=8)
         a.set_title(f"mean {metric}" + ("  (lower is better)" if lower else ""))
         for b, v in zip(bars, values):
             if pd.notna(v):
@@ -285,7 +303,10 @@ def plot_model_comparison(cross: pd.DataFrame, figdir: str = SHARED_FIGURES_DIR)
     n = int(cross["millet85_datasets"].max())
     fig.suptitle(f"Model comparison over the {n} datasets MILLET published   "
                  f"[orange = our new pooling heads, red = MILLET]")
-    fig.tight_layout()
+    # the legend: "m1 = <config name>" per model, laid out in columns under the plots
+    legend = "   ".join(f"{code[m]} = {m.split('__')[0]}" for m in cross['model'])
+    fig.tight_layout(rect=(0, 0.10, 1, 1))                   # leave a strip at the bottom for the legend
+    fig.text(0.01, 0.01, "legend:  " + legend, fontsize=7, va="bottom", family="monospace", wrap=True)
     return [_save(fig, os.path.join(figdir, "model_comparison.png"))]
 
 

@@ -380,4 +380,9 @@ def model_folder_name(cfg) -> str:
     if not config_name:
         raise ValueError("model_folder_name needs the full config (with cfg.model set) so the "
                          "folder name can start with the config file name.")
+    # configs now live in version folders (sv1/.. sv4/..), so cfg.model can be "sv4/seanet_gated_last".
+    # We keep only the file name here, so the RESULTS layout stays flat (results/SEA_NET/<name>__...)
+    # exactly as before - the version prefix must not turn into a nested results folder (that would
+    # hide the results from discover_models, which only scans the top level).
+    config_name = os.path.basename(config_name)
     return f"{config_name}__{encoder}_{pooling}"

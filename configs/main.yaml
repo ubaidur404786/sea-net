@@ -10,8 +10,10 @@
 # line, e.g. "python main.py run --model millet --dataset Coffee --smoke".
 
 # which model to run. Must match a file configs/models/<model>.yaml
-# options that exist today: seanet, millet   (transformer is a placeholder, not implemented yet)
-model: seanet
+# Configs now live in VERSION folders, so the name includes the folder, e.g. "sv2/seanet" or
+# "sv4/seanet_gated_last". Versions: sv1 = paper baselines (millet/fcn/resnet), sv2 = original SEA-Net,
+# sv3 = pooling family (acp/classwise/conjunctive/softmax), sv4 = new encoder+pooling experiments.
+model: sv2/seanet
 
 # what to run
 run:
