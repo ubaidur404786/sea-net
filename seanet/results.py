@@ -584,15 +584,27 @@ def _print_model_comparison(df: pd.DataFrame, out: str) -> None:
     if "mean_acc_ours" not in df.columns:
         print(f"{len(df)} model(s) have results, but none has finished a dataset MILLET published yet.")
         return
-    millet_acc = df["mean_acc_millet"].dropna()
-    print(f"Cross-model comparison over {len(df)} model(s), on the "
-          f"{int(df['millet85_datasets'].max())} datasets MILLET published (best accuracy first):")
+    # Only models that finished at least one MILLET-published dataset have head-to-head numbers. Models
+    # we only ran on WebTraffic (the fast screen) have NaN there, so we leave them out of THIS table -
+    # they are still saved in the CSV and drawn by `python main.py report`. (Without this filter the
+    # print crashed trying to format a NaN win/tie/loss with the string format code.)
+    ranked = df[df["mean_acc_ours"].notna()]
+    n_skipped = len(df) - len(ranked)
+    if ranked.empty:
+        print(f"{len(df)} model(s) have results, but none has finished a dataset MILLET published yet "
+              f"(run the full sweep: `python main.py train --model <config>`).")
+        print(f"  wrote {out}")
+        return
+    millet_acc = ranked["mean_acc_millet"].dropna()
+    note = f"   ({n_skipped} more have WebTraffic-only results, not shown here)" if n_skipped else ""
+    print(f"Cross-model comparison over {len(ranked)} model(s), on the "
+          f"{int(ranked['millet85_datasets'].max())} datasets MILLET published (best accuracy first):{note}")
     print(f"  {'model':32s} {'acc':>7s} {'loss':>7s} {'aopcr':>8s} {'acc W/T/L':>11s}")
-    for _, r in df.iterrows():
+    for _, r in ranked.iterrows():
         print(f"  {r['model']:32s} {r['mean_acc_ours']:>7.4f} {r['mean_loss_ours']:>7.4f} "
-              f"{r['mean_aopcr_ours']:>8.3f} {r['acc_win_tie_loss']:>11s}")
+              f"{r['mean_aopcr_ours']:>8.3f} {str(r['acc_win_tie_loss']):>11s}")
     if len(millet_acc):                                       # the bar every model above must clear
-        r = df.iloc[0]
+        r = ranked.iloc[0]
         print(f"  {'MILLET (the baseline)':32s} {r['mean_acc_millet']:>7.4f} "
               f"{r['mean_loss_millet']:>7.4f} {r['mean_aopcr_millet']:>8.3f}")
     print(f"  wrote {out}")

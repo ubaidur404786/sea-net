@@ -1,0 +1,11 @@
+[log] command 'results' started at 2026-07-23_16-02-07
+[log] a copy of everything below is being saved to: results\SEA_NET\logs\results_2026-07-23_16-02-07.log
+
+Cross-model comparison over 2 model(s), on the 85 datasets MILLET published (best accuracy first):   (17 more have WebTraffic-only results, not shown here)
+  model                                acc    loss    aopcr   acc W/T/L
+  seanet_gated_last_topk__mstcn_sep_gated_topk_conjunctive  0.8015  0.5531    0.967    17/17/51
+  seanet_gated__mstcn_sep_gated_classwise_conjunctive  0.7900  0.5848    0.486    16/15/54
+  MILLET (the baseline)             0.8445  1.2241    4.553
+  wrote results\SEA_NET\model_comparison.csv
+
+[log] finished; full output saved to results\SEA_NET\logs\results_2026-07-23_16-02-07.log
