@@ -1,0 +1,2 @@
+dataset,model,encoder,pooling,seed,device,params,model_size_mb,n_train,n_val,n_test,series_length,n_classes,lambda_entropy,test_acc,test_bal_acc,test_auroc,test_loss,test_aopcr,test_ndcg,train_time_s,run_datetime
+WebTraffic,seanet,mstcn_sep,additive,0,cuda,269083,3.5386,400,100,500,1008,10,0.01,0.942,0.942,0.9975,0.2597,1.5791,0.7291,77.22,2026-07-23 13:30:06

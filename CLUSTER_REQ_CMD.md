@@ -1,5 +1,5 @@
 # H100 94 GiB, 6 nodes × 2 GPUs — best availability
-oarsub -q abaca -I -l gpu=1,walltime=4:00:00 -p musa
+oarsub -q abaca -I -l gpu=1,walltime=8:00:00 -p musa
 
 # A100 80 GiB
 oarsub -q abaca -I -l gpu=1,walltime=4:00:00 -p esterel37
@@ -17,4 +17,4 @@ oarsub -q besteffort -I -l gpu=1,walltime=4:00:00 -p "gpu_model LIKE '%L40S%'"
 
 oarsub -q abaca -I -l gpu=1,walltime=4:00:00 -p "esterel35 or esterel25 or esterel26"
 
-oarsub -q besteffort -I -l gpu=1,walltime=4:00:00 -p "esterel35 or esterel40 or esterel43"
+oarsub -q besteffort -I -l gpu=1,walltime=8:00:00 -p "esterel35 or esterel40 or esterel43 or esterel37 or esterel17"

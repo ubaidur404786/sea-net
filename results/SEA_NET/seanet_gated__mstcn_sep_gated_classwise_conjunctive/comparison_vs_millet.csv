@@ -1,129 +1,129 @@
-dataset                       , ours_acc, millet_acc, acc_diff, acc_outcome, ours_loss, millet_loss, loss_diff, loss_outcome, ours_aopcr, millet_aopcr, aopcr_diff, aopcr_outcome, params, model_size_mb
-Adiac                         ,   0.7494,     0.8317, -0.0823 , loss       ,    0.8147,      1.028 , -0.2133  , win         , 0.8605    , 15.8906     , -15.0301  , loss         ,  63738,        1.5102
-ArrowHead                     ,   0.7943,     0.8377, -0.0434 , loss       ,    0.4946,      1.0053, -0.5107  , win         , -0.0678   , 3.2005      , -3.2683   , loss         ,  61222,        1.5006
-Beef                          ,   0.8667,     0.8467, 0.02    , win        ,    0.4504,      0.965 , -0.5146  , win         , 1.4899    , 5.4866      , -3.9967   , loss         ,  61370,        1.5011
-BeetleFly                     ,   0.65  ,     0.92  , -0.27   , loss       ,    0.7427,      0.2905, 0.4522   , loss        , 0.0616    , 1.2424      , -1.1808   , loss         ,  61148,        1.5003
-BirdChicken                   ,   0.8   ,     0.94  , -0.14   , loss       ,    0.5302,      0.1447, 0.3855   , loss        , 0.38      , 3.3665      , -2.9865   , loss         ,  61148,        1.5003
-Car                           ,   0.85  ,     0.92  , -0.07   , loss       ,    0.4273,      0.4259, 0.0014   , tie         , 0.3197    , 6.6173      , -6.2976   , loss         ,  61296,        1.5009
-CBF                           ,   0.9644,     0.9998, -0.0354 , loss       ,    0.1828,      0.0007, 0.1821   , loss        , 0.0548    , 3.5827      , -3.5279   , loss         ,  61222,        1.5006
-ChlorineConcentration         ,   0.7169,     0.8576, -0.1407 , loss       ,    0.6619,      0.9747, -0.3128  , win         , 0.303     , 2.1418      , -1.8388   , loss         ,  61222,        1.5006
-CinCECGTorso                  ,   0.6188,     0.8239, -0.2051 , loss       ,    0.9165,      0.9547, -0.0382  , win         , 0.4461    , 4.7745      , -4.3284   , loss         ,  61296,        1.5009
-Coffee                        ,   1.0   ,     1.0   , 0.0     , tie        ,    0.0733,      0.0   , 0.0733   , loss        , 0.4936    , 3.4889      , -2.9953   , loss         ,  61148,        1.5003
-Computers                     ,   0.612 ,     0.7688, -0.1568 , loss       ,    0.7909,      2.1231, -1.3322  , win         , -0.0292   , 3.4427      , -3.4719   , loss         ,  61148,        1.5003
-CricketX                      ,   0.8128,     0.8267, -0.0139 , loss       ,    0.6879,      0.9717, -0.2838  , win         , 1.4503    , 4.5072      , -3.0569   , loss         ,  61888,        1.5031
-CricketY                      ,   0.8359,     0.8231, 0.0128  , win        ,    0.6423,      0.9759, -0.3336  , win         , 1.4583    , 4.8896      , -3.4313   , loss         ,  61888,        1.5031
-CricketZ                      ,   0.8333,     0.8574, -0.0241 , loss       ,    0.5935,      0.8017, -0.2082  , win         , 1.3551    , 4.7715      , -3.4164   , loss         ,  61888,        1.5031
-DiatomSizeReduction           ,   0.9183,     0.9719, -0.0536 , loss       ,    0.256 ,      0.0944, 0.1616   , loss        , 0.4267    , 1.0258      , -0.5991   , loss         ,  61296,        1.5009
-DistalPhalanxOutlineAgeGroup  ,   0.7554,     0.7151, 0.0403  , win        ,    0.5533,      2.5757, -2.0224  , win         , -0.0723   , 2.4343      , -2.5066   , loss         ,  61222,        1.5006
-DistalPhalanxOutlineCorrect   ,   0.7645,     0.7703, -0.0058 , loss       ,    0.5562,      2.0843, -1.5281  , win         , 0.1551    , 0.6399      , -0.4848   , loss         ,  61148,        1.5003
-DistalPhalanxTW               ,   0.6763,     0.6604, 0.0159  , win        ,    0.8145,      2.8454, -2.0309  , win         , -0.0138   , 3.1209      , -3.1347   , loss         ,  61444,        1.5014
-Earthquakes                   ,   0.741 ,     0.7252, 0.0158  , win        ,    0.6003,      2.0855, -1.4852  , win         , 0.1933    , 3.4927      , -3.2994   , loss         ,  61148,        1.5003
-ECG200                        ,   0.73  ,     0.896 , -0.166  , loss       ,    0.4266,      0.8048, -0.3782  , win         , 0.3093    , 2.8601      , -2.5508   , loss         ,  61148,        1.5003
-ECG5000                       ,   0.9353,     0.9419, -0.0066 , loss       ,    0.2931,      0.6952, -0.4021  , win         , 1.5056    , 6.7025      , -5.1969   , loss         ,  61370,        1.5011
-ECGFiveDays                   ,   0.9942,     1.0   , -0.0058 , loss       ,    0.0805,      0.0   , 0.0805   , loss        , 0.1608    , 4.7579      , -4.5971   , loss         ,  61148,        1.5003
-ElectricDevices               ,   0.714 ,     0.712 , 0.002   , tie        ,    0.9667,      5.5714, -4.6047  , win         , 0.4828    , 4.6437      , -4.1609   , loss         ,  61518,        1.5017
-FaceAll                       ,   0.8249,     0.9528, -0.1279 , loss       ,    0.8044,      0.2954, 0.509    , loss        , 0.3073    , 3.9975      , -3.6902   , loss         ,  62036,        1.5036
-FaceFour                      ,   0.625 ,     0.9591, -0.3341 , loss       ,    0.9079,      0.468 , 0.4399   , loss        , 0.4642    , 6.4735      , -6.0093   , loss         ,  61296,        1.5009
-FacesUCR                      ,   0.942 ,     0.9597, -0.0177 , loss       ,    0.2722,      0.1909, 0.0813   , loss        , 0.533     , 3.1775      , -2.6445   , loss         ,  62036,        1.5036
-FiftyWords                    ,   0.8088,     0.8352, -0.0264 , loss       ,    0.8532,      1.0207, -0.1675  , win         , 0.5273    , 3.3053      , -2.778    , loss         ,  64700,        1.5139
-Fish                          ,   0.9771,     0.9806, -0.0035 , tie        ,    0.2231,      0.2986, -0.0755  , win         , 0.5103    , 5.4842      , -4.9739   , loss         ,  61518,        1.5017
-FordA                         ,   0.9591,     0.9541, 0.005   , win        ,    0.151 ,      0.4398, -0.2888  , win         , 0.0506    , 2.7146      , -2.664    , loss         ,  61148,        1.5003
-FordB                         ,   0.8457,     0.8499, -0.0042 , tie        ,    0.3704,      1.4783, -1.1079  , win         , 0.0422    , 1.6448      , -1.6026   , loss         ,  61148,        1.5003
-GunPoint                      ,   0.98  ,     0.9853, -0.0053 , loss       ,    0.1014,      0.0533, 0.0481   , loss        , 0.2562    , 4.0108      , -3.7546   , loss         ,  61148,        1.5003
-Ham                           ,   0.7429,     0.7086, 0.0343  , win        ,    0.5373,      1.7929, -1.2556  , win         , 1.0566    , 3.9279      , -2.8713   , loss         ,  61148,        1.5003
-HandOutlines                  ,   0.9459,     0.9476, -0.0017 , tie        ,    0.2055,      0.3636, -0.1581  , win         , 0.089     , 12.7111     , -12.6221  , loss         ,  61148,        1.5003
-Haptics                       ,   0.3994,     0.524 , -0.1246 , loss       ,    1.5281,      3.2084, -1.6803  , win         , 1.4479    , 5.9916      , -4.5437   , loss         ,  61370,        1.5011
-Herring                       ,   0.5781,     0.5781, -0.0    , tie        ,    0.8757,      3.3086, -2.4329  , win         , 0.7133    , 4.6122      , -3.8989   , loss         ,  61148,        1.5003
-InlineSkate                   ,   0.2582,     0.4913, -0.2331 , loss       ,    2.032 ,      2.5766, -0.5446  , win         , 1.2414    , 8.1641      , -6.9227   , loss         ,  61518,        1.5017
-InsectWingbeatSound           ,   0.5934,     0.6146, -0.0212 , loss       ,    1.057 ,      2.598 , -1.541   , win         , 0.1137    , 2.7342      , -2.6205   , loss         ,  61814,        1.5028
-ItalyPowerDemand              ,   0.9592,     0.9506, 0.0086  , win        ,    0.1596,      0.5572, -0.3976  , win         , 0.6521    , 4.1634      , -3.5113   , loss         ,  61148,        1.5003
-LargeKitchenAppliances        ,   0.8827,     0.9013, -0.0186 , loss       ,    0.3432,      1.1387, -0.7955  , win         , 1.5171    , 9.5087      , -7.9916   , loss         ,  61222,        1.5006
-Lightning2                    ,   0.7213,     0.8557, -0.1344 , loss       ,    0.5906,      0.9113, -0.3207  , win         , 0.15      , 5.3802      , -5.2302   , loss         ,  61148,        1.5003
-Lightning7                    ,   0.7808,     0.8274, -0.0466 , loss       ,    0.69  ,      0.9538, -0.2638  , win         , 0.6292    , 4.2526      , -3.6234   , loss         ,  61518,        1.5017
-Mallat                        ,   0.9369,     0.9688, -0.0319 , loss       ,    0.3228,      0.1333, 0.1895   , loss        , 1.5739    , 6.7384      , -5.1645   , loss         ,  61592,        1.502
-Meat                          ,   0.95  ,     0.9867, -0.0367 , loss       ,    0.2181,      0.0539, 0.1642   , loss        , 0.9196    , 6.1908      , -5.2712   , loss         ,  61222,        1.5006
-MedicalImages                 ,   0.775 ,     0.8021, -0.0271 , loss       ,    0.6811,      1.3284, -0.6473  , win         , 0.4254    , 2.8937      , -2.4683   , loss         ,  61740,        1.5025
-MiddlePhalanxOutlineAgeGroup  ,   0.6104,     0.5221, 0.0883  , win        ,    0.9163,      4.9601, -4.0438  , win         , 0.4211    , 0.9851      , -0.564    , loss         ,  61222,        1.5006
-MiddlePhalanxOutlineCorrect   ,   0.8144,     0.8103, 0.0041  , tie        ,    0.39  ,      1.2175, -0.8275  , win         , 0.3719    , 2.4532      , -2.0813   , loss         ,  61148,        1.5003
-MiddlePhalanxTW               ,   0.5844,     0.5104, 0.074   , win        ,    1.088 ,      4.0946, -3.0066  , win         , -0.0784   , 3.4         , -3.4784   , loss         ,  61444,        1.5014
-MoteStrain                    ,   0.8466,     0.9018, -0.0552 , loss       ,    0.37  ,      0.6772, -0.3072  , win         , 0.1334    , 3.5563      , -3.4229   , loss         ,  61148,        1.5003
-NonInvasiveFetalECGThorax1    ,   0.9181,     0.9511, -0.033  , loss       ,    0.3842,      0.2659, 0.1183   , loss        , -0.4957   , -2.2634     , 1.7677    , win          ,  64108,        1.5116
-NonInvasiveFetalECGThorax2    ,   0.9237,     0.9526, -0.0289 , loss       ,    0.3507,      0.2528, 0.0979   , loss        , -0.2247   , 2.9866      , -3.2113   , loss         ,  64108,        1.5116
-OliveOil                      ,   0.4   ,     0.8467, -0.4467 , loss       ,    1.2983,      0.9378, 0.3605   , loss        , 0.1381    , -3.6343     , 3.7724    , win          ,  61296,        1.5009
-OSULeaf                       ,   0.9132,     0.9471, -0.0339 , loss       ,    0.3649,      0.2378, 0.1271   , loss        , 0.5308    , 6.5343      , -6.0035   , loss         ,  61444,        1.5014
-PhalangesOutlinesCorrect      ,   0.8287,     0.8303, -0.0016 , tie        ,    0.3838,      1.4708, -1.087   , win         , 0.0506    , 2.0437      , -1.9931   , loss         ,  61148,        1.5003
-Phoneme                       ,   0.2569,     0.3006, -0.0437 , loss       ,    2.766 ,      7.0359, -4.2699  , win         , 0.549     , 4.7834      , -4.2344   , loss         ,  63886,        1.5107
-Plane                         ,   1.0   ,     1.0   , 0.0     , tie        ,    0.1099,      0.0   , 0.1099   , loss        , 0.0422    , 3.3933      , -3.3511   , loss         ,  61518,        1.5017
-ProximalPhalanxOutlineAgeGroup,   0.839 ,     0.8537, -0.0147 , loss       ,    0.4555,      1.2906, -0.8351  , win         , 1.1563    , 5.6483      , -4.492    , loss         ,  61222,        1.5006
-ProximalPhalanxOutlineCorrect ,   0.9107,     0.923 , -0.0123 , loss       ,    0.2719,      0.5448, -0.2729  , win         , -1.713    , -3.5363     , 1.8233    , win          ,  61148,        1.5003
-ProximalPhalanxTW             ,   0.7805,     0.76  , 0.0205  , win        ,    0.5835,      2.0198, -1.4363  , win         , 0.3832    , 5.6975      , -5.3143   , loss         ,  61444,        1.5014
-RefrigerationDevices          ,   0.5173,     0.5099, 0.0074  , win        ,    1.4017,      6.1414, -4.7397  , win         , 0.1356    , 4.2486      , -4.113    , loss         ,  61222,        1.5006
-ScreenType                    ,   0.3947,     0.576 , -0.1813 , loss       ,    1.1694,      3.6402, -2.4708  , win         , 0.3962    , 4.2157      , -3.8195   , loss         ,  61222,        1.5006
-ShapeletSim                   ,   0.4611,     0.9089, -0.4478 , loss       ,    0.8965,      0.2342, 0.6623   , loss        , 0.08      , 3.429       , -3.349    , loss         ,  61148,        1.5003
-ShapesAll                     ,   0.8967,     0.9283, -0.0316 , loss       ,    0.606 ,      0.4908, 0.1152   , loss        , 0.5593    , 9.5598      , -9.0005   , loss         ,  65440,        1.5166
-SmallKitchenAppliances        ,   0.7387,     0.7819, -0.0432 , loss       ,    0.677 ,      2.273 , -1.596   , win         , 0.3854    , 3.9346      , -3.5492   , loss         ,  61222,        1.5006
-SonyAIBORobotSurface1         ,   0.7088,     0.9338, -0.225  , loss       ,    0.6532,      0.3641, 0.2891   , loss        , 0.2067    , 3.2614      , -3.0547   , loss         ,  61148,        1.5003
-SonyAIBORobotSurface2         ,   0.8562,     0.8269, 0.0293  , win        ,    0.3408,      1.433 , -1.0922  , win         , 0.0683    , 2.9596      , -2.8913   , loss         ,  61148,        1.5003
-StarLightCurves               ,   0.9735,     0.9769, -0.0034 , tie        ,    0.1519,      0.2046, -0.0527  , win         , 0.7324    , 8.4155      , -7.6831   , loss         ,  61222,        1.5006
-Strawberry                    ,   0.9676,     0.9746, -0.007  , loss       ,    0.1378,      0.1629, -0.0251  , win         , 0.156     , 6.2246      , -6.0686   , loss         ,  61148,        1.5003
-SwedishLeaf                   ,   0.9536,     0.967 , -0.0134 , loss       ,    0.2406,      0.1892, 0.0514   , loss        , 0.3998    , 4.1636      , -3.7638   , loss         ,  62110,        1.5039
-Symbols                       ,   0.9266,     0.9576, -0.031  , loss       ,    0.3472,      0.1578, 0.1894   , loss        , 0.3566    , 2.5618      , -2.2052   , loss         ,  61444,        1.5014
-SyntheticControl              ,   0.9933,     0.9973, -0.004  , tie        ,    0.1284,      0.0052, 0.1232   , loss        , 0.4432    , 3.3016      , -2.8584   , loss         ,  61444,        1.5014
-ToeSegmentation1              ,   0.6974,     0.9632, -0.2658 , loss       ,    0.6141,      0.1864, 0.4277   , loss        , 0.0364    , 2.1806      , -2.1442   , loss         ,  61148,        1.5003
-ToeSegmentation2              ,   0.6538,     0.9092, -0.2554 , loss       ,    0.6871,      0.5003, 0.1868   , loss        , 0.1604    , 3.2069      , -3.0465   , loss         ,  61148,        1.5003
-Trace                         ,   1.0   ,     1.0   , 0.0     , tie        ,    0.1002,      0.0   , 0.1002   , loss        , 1.4277    , 4.9221      , -3.4944   , loss         ,  61296,        1.5009
-TwoLeadECG                    ,   0.9754,     0.9993, -0.0239 , loss       ,    0.1186,      0.0066, 0.112    , loss        , 0.5104    , 4.762       , -4.2516   , loss         ,  61148,        1.5003
-TwoPatterns                   ,   1.0   ,     1.0   , 0.0     , tie        ,    0.0951,      0.0   , 0.0951   , loss        , 1.6057    , 12.1597     , -10.554   , loss         ,  61296,        1.5009
-UWaveGestureLibraryAll        ,   0.9629,     0.9447, 0.0182  , win        ,    0.2641,      0.3434, -0.0793  , win         , 0.3484    , 8.0814      , -7.733    , loss         ,  61592,        1.502
-UWaveGestureLibraryX          ,   0.8171,     0.8099, 0.0072  , win        ,    0.6202,      1.5956, -0.9754  , win         , 0.6822    , 4.3044      , -3.6222   , loss         ,  61592,        1.502
-UWaveGestureLibraryY          ,   0.7362,     0.7528, -0.0166 , loss       ,    0.8023,      1.8851, -1.0828  , win         , 0.6658    , 4.101       , -3.4352   , loss         ,  61592,        1.502
-UWaveGestureLibraryZ          ,   0.7585,     0.7432, 0.0153  , win        ,    0.6733,      1.9758, -1.3025  , win         , 1.0838    , 4.6466      , -3.5628   , loss         ,  61592,        1.502
-Wafer                         ,   0.9977,     0.998 , -0.0003 , tie        ,    0.0705,      0.017 , 0.0535   , loss        , 0.1763    , 1.1361      , -0.9598   , loss         ,  61148,        1.5003
-Wine                          ,   0.7407,     0.8185, -0.0778 , loss       ,    0.5337,      0.9499, -0.4162  , win         , 1.0158    , 26.9638     , -25.948   , loss         ,  61148,        1.5003
-WordSynonyms                  ,   0.7273,     0.7417, -0.0144 , loss       ,    1.1746,      1.8361, -0.6615  , win         , 0.6612    , 3.0425      , -2.3813   , loss         ,  62850,        1.5067
-Worms                         ,   0.6753,     0.7662, -0.0909 , loss       ,    0.9575,      1.5027, -0.5452  , win         , 0.8005    , 3.1133      , -2.3128   , loss         ,  61370,        1.5011
-WormsTwoClass                 ,   0.6753,     0.7065, -0.0312 , loss       ,    0.7788,      1.8387, -1.0599  , win         , 0.8722    , 4.3009      , -3.4287   , loss         ,  61148,        1.5003
-Yoga                          ,   0.9007,     0.9031, -0.0024 , tie        ,    0.2513,      0.5236, -0.2723  , win         , 1.0978    , 6.6224      , -5.5246   , loss         ,  61148,        1.5003
-ACSF1                         ,   0.83  ,           ,         , no_baseline,    0.693 ,            ,          , no_baseline , -0.5329   ,             ,           , no_baseline  ,  61740,        1.5025
-AllGestureWiimoteX            ,   0.7457,           ,         , no_baseline,    0.862 ,            ,          , no_baseline , 1.8931    ,             ,           , no_baseline  ,  61740,        1.5025
-AllGestureWiimoteY            ,   0.7786,           ,         , no_baseline,    0.7937,            ,          , no_baseline , 1.9817    ,             ,           , no_baseline  ,  61740,        1.5025
-AllGestureWiimoteZ            ,   0.7771,           ,         , no_baseline,    0.7974,            ,          , no_baseline , 1.5834    ,             ,           , no_baseline  ,  61740,        1.5025
-BME                           ,   0.9667,           ,         , no_baseline,    0.1613,            ,          , no_baseline , 0.3347    ,             ,           , no_baseline  ,  61222,        1.5006
-Chinatown                     ,   0.9738,           ,         , no_baseline,    0.1225,            ,          , no_baseline , 0.2415    ,             ,           , no_baseline  ,  61148,        1.5003
-Crop                          ,   0.7419,           ,         , no_baseline,    0.8714,            ,          , no_baseline , 0.2176    ,             ,           , no_baseline  ,  62776,        1.5065
-DodgerLoopDay                 ,   0.55  ,           ,         , no_baseline,    1.408 ,            ,          , no_baseline , 0.3151    ,             ,           , no_baseline  ,  61518,        1.5017
-DodgerLoopGame                ,   0.8551,           ,         , no_baseline,    0.3589,            ,          , no_baseline , 0.4917    ,             ,           , no_baseline  ,  61148,        1.5003
-DodgerLoopWeekend             ,   0.8841,           ,         , no_baseline,    0.3302,            ,          , no_baseline , 0.1525    ,             ,           , no_baseline  ,  61148,        1.5003
-EOGHorizontalSignal           ,   0.5552,           ,         , no_baseline,    1.4355,            ,          , no_baseline , 1.8175    ,             ,           , no_baseline  ,  61888,        1.5031
-EOGVerticalSignal             ,   0.511 ,           ,         , no_baseline,    1.6611,            ,          , no_baseline , 2.047     ,             ,           , no_baseline  ,  61888,        1.5031
-EthanolLevel                  ,   0.818 ,           ,         , no_baseline,    0.515 ,            ,          , no_baseline , 0.931     ,             ,           , no_baseline  ,  61296,        1.5009
-FreezerRegularTrain           ,   0.9933,           ,         , no_baseline,    0.0767,            ,          , no_baseline , 0.707     ,             ,           , no_baseline  ,  61148,        1.5003
-FreezerSmallTrain             ,   0.6719,           ,         , no_baseline,    0.8591,            ,          , no_baseline , 0.3344    ,             ,           , no_baseline  ,  61148,        1.5003
-Fungi                         ,   0.8763,           ,         , no_baseline,    0.4399,            ,          , no_baseline , 0.2553    ,             ,           , no_baseline  ,  62332,        1.5048
-GestureMidAirD1               ,   0.7692,           ,         , no_baseline,    0.9364,            ,          , no_baseline , 1.9215    ,             ,           , no_baseline  ,  62924,        1.507
-GestureMidAirD2               ,   0.6615,           ,         , no_baseline,    1.053 ,            ,          , no_baseline , 1.3442    ,             ,           , no_baseline  ,  62924,        1.507
-GestureMidAirD3               ,   0.3308,           ,         , no_baseline,    2.2029,            ,          , no_baseline , 1.1302    ,             ,           , no_baseline  ,  62924,        1.507
-GesturePebbleZ1               ,   0.9244,           ,         , no_baseline,    0.303 ,            ,          , no_baseline , 1.5006    ,             ,           , no_baseline  ,  61444,        1.5014
-GesturePebbleZ2               ,   0.9114,           ,         , no_baseline,    0.3965,            ,          , no_baseline , 1.4171    ,             ,           , no_baseline  ,  61444,        1.5014
-GunPointAgeSpan               ,   0.9873,           ,         , no_baseline,    0.1136,            ,          , no_baseline , 0.7998    ,             ,           , no_baseline  ,  61148,        1.5003
-GunPointMaleVersusFemale      ,   0.9905,           ,         , no_baseline,    0.0841,            ,          , no_baseline , 0.2168    ,             ,           , no_baseline  ,  61148,        1.5003
-GunPointOldVersusYoung        ,   0.9714,           ,         , no_baseline,    0.1249,            ,          , no_baseline , 0.3253    ,             ,           , no_baseline  ,  61148,        1.5003
-HouseTwenty                   ,   0.958 ,           ,         , no_baseline,    0.2038,            ,          , no_baseline , 0.9479    ,             ,           , no_baseline  ,  61148,        1.5003
-InsectEPGRegularTrain         ,   0.9679,           ,         , no_baseline,    0.1934,            ,          , no_baseline , 1.2098    ,             ,           , no_baseline  ,  61222,        1.5006
-InsectEPGSmallTrain           ,   0.7229,           ,         , no_baseline,    0.6292,            ,          , no_baseline , 0.9124    ,             ,           , no_baseline  ,  61222,        1.5006
-MelbournePedestrian           ,   0.8979,           ,         , no_baseline,    0.374 ,            ,          , no_baseline , 0.2191    ,             ,           , no_baseline  ,  61740,        1.5025
-MixedShapesRegularTrain       ,   0.9641,           ,         , no_baseline,    0.1978,            ,          , no_baseline , 0.1181    ,             ,           , no_baseline  ,  61370,        1.5011
-MixedShapesSmallTrain         ,   0.8532,           ,         , no_baseline,    0.4783,            ,          , no_baseline , 0.843     ,             ,           , no_baseline  ,  61370,        1.5011
-PLAID                         ,   0.8026,           ,         , no_baseline,    0.6078,            ,          , no_baseline , 1.8068    ,             ,           , no_baseline  ,  61814,        1.5028
-PickupGestureWiimoteZ         ,   0.8   ,           ,         , no_baseline,    0.7231,            ,          , no_baseline , 1.1858    ,             ,           , no_baseline  ,  61740,        1.5025
-PigAirwayPressure             ,   0.0385,           ,         , no_baseline,    3.8523,            ,          , no_baseline , 0.1256    ,             ,           , no_baseline  ,  64848,        1.5144
-PigArtPressure                ,   0.5048,           ,         , no_baseline,    1.7569,            ,          , no_baseline , 0.6137    ,             ,           , no_baseline  ,  64848,        1.5144
-PigCVP                        ,   0.3221,           ,         , no_baseline,    2.6548,            ,          , no_baseline , 0.9867    ,             ,           , no_baseline  ,  64848,        1.5144
-PowerCons                     ,   0.9722,           ,         , no_baseline,    0.1277,            ,          , no_baseline , 0.1482    ,             ,           , no_baseline  ,  61148,        1.5003
-Rock                          ,   0.72  ,           ,         , no_baseline,    0.7328,            ,          , no_baseline , 0.7334    ,             ,           , no_baseline  ,  61296,        1.5009
-SemgHandGenderCh2             ,   0.8917,           ,         , no_baseline,    0.2905,            ,          , no_baseline , 0.976     ,             ,           , no_baseline  ,  61148,        1.5003
-SemgHandMovementCh2           ,   0.4889,           ,         , no_baseline,    1.357 ,            ,          , no_baseline , 0.8886    ,             ,           , no_baseline  ,  61444,        1.5014
-SemgHandSubjectCh2            ,   0.8667,           ,         , no_baseline,    0.5303,            ,          , no_baseline , 1.0191    ,             ,           , no_baseline  ,  61370,        1.5011
-ShakeGestureWiimoteZ          ,   0.88  ,           ,         , no_baseline,    0.4851,            ,          , no_baseline , 0.9992    ,             ,           , no_baseline  ,  61740,        1.5025
-SmoothSubspace                ,   0.9667,           ,         , no_baseline,    0.1497,            ,          , no_baseline , 0.3086    ,             ,           , no_baseline  ,  61222,        1.5006
-UMD                           ,   0.9722,           ,         , no_baseline,    0.1601,            ,          , no_baseline , 0.019     ,             ,           , no_baseline  ,  61222,        1.5006
+dataset,ours_acc,millet_acc,acc_diff,acc_outcome,ours_loss,millet_loss,loss_diff,loss_outcome,ours_aopcr,millet_aopcr,aopcr_diff,aopcr_outcome,params,model_size_mb
+Adiac,0.7494,0.8317,-0.0823,loss,0.8147,1.028,-0.2133,win,0.8605,15.8906,-15.0301,loss,63738,1.5102
+ArrowHead,0.7943,0.8377,-0.0434,loss,0.4946,1.0053,-0.5107,win,-0.0678,3.2005,-3.2683,loss,61222,1.5006
+Beef,0.8667,0.8467,0.02,win,0.4504,0.965,-0.5146,win,1.4899,5.4866,-3.9967,loss,61370,1.5011
+BeetleFly,0.65,0.92,-0.27,loss,0.7427,0.2905,0.4522,loss,0.0616,1.2424,-1.1808,loss,61148,1.5003
+BirdChicken,0.8,0.94,-0.14,loss,0.5302,0.1447,0.3855,loss,0.38,3.3665,-2.9865,loss,61148,1.5003
+Car,0.85,0.92,-0.07,loss,0.4273,0.4259,0.0014,tie,0.3197,6.6173,-6.2976,loss,61296,1.5009
+CBF,0.9644,0.9998,-0.0354,loss,0.1828,0.0007,0.1821,loss,0.0548,3.5827,-3.5279,loss,61222,1.5006
+ChlorineConcentration,0.7169,0.8576,-0.1407,loss,0.6619,0.9747,-0.3128,win,0.303,2.1418,-1.8388,loss,61222,1.5006
+CinCECGTorso,0.6188,0.8239,-0.2051,loss,0.9165,0.9547,-0.0382,win,0.4461,4.7745,-4.3284,loss,61296,1.5009
+Coffee,1.0,1.0,0.0,tie,0.0733,0.0,0.0733,loss,0.4936,3.4889,-2.9953,loss,61148,1.5003
+Computers,0.612,0.7688,-0.1568,loss,0.7909,2.1231,-1.3322,win,-0.0292,3.4427,-3.4719,loss,61148,1.5003
+CricketX,0.8128,0.8267,-0.0139,loss,0.6879,0.9717,-0.2838,win,1.4503,4.5072,-3.0569,loss,61888,1.5031
+CricketY,0.8359,0.8231,0.0128,win,0.6423,0.9759,-0.3336,win,1.4583,4.8896,-3.4313,loss,61888,1.5031
+CricketZ,0.8333,0.8574,-0.0241,loss,0.5935,0.8017,-0.2082,win,1.3551,4.7715,-3.4164,loss,61888,1.5031
+DiatomSizeReduction,0.9183,0.9719,-0.0536,loss,0.256,0.0944,0.1616,loss,0.4267,1.0258,-0.5991,loss,61296,1.5009
+DistalPhalanxOutlineAgeGroup,0.7554,0.7151,0.0403,win,0.5533,2.5757,-2.0224,win,-0.0723,2.4343,-2.5066,loss,61222,1.5006
+DistalPhalanxOutlineCorrect,0.7645,0.7703,-0.0058,loss,0.5562,2.0843,-1.5281,win,0.1551,0.6399,-0.4848,loss,61148,1.5003
+DistalPhalanxTW,0.6763,0.6604,0.0159,win,0.8145,2.8454,-2.0309,win,-0.0138,3.1209,-3.1347,loss,61444,1.5014
+Earthquakes,0.741,0.7252,0.0158,win,0.6003,2.0855,-1.4852,win,0.1933,3.4927,-3.2994,loss,61148,1.5003
+ECG200,0.73,0.896,-0.166,loss,0.4266,0.8048,-0.3782,win,0.3093,2.8601,-2.5508,loss,61148,1.5003
+ECG5000,0.9353,0.9419,-0.0066,loss,0.2931,0.6952,-0.4021,win,1.5056,6.7025,-5.1969,loss,61370,1.5011
+ECGFiveDays,0.9942,1.0,-0.0058,loss,0.0805,0.0,0.0805,loss,0.1608,4.7579,-4.5971,loss,61148,1.5003
+ElectricDevices,0.714,0.712,0.002,tie,0.9667,5.5714,-4.6047,win,0.4828,4.6437,-4.1609,loss,61518,1.5017
+FaceAll,0.8249,0.9528,-0.1279,loss,0.8044,0.2954,0.509,loss,0.3073,3.9975,-3.6902,loss,62036,1.5036
+FaceFour,0.625,0.9591,-0.3341,loss,0.9079,0.468,0.4399,loss,0.4642,6.4735,-6.0093,loss,61296,1.5009
+FacesUCR,0.942,0.9597,-0.0177,loss,0.2722,0.1909,0.0813,loss,0.533,3.1775,-2.6445,loss,62036,1.5036
+FiftyWords,0.8088,0.8352,-0.0264,loss,0.8532,1.0207,-0.1675,win,0.5273,3.3053,-2.778,loss,64700,1.5139
+Fish,0.9771,0.9806,-0.0035,tie,0.2231,0.2986,-0.0755,win,0.5103,5.4842,-4.9739,loss,61518,1.5017
+FordA,0.9591,0.9541,0.005,win,0.151,0.4398,-0.2888,win,0.0506,2.7146,-2.664,loss,61148,1.5003
+FordB,0.8457,0.8499,-0.0042,tie,0.3704,1.4783,-1.1079,win,0.0422,1.6448,-1.6026,loss,61148,1.5003
+GunPoint,0.98,0.9853,-0.0053,loss,0.1014,0.0533,0.0481,loss,0.2562,4.0108,-3.7546,loss,61148,1.5003
+Ham,0.7429,0.7086,0.0343,win,0.5373,1.7929,-1.2556,win,1.0566,3.9279,-2.8713,loss,61148,1.5003
+HandOutlines,0.9459,0.9476,-0.0017,tie,0.2055,0.3636,-0.1581,win,0.089,12.7111,-12.6221,loss,61148,1.5003
+Haptics,0.3994,0.524,-0.1246,loss,1.5281,3.2084,-1.6803,win,1.4479,5.9916,-4.5437,loss,61370,1.5011
+Herring,0.5781,0.5781,-0.0,tie,0.8757,3.3086,-2.4329,win,0.7133,4.6122,-3.8989,loss,61148,1.5003
+InlineSkate,0.2582,0.4913,-0.2331,loss,2.032,2.5766,-0.5446,win,1.2414,8.1641,-6.9227,loss,61518,1.5017
+InsectWingbeatSound,0.5934,0.6146,-0.0212,loss,1.057,2.598,-1.541,win,0.1137,2.7342,-2.6205,loss,61814,1.5028
+ItalyPowerDemand,0.9592,0.9506,0.0086,win,0.1596,0.5572,-0.3976,win,0.6521,4.1634,-3.5113,loss,61148,1.5003
+LargeKitchenAppliances,0.8827,0.9013,-0.0186,loss,0.3432,1.1387,-0.7955,win,1.5171,9.5087,-7.9916,loss,61222,1.5006
+Lightning2,0.7213,0.8557,-0.1344,loss,0.5906,0.9113,-0.3207,win,0.15,5.3802,-5.2302,loss,61148,1.5003
+Lightning7,0.7808,0.8274,-0.0466,loss,0.69,0.9538,-0.2638,win,0.6292,4.2526,-3.6234,loss,61518,1.5017
+Mallat,0.9369,0.9688,-0.0319,loss,0.3228,0.1333,0.1895,loss,1.5739,6.7384,-5.1645,loss,61592,1.502
+Meat,0.95,0.9867,-0.0367,loss,0.2181,0.0539,0.1642,loss,0.9196,6.1908,-5.2712,loss,61222,1.5006
+MedicalImages,0.775,0.8021,-0.0271,loss,0.6811,1.3284,-0.6473,win,0.4254,2.8937,-2.4683,loss,61740,1.5025
+MiddlePhalanxOutlineAgeGroup,0.6104,0.5221,0.0883,win,0.9163,4.9601,-4.0438,win,0.4211,0.9851,-0.564,loss,61222,1.5006
+MiddlePhalanxOutlineCorrect,0.8144,0.8103,0.0041,tie,0.39,1.2175,-0.8275,win,0.3719,2.4532,-2.0813,loss,61148,1.5003
+MiddlePhalanxTW,0.5844,0.5104,0.074,win,1.088,4.0946,-3.0066,win,-0.0784,3.4,-3.4784,loss,61444,1.5014
+MoteStrain,0.8466,0.9018,-0.0552,loss,0.37,0.6772,-0.3072,win,0.1334,3.5563,-3.4229,loss,61148,1.5003
+NonInvasiveFetalECGThorax1,0.9181,0.9511,-0.033,loss,0.3842,0.2659,0.1183,loss,-0.4957,-2.2634,1.7677,win,64108,1.5116
+NonInvasiveFetalECGThorax2,0.9237,0.9526,-0.0289,loss,0.3507,0.2528,0.0979,loss,-0.2247,2.9866,-3.2113,loss,64108,1.5116
+OliveOil,0.4,0.8467,-0.4467,loss,1.2983,0.9378,0.3605,loss,0.1381,-3.6343,3.7724,win,61296,1.5009
+OSULeaf,0.9132,0.9471,-0.0339,loss,0.3649,0.2378,0.1271,loss,0.5308,6.5343,-6.0035,loss,61444,1.5014
+PhalangesOutlinesCorrect,0.8287,0.8303,-0.0016,tie,0.3838,1.4708,-1.087,win,0.0506,2.0437,-1.9931,loss,61148,1.5003
+Phoneme,0.2569,0.3006,-0.0437,loss,2.766,7.0359,-4.2699,win,0.549,4.7834,-4.2344,loss,63886,1.5107
+Plane,1.0,1.0,0.0,tie,0.1099,0.0,0.1099,loss,0.0422,3.3933,-3.3511,loss,61518,1.5017
+ProximalPhalanxOutlineAgeGroup,0.839,0.8537,-0.0147,loss,0.4555,1.2906,-0.8351,win,1.1563,5.6483,-4.492,loss,61222,1.5006
+ProximalPhalanxOutlineCorrect,0.9107,0.923,-0.0123,loss,0.2719,0.5448,-0.2729,win,-1.713,-3.5363,1.8233,win,61148,1.5003
+ProximalPhalanxTW,0.7805,0.76,0.0205,win,0.5835,2.0198,-1.4363,win,0.3832,5.6975,-5.3143,loss,61444,1.5014
+RefrigerationDevices,0.5173,0.5099,0.0074,win,1.4017,6.1414,-4.7397,win,0.1356,4.2486,-4.113,loss,61222,1.5006
+ScreenType,0.3947,0.576,-0.1813,loss,1.1694,3.6402,-2.4708,win,0.3962,4.2157,-3.8195,loss,61222,1.5006
+ShapeletSim,0.4611,0.9089,-0.4478,loss,0.8965,0.2342,0.6623,loss,0.08,3.429,-3.349,loss,61148,1.5003
+ShapesAll,0.8967,0.9283,-0.0316,loss,0.606,0.4908,0.1152,loss,0.5593,9.5598,-9.0005,loss,65440,1.5166
+SmallKitchenAppliances,0.7387,0.7819,-0.0432,loss,0.677,2.273,-1.596,win,0.3854,3.9346,-3.5492,loss,61222,1.5006
+SonyAIBORobotSurface1,0.7088,0.9338,-0.225,loss,0.6532,0.3641,0.2891,loss,0.2067,3.2614,-3.0547,loss,61148,1.5003
+SonyAIBORobotSurface2,0.8562,0.8269,0.0293,win,0.3408,1.433,-1.0922,win,0.0683,2.9596,-2.8913,loss,61148,1.5003
+StarLightCurves,0.9735,0.9769,-0.0034,tie,0.1519,0.2046,-0.0527,win,0.7324,8.4155,-7.6831,loss,61222,1.5006
+Strawberry,0.9676,0.9746,-0.007,loss,0.1378,0.1629,-0.0251,win,0.156,6.2246,-6.0686,loss,61148,1.5003
+SwedishLeaf,0.9536,0.967,-0.0134,loss,0.2406,0.1892,0.0514,loss,0.3998,4.1636,-3.7638,loss,62110,1.5039
+Symbols,0.9266,0.9576,-0.031,loss,0.3472,0.1578,0.1894,loss,0.3566,2.5618,-2.2052,loss,61444,1.5014
+SyntheticControl,0.9933,0.9973,-0.004,tie,0.1284,0.0052,0.1232,loss,0.4432,3.3016,-2.8584,loss,61444,1.5014
+ToeSegmentation1,0.6974,0.9632,-0.2658,loss,0.6141,0.1864,0.4277,loss,0.0364,2.1806,-2.1442,loss,61148,1.5003
+ToeSegmentation2,0.6538,0.9092,-0.2554,loss,0.6871,0.5003,0.1868,loss,0.1604,3.2069,-3.0465,loss,61148,1.5003
+Trace,1.0,1.0,0.0,tie,0.1002,0.0,0.1002,loss,1.4277,4.9221,-3.4944,loss,61296,1.5009
+TwoLeadECG,0.9754,0.9993,-0.0239,loss,0.1186,0.0066,0.112,loss,0.5104,4.762,-4.2516,loss,61148,1.5003
+TwoPatterns,1.0,1.0,0.0,tie,0.0951,0.0,0.0951,loss,1.6057,12.1597,-10.554,loss,61296,1.5009
+UWaveGestureLibraryAll,0.9629,0.9447,0.0182,win,0.2641,0.3434,-0.0793,win,0.3484,8.0814,-7.733,loss,61592,1.502
+UWaveGestureLibraryX,0.8171,0.8099,0.0072,win,0.6202,1.5956,-0.9754,win,0.6822,4.3044,-3.6222,loss,61592,1.502
+UWaveGestureLibraryY,0.7362,0.7528,-0.0166,loss,0.8023,1.8851,-1.0828,win,0.6658,4.101,-3.4352,loss,61592,1.502
+UWaveGestureLibraryZ,0.7585,0.7432,0.0153,win,0.6733,1.9758,-1.3025,win,1.0838,4.6466,-3.5628,loss,61592,1.502
+Wafer,0.9977,0.998,-0.0003,tie,0.0705,0.017,0.0535,loss,0.1763,1.1361,-0.9598,loss,61148,1.5003
+Wine,0.7407,0.8185,-0.0778,loss,0.5337,0.9499,-0.4162,win,1.0158,26.9638,-25.948,loss,61148,1.5003
+WordSynonyms,0.7273,0.7417,-0.0144,loss,1.1746,1.8361,-0.6615,win,0.6612,3.0425,-2.3813,loss,62850,1.5067
+Worms,0.6753,0.7662,-0.0909,loss,0.9575,1.5027,-0.5452,win,0.8005,3.1133,-2.3128,loss,61370,1.5011
+WormsTwoClass,0.6753,0.7065,-0.0312,loss,0.7788,1.8387,-1.0599,win,0.8722,4.3009,-3.4287,loss,61148,1.5003
+Yoga,0.9007,0.9031,-0.0024,tie,0.2513,0.5236,-0.2723,win,1.0978,6.6224,-5.5246,loss,61148,1.5003
+ACSF1,0.83,,,no_baseline,0.693,,,no_baseline,-0.5329,,,no_baseline,61740,1.5025
+AllGestureWiimoteX,0.7457,,,no_baseline,0.862,,,no_baseline,1.8931,,,no_baseline,61740,1.5025
+AllGestureWiimoteY,0.7786,,,no_baseline,0.7937,,,no_baseline,1.9817,,,no_baseline,61740,1.5025
+AllGestureWiimoteZ,0.7771,,,no_baseline,0.7974,,,no_baseline,1.5834,,,no_baseline,61740,1.5025
+BME,0.9667,,,no_baseline,0.1613,,,no_baseline,0.3347,,,no_baseline,61222,1.5006
+Chinatown,0.9738,,,no_baseline,0.1225,,,no_baseline,0.2415,,,no_baseline,61148,1.5003
+Crop,0.7419,,,no_baseline,0.8714,,,no_baseline,0.2176,,,no_baseline,62776,1.5065
+DodgerLoopDay,0.55,,,no_baseline,1.408,,,no_baseline,0.3151,,,no_baseline,61518,1.5017
+DodgerLoopGame,0.8551,,,no_baseline,0.3589,,,no_baseline,0.4917,,,no_baseline,61148,1.5003
+DodgerLoopWeekend,0.8841,,,no_baseline,0.3302,,,no_baseline,0.1525,,,no_baseline,61148,1.5003
+EOGHorizontalSignal,0.5552,,,no_baseline,1.4355,,,no_baseline,1.8175,,,no_baseline,61888,1.5031
+EOGVerticalSignal,0.511,,,no_baseline,1.6611,,,no_baseline,2.047,,,no_baseline,61888,1.5031
+EthanolLevel,0.818,,,no_baseline,0.515,,,no_baseline,0.931,,,no_baseline,61296,1.5009
+FreezerRegularTrain,0.9933,,,no_baseline,0.0767,,,no_baseline,0.707,,,no_baseline,61148,1.5003
+FreezerSmallTrain,0.6719,,,no_baseline,0.8591,,,no_baseline,0.3344,,,no_baseline,61148,1.5003
+Fungi,0.8763,,,no_baseline,0.4399,,,no_baseline,0.2553,,,no_baseline,62332,1.5048
+GestureMidAirD1,0.7692,,,no_baseline,0.9364,,,no_baseline,1.9215,,,no_baseline,62924,1.507
+GestureMidAirD2,0.6615,,,no_baseline,1.053,,,no_baseline,1.3442,,,no_baseline,62924,1.507
+GestureMidAirD3,0.3308,,,no_baseline,2.2029,,,no_baseline,1.1302,,,no_baseline,62924,1.507
+GesturePebbleZ1,0.9244,,,no_baseline,0.303,,,no_baseline,1.5006,,,no_baseline,61444,1.5014
+GesturePebbleZ2,0.9114,,,no_baseline,0.3965,,,no_baseline,1.4171,,,no_baseline,61444,1.5014
+GunPointAgeSpan,0.9873,,,no_baseline,0.1136,,,no_baseline,0.7998,,,no_baseline,61148,1.5003
+GunPointMaleVersusFemale,0.9905,,,no_baseline,0.0841,,,no_baseline,0.2168,,,no_baseline,61148,1.5003
+GunPointOldVersusYoung,0.9714,,,no_baseline,0.1249,,,no_baseline,0.3253,,,no_baseline,61148,1.5003
+HouseTwenty,0.958,,,no_baseline,0.2038,,,no_baseline,0.9479,,,no_baseline,61148,1.5003
+InsectEPGRegularTrain,0.9679,,,no_baseline,0.1934,,,no_baseline,1.2098,,,no_baseline,61222,1.5006
+InsectEPGSmallTrain,0.7229,,,no_baseline,0.6292,,,no_baseline,0.9124,,,no_baseline,61222,1.5006
+MelbournePedestrian,0.8979,,,no_baseline,0.374,,,no_baseline,0.2191,,,no_baseline,61740,1.5025
+MixedShapesRegularTrain,0.9641,,,no_baseline,0.1978,,,no_baseline,0.1181,,,no_baseline,61370,1.5011
+MixedShapesSmallTrain,0.8532,,,no_baseline,0.4783,,,no_baseline,0.843,,,no_baseline,61370,1.5011
+PLAID,0.8026,,,no_baseline,0.6078,,,no_baseline,1.8068,,,no_baseline,61814,1.5028
+PickupGestureWiimoteZ,0.8,,,no_baseline,0.7231,,,no_baseline,1.1858,,,no_baseline,61740,1.5025
+PigAirwayPressure,0.0385,,,no_baseline,3.8523,,,no_baseline,0.1256,,,no_baseline,64848,1.5144
+PigArtPressure,0.5048,,,no_baseline,1.7569,,,no_baseline,0.6137,,,no_baseline,64848,1.5144
+PigCVP,0.3221,,,no_baseline,2.6548,,,no_baseline,0.9867,,,no_baseline,64848,1.5144
+PowerCons,0.9722,,,no_baseline,0.1277,,,no_baseline,0.1482,,,no_baseline,61148,1.5003
+Rock,0.72,,,no_baseline,0.7328,,,no_baseline,0.7334,,,no_baseline,61296,1.5009
+SemgHandGenderCh2,0.8917,,,no_baseline,0.2905,,,no_baseline,0.976,,,no_baseline,61148,1.5003
+SemgHandMovementCh2,0.4889,,,no_baseline,1.357,,,no_baseline,0.8886,,,no_baseline,61444,1.5014
+SemgHandSubjectCh2,0.8667,,,no_baseline,0.5303,,,no_baseline,1.0191,,,no_baseline,61370,1.5011
+ShakeGestureWiimoteZ,0.88,,,no_baseline,0.4851,,,no_baseline,0.9992,,,no_baseline,61740,1.5025
+SmoothSubspace,0.9667,,,no_baseline,0.1497,,,no_baseline,0.3086,,,no_baseline,61222,1.5006
+UMD,0.9722,,,no_baseline,0.1601,,,no_baseline,0.019,,,no_baseline,61222,1.5006

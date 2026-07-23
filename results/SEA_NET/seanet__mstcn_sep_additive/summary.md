@@ -1,0 +1,11 @@
+# seanet__mstcn_sep_additive - results summary
+
+| metric | value |
+|---|---|
+| model | seanet__mstcn_sep_additive |
+| millet85_datasets | 0 |
+| overall_ucr_datasets | 0 |
+| webtraffic_acc | 0.942 |
+| webtraffic_ndcg | 0.7291 |
+| params | 269083 |
+| model_size_mb | 3.539 |

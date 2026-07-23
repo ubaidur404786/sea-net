@@ -109,3 +109,10 @@ records:
       dataset: WebTraffic
       n_trials: 30
       recorded: '2026-07-14 14:37:20'
+  default:
+    metrics:
+      test_acc: 0.942
+      test_loss: 0.2597
+      test_auroc: 0.9975
+      dataset: WebTraffic
+      recorded: '2026-07-23 13:30:06'

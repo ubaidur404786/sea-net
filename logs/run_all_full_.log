@@ -1,0 +1,6 @@
+=== SEA-Net [full] run started on esterel17-1.sophia.grid5000.fr at Thu 23 Jul 2026 03:27:03 PM CEST ===
+models: 
+
+=== ALL MODELS DONE (Thu 23 Jul 2026 03:27:03 PM CEST) ===
+Next: python main.py results   (cross-model table)
+      python main.py report    (all figures, comparison uses short m1/m2 labels + a legend)
