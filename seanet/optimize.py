@@ -14,9 +14,10 @@ This file is exactly that, with two practical additions:
     - the hyperparameters and their ranges are read from the config (the `optuna` block in the model
       file) instead of being written in code - so tuning a new encoder/pooling head is just a config
       edit, no Python change; and
-    - each finished trial is recorded to MLflow (its hyperparameters + its validation loss), so you
-      can open the MLflow web page afterwards, sort by validation loss, and pick the best set. See
-      seanet/tracking.py and MLFLOW_GUIDE.md.
+    - each finished trial is recorded to MLflow (its hyperparameters + its train AND validation
+      ACCURACY and LOSS), so you can open the MLflow web page afterwards, sort by any of them, compare
+      train vs validation to spot over-fitting, and pick the best set. See seanet/tracking.py and
+      MLFLOW_GUIDE.md.
 
 Our objective: one trial = train the model once with the sampled values and return its best VALIDATION
 LOSS (lower is better). When the search finishes, we retrain the best config once, score it on the test
@@ -222,23 +223,35 @@ def run_optuna(cfg, dataset=None, device=None, smoke: bool = False, verbose: boo
             if trial.should_prune():              # Optuna: "worse than the others" -> abandon this trial
                 raise optuna.TrialPruned()
 
-        model, _, _, _, _ = fit_model(dataset, device=device, verbose=False,
-                                      epoch_callback=epoch_callback, **kwargs)
+        model, train_ds, val_ds, _, _ = fit_model(dataset, device=device, verbose=False,
+                                                   epoch_callback=epoch_callback, **kwargs)
 
-        # (c) SCORE: the trial's result is its best validation loss (this is what Optuna minimises)
-        val_loss = min(model.history) if model.history else float("inf")
+        # (c) SCORE: measure accuracy AND loss on BOTH the train and the validation set, so each trial
+        # shows train-vs-validation for both numbers (easy to spot over-fitting: train good, val bad).
+        # fit_model already loaded the best-epoch weights back, so these are the best-epoch numbers.
+        # We measure train and val the SAME way (safe_evaluate -> {"acc","loss","auroc"}) so they are
+        # directly comparable. Tiny datasets have no validation split (val_ds is None) -> fall back to
+        # the train numbers. Optuna still MINIMISES the validation loss (val_loss below), unchanged.
+        tr = safe_evaluate(model, train_ds)
+        va = safe_evaluate(model, val_ds) if val_ds is not None else tr
+        val_loss = float(va["loss"])                          # the value Optuna minimises
         n_model_params = num_params(model.net)                # network size for this config (logged to MLflow)
         del model
         if device.type == "cuda":
             torch.cuda.empty_cache()
-        print(f"           -> val_loss={val_loss:.4f}")
+        print(f"           -> train_acc={tr['acc']:.4f} val_acc={va['acc']:.4f}  "
+              f"train_loss={tr['loss']:.4f} val_loss={va['loss']:.4f}")
 
-        # (d) RECORD in MLflow: the hyperparameters (inputs) + the val_loss (result) for this trial
+        # (d) RECORD in MLflow: the hyperparameters (inputs) + train/val ACCURACY and LOSS (results),
+        # so you can sort/compare trials on any of them, not just the loss.
         with tracking.trial_run(mlf, run_name=f"{cfg.model}_{dataset}_trial{trial.number}",
                                 tags={"dataset": dataset, "model": cfg.model, "kind": "optuna-trial"}):
             tracking.log_params(mlf, suggested)
             tracking.log_params(mlf, {"model_params": n_model_params})
-            tracking.log_metric(mlf, "val_loss", val_loss)
+            tracking.log_metric(mlf, "train_acc", float(tr["acc"]))
+            tracking.log_metric(mlf, "train_loss", float(tr["loss"]))
+            tracking.log_metric(mlf, "val_acc", float(va["acc"]))
+            tracking.log_metric(mlf, "val_loss", float(va["loss"]))
 
         return val_loss
 
@@ -277,9 +290,11 @@ def run_optuna(cfg, dataset=None, device=None, smoke: bool = False, verbose: boo
     best_cfg = copy.deepcopy(cfg)
     for path, value in best_params.items():
         _set_nested(best_cfg.model_config, path, value)
-    model, _, _, test_ds, _ = fit_model(dataset, device=device, verbose=verbose,
-                                        **_train_kwargs_from_config(best_cfg, smoke=False))
-    cls = safe_evaluate(model, test_ds)
+    model, best_train_ds, best_val_ds, test_ds, _ = fit_model(dataset, device=device, verbose=verbose,
+                                                              **_train_kwargs_from_config(best_cfg, smoke=False))
+    cls = safe_evaluate(model, test_ds)                       # test set (the headline number)
+    tr = safe_evaluate(model, best_train_ds)                  # train acc + loss of the winner
+    va = safe_evaluate(model, best_val_ds) if best_val_ds is not None else tr   # val acc + loss
     del model
     if device.type == "cuda":
         torch.cuda.empty_cache()
@@ -288,7 +303,10 @@ def run_optuna(cfg, dataset=None, device=None, smoke: bool = False, verbose: boo
         "test_acc": round(float(cls["acc"]), 4),
         "test_loss": round(float(cls["loss"]), 4),
         "test_auroc": round(float(cls["auroc"]), 4),
-        "val_loss": round(float(best_value), 4),
+        "train_acc": round(float(tr["acc"]), 4),             # NEW: so we can see train vs val too
+        "train_loss": round(float(tr["loss"]), 4),
+        "val_acc": round(float(va["acc"]), 4),               # NEW
+        "val_loss": round(float(best_value), 4),             # the search's best validation loss
         "dataset": dataset,
         "n_trials": len(study.trials),
         "recorded": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
@@ -296,7 +314,9 @@ def run_optuna(cfg, dataset=None, device=None, smoke: bool = False, verbose: boo
     saved_path = record_metrics(cfg.model, "optuna_best", metrics, params=_nested_from_flat(best_params))
     print(f"  saved best params + metrics -> {saved_path}  (records.optuna_best)")
     print(f"  best on {dataset}: test_acc={metrics['test_acc']} test_loss={metrics['test_loss']} "
-          f"test_auroc={metrics['test_auroc']}  (val_loss={metrics['val_loss']})")
+          f"test_auroc={metrics['test_auroc']}")
+    print(f"    train_acc={metrics['train_acc']} val_acc={metrics['val_acc']}  "
+          f"train_loss={metrics['train_loss']} val_loss={metrics['val_loss']}  (watch for over-fitting)")
     print(f"  set `use_params: auto` (or optuna_best) in configs/models/{cfg.model}.yaml to train with these.")
     if mlf is not None:
         print("  compare all trials in the MLflow web page:  mlflow ui --backend-store-uri sqlite:///mlflow.db")
