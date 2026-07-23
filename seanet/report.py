@@ -64,6 +64,22 @@ def is_baseline(model_id: str) -> bool:
     return model_id.split("__")[-1] in BASELINE_MODELS       # drop the "<config>__" prefix first
 
 
+# the reran PAPER baselines use one of these encoder backbones (our own encoders all start "mstcn_sep")
+PAPER_BACKBONES = ("inceptiontime", "fcn", "resnet")
+
+
+def is_paper_baseline(model_id: str) -> bool:
+    """
+    True ONLY for our rerun of the paper baselines (InceptionTime / FCN / ResNet backbones).
+
+    Unlike is_baseline (which also flags our encoder when it uses a MILLET pooling head), this checks
+    the ENCODER, so seanet_conjunctive / seanet (additive) count as OUR models here - which is what we
+    want when we colour "our models vs the reran baselines" on the WebTraffic figure.
+    """
+    encoder = model_id.split("__")[-1].split("_")[0]         # first word of "<encoder>_<pooling>"
+    return encoder in PAPER_BACKBONES
+
+
 def short_labels(models: List[str]) -> Dict[str, str]:
     """
     Give every model a short code m1, m2, ... in the order given.
@@ -311,6 +327,79 @@ def plot_model_comparison(cross: pd.DataFrame, figdir: str = SHARED_FIGURES_DIR)
 
 
 # --------------------------------------------------------------------------------------
+# 3b. The WebTraffic-only figure (our headline dataset)
+# --------------------------------------------------------------------------------------
+def _webtraffic_legend_text(code: Dict[str, str], models: List[str], per_line: int = 4) -> tuple:
+    """Build the 'm1 = name   m2 = name ...' legend, wrapped to a few entries per line."""
+    entries = [f"{code[m]} = {m.split('__')[0]}" for m in models]
+    lines = ["   ".join(entries[i:i + per_line]) for i in range(0, len(entries), per_line)]
+    return "\n".join(lines), len(lines)
+
+
+def _plot_webtraffic_metric(df, paper: Dict[str, float], code: Dict[str, str], col: str,
+                            title: str, target, figdir: str) -> Optional[str]:
+    """
+    Draw ONE WebTraffic metric (accuracy / AOPCR / NDCG) as its own full-size figure.
+
+    Orange bars = our models, blue bars = our rerun of the paper baselines. The red dashed line is the
+    MILLET PAPER number (the bar to beat); the green dotted line is our target (accuracy only). The
+    x-axis uses short m1/m2 codes with a legend underneath, so it stays readable with many models.
+    """
+    s = df.dropna(subset=[col])
+    if s.empty:
+        return None
+    models = list(s["model"])
+    names = [code[m] for m in models]
+    values = list(s[col])
+    colours = [OURS_COLOUR if is_paper_baseline(m) else "darkorange" for m in models]
+    n = len(names)
+    legend_text, n_lines = _webtraffic_legend_text(code, models)
+    bottom = min(0.45, 0.06 + 0.028 * n_lines)               # leave room at the bottom for the legend
+
+    # width grows with the number of models so the bars never get squashed (that was the whole point)
+    fig, a = plt.subplots(figsize=(max(11, 0.5 * n), 6))
+    bars = a.bar(range(n), values, color=colours)
+    a.set_xticks(range(n))
+    a.set_xticklabels(names, fontsize=8)
+    a.set_ylabel(title)
+    a.set_title(f"WebTraffic {title}   "
+                f"[orange = our models, blue = reran baselines, red dashed = MILLET paper]", fontsize=11)
+    for b, v in zip(bars, values):
+        a.text(b.get_x() + b.get_width() / 2, v, f"{v:.3f}", ha="center", va="bottom", fontsize=7)
+    if col in paper:                                         # the paper baseline as a line to beat
+        a.axhline(paper[col], ls="--", color=MILLET_COLOUR, lw=1.6, label=f"MILLET paper ({paper[col]:.3f})")
+    if target is not None:                                   # our goal (only meaningful for accuracy)
+        a.axhline(target, ls=":", color="green", lw=1.3, label=f"target ({target})")
+    a.legend(fontsize=9, loc="lower left")
+    fig.tight_layout(rect=(0, bottom, 1, 1))
+    fig.text(0.01, 0.01, "legend:  " + legend_text, fontsize=7, va="bottom", family="monospace")
+    return _save(fig, os.path.join(figdir, f"webtraffic_{col}.png"))
+
+
+def plot_webtraffic_comparison(figdir: str = SHARED_FIGURES_DIR) -> List[str]:
+    """
+    Draw the WebTraffic comparison as THREE separate figures - accuracy, AOPCR and NDCG - so each one is
+    full-size and easy to read in detail (instead of one cramped 3-in-1 panel).
+
+    Files: webtraffic_acc.png, webtraffic_aopcr.png, webtraffic_ndcg.png (all under results/SEA_NET/
+    figures/). Everything is rebuilt from whatever has finished, so new models appear automatically. The
+    short m1/m2 codes are shared across the three figures, so m3 means the same model in all of them.
+    """
+    df = R.webtraffic_table()
+    if df.empty:
+        return []
+    paper = R.webtraffic_paper_baseline()
+    code = short_labels(list(df["model"]))                   # one shared code map -> same code in all 3
+    panels = [("acc", "accuracy", 0.96), ("aopcr", "AOPCR", None), ("ndcg", "NDCG", None)]
+    paths = []
+    for col, title, target in panels:
+        path = _plot_webtraffic_metric(df, paper, code, col, title, target, figdir)
+        if path:
+            paths.append(path)
+    return paths
+
+
+# --------------------------------------------------------------------------------------
 # 4. The whole report
 # --------------------------------------------------------------------------------------
 def generate_report(models: Optional[List[str]] = None, verbose: bool = True) -> Dict:
@@ -350,6 +439,7 @@ def generate_report(models: Optional[List[str]] = None, verbose: bool = True) ->
                 print(f"  {key:24s}: {value}")
 
     figures += plot_model_comparison(cross)
+    figures += plot_webtraffic_comparison()                  # our headline dataset, vs the paper baseline
 
     if verbose:
         print("\n=== which model wins? ===")

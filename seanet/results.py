@@ -608,3 +608,108 @@ def _print_model_comparison(df: pd.DataFrame, out: str) -> None:
         print(f"  {'MILLET (the baseline)':32s} {r['mean_acc_millet']:>7.4f} "
               f"{r['mean_loss_millet']:>7.4f} {r['mean_aopcr_millet']:>8.3f}")
     print(f"  wrote {out}")
+
+
+# --------------------------------------------------------------------------------------
+# 6. WebTraffic-only comparison (the fast screen: ONE dataset, with the paper baseline)
+#
+# WebTraffic is our headline dataset (it is the only one with per-timestep ground truth, so the only
+# one with NDCG). This table ranks every model on WebTraffic alone, next to TWO baselines kept apart on
+# purpose:
+#   - "MILLET (paper)"  : the numbers the paper published (results/WebTraffic/InceptionTime/), and
+#   - our own rerun of the same baseline model (millet/fcn/resnet in sv1), which usually scores a bit
+#     lower - seeing the gap between the two is exactly what we want.
+# --------------------------------------------------------------------------------------
+WEBTRAFFIC_COMPARISON_CSV = os.path.join(RESULTS_ROOT, "webtraffic_comparison.csv")
+
+
+def webtraffic_paper_baseline() -> Dict[str, float]:
+    """
+    The paper's published WebTraffic numbers (mean of MILLET's 5 Conjunctive reps).
+
+    Read straight from results/WebTraffic/InceptionTime/ (we only ever READ these files). Kept SEPARATE
+    from our own rerun of the same model, because our rerun usually scores a little lower.
+
+    returns : {"acc":.., "loss":.., "aopcr":.., "ndcg":..}; a metric is skipped if its file is missing.
+    """
+    files = {"acc": "test_acc.csv", "loss": "test_loss.csv",
+             "aopcr": "test_aopcr.csv", "ndcg": "test_ndcg.csv"}
+    out: Dict[str, float] = {}
+    for metric, fname in files.items():
+        try:
+            s = millet_baseline(fname, directory=MILLET_WEBTRAFFIC_DIR)
+            out[metric] = round(float(s.get(WEB_TRAFFIC, s.iloc[0])), 4)
+        except Exception:
+            pass                                                 # file missing / unreadable -> just skip
+    return out
+
+
+def webtraffic_table(models: Optional[List[str]] = None) -> pd.DataFrame:
+    """
+    One row per model with its WebTraffic metrics (acc, loss, aopcr, ndcg, params), best accuracy first.
+
+    models : which models to include (default: every model that has a WebTraffic result). Because it
+             auto-discovers, the table (and its figure) grow by themselves as new models finish.
+    returns : the table as a DataFrame (empty if nothing has a WebTraffic row yet).
+    """
+    models = discover_models() if models is None else models
+    rows = []
+    for model_id in models:
+        res = load_results(model_id)
+        if res.empty:
+            continue
+        web = res[res["dataset"] == WEB_TRAFFIC]
+        if web.empty:                                            # this model has no WebTraffic row yet
+            continue
+        r = web.iloc[0]
+        num = lambda col: pd.to_numeric(r[col], errors="coerce") if col in web.columns else float("nan")
+        rows.append({
+            "model": model_id,
+            "acc": num("test_acc"),
+            "loss": num("test_loss"),
+            "aopcr": num("test_aopcr"),
+            "ndcg": num("test_ndcg"),
+            "params": num("params"),
+        })
+    df = pd.DataFrame(rows)
+    if not df.empty:
+        df = df.sort_values("acc", ascending=False).reset_index(drop=True)
+    return df
+
+
+def compare_webtraffic(models: Optional[List[str]] = None, out: str = WEBTRAFFIC_COMPARISON_CSV,
+                       verbose: bool = True) -> pd.DataFrame:
+    """
+    Build + save the WebTraffic-only comparison table, and print every model next to the paper baseline.
+
+    out : where to write the CSV.
+    verbose : print the ranking.
+    returns : the table (also saved to `out`).
+    """
+    df = webtraffic_table(models)
+    if df.empty:
+        if verbose:
+            print("No WebTraffic results yet - run e.g. `bash scripts/run_all.sh web`.")
+        return df
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    df.to_csv(out, index=False)
+    if verbose:
+        _print_webtraffic_comparison(df, out)
+    return df
+
+
+def _print_webtraffic_comparison(df: pd.DataFrame, out: str) -> None:
+    """Print the WebTraffic ranking, then the paper's published MILLET number as the bar to beat."""
+    paper = webtraffic_paper_baseline()
+    print(f"WebTraffic comparison over {len(df)} model(s) (best accuracy first):")
+    print(f"  {'model':44s} {'acc':>7s} {'loss':>7s} {'aopcr':>8s} {'ndcg':>7s} {'params':>9s}")
+    for _, r in df.iterrows():
+        ndcg = f"{r['ndcg']:>7.4f}" if pd.notna(r['ndcg']) else f"{'-':>7s}"
+        params = f"{int(r['params']):>9d}" if pd.notna(r['params']) else f"{'-':>9s}"
+        print(f"  {str(r['model']):44s} {r['acc']:>7.4f} {r['loss']:>7.4f} "
+              f"{r['aopcr']:>8.3f} {ndcg} {params}")
+    if paper:
+        nd = f"{paper.get('ndcg'):>7.4f}" if 'ndcg' in paper else f"{'-':>7s}"
+        print(f"  {'MILLET (paper, published)':44s} {paper.get('acc', float('nan')):>7.4f} "
+              f"{paper.get('loss', float('nan')):>7.4f} {paper.get('aopcr', float('nan')):>8.3f} {nd}")
+    print(f"  wrote {out}")

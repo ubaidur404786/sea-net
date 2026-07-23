@@ -596,6 +596,26 @@ def cmd_report(args):
     generate_report(verbose=True)
 
 
+def cmd_webcompare(args):
+    """
+    "web-compare" command: WebTraffic-ONLY comparison of every model.
+
+    It ranks all models on WebTraffic (accuracy, loss, AOPCR, NDCG, params) next to two baselines - the
+    MILLET PAPER number and our own rerun of the paper baselines - and draws the WebTraffic figure
+    (results/SEA_NET/figures/webtraffic_comparison.png). Both rebuild from whatever has finished, so a
+    new model is picked up automatically the next time you run this. Use it after the WebTraffic screen
+    (`bash scripts/run_all.sh web`).
+
+    args : parsed arguments (unused).
+    returns : nothing.
+    """
+    from seanet.results import compare_webtraffic
+    from seanet.report import plot_webtraffic_comparison
+    compare_webtraffic(verbose=True)
+    for p in plot_webtraffic_comparison():
+        print(f"  wrote {p}")
+
+
 # ---------------------------------------------------------------------------
 # argument parsing
 # ---------------------------------------------------------------------------
@@ -678,6 +698,10 @@ def main():
     # report (every figure + summary table)
     p = sub.add_parser("report", help="generate every figure + summary table under results/SEA_NET/")
     p.set_defaults(func=cmd_report)
+
+    # web-compare (WebTraffic-only comparison, with the paper baseline)
+    p = sub.add_parser("web-compare", help="WebTraffic-only comparison of all models vs the MILLET paper + our reran baselines")
+    p.set_defaults(func=cmd_webcompare)
 
     args = parser.parse_args()
 

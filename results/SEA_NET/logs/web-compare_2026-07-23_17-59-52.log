@@ -1,0 +1,31 @@
+[log] command 'web-compare' started at 2026-07-23_17-59-52
+[log] a copy of everything below is being saved to: results\SEA_NET\logs\web-compare_2026-07-23_17-59-52.log
+
+WebTraffic comparison over 19 model(s) (best accuracy first):
+  model                                            acc    loss    aopcr    ndcg    params
+  seanet_conjunctive__mstcn_sep_conjunctive     0.9540  0.2623    1.502  0.6983    269083
+  seanet_classwise__mstcn_sep_classwise_conjunctive  0.9460  0.2917    1.722  0.6860    269164
+  seanet_gated_max__mstcn_sep_gated_classwise_conjunctive  0.9440  0.3063    1.889  0.5924     61740
+  seanet_gated_last__mstcn_sep_gated_classwise_conjunctive  0.9420  0.3272    2.520  0.7417     61740
+  seanet_gated_last_topk__mstcn_sep_gated_topk_conjunctive  0.9420  0.3276    2.312  0.7483     61740
+  seanet__mstcn_sep_additive                    0.9420  0.2597    1.579  0.7291    269083
+  seanet_gated__mstcn_sep_gated_classwise_conjunctive  0.9300  0.3591    2.408  0.6374     61740
+  seanet_acp__mstcn_sep_adaptive_classwise      0.9180  0.3601    1.608  0.6188    269174
+  seanet_slim__mstcn_sep_classwise_conjunctive  0.9160  0.3826    2.478  0.7185     57580
+  seanet_inputgate__mstcn_sep_inputgate_classwise_conjunctive  0.9140  0.3976    2.481  0.7145     58092
+  seanet_recon__mstcn_sep_recon_classwise_conjunctive  0.9100  0.4172    2.504  0.6804     62925
+  seanet_spiketrend__mstcn_sep_spiketrend_classwise_conjunctive  0.9040  0.3954    2.155  0.6985     67020
+  seanet_gated_mean__mstcn_sep_gated_classwise_conjunctive  0.9020  0.3929    2.493  0.7139     61740
+  seanet_bottleneck__mstcn_sep_bottleneck_classwise_conjunctive  0.9020  0.3952    2.572  0.7325     41324
+  millet__inceptiontime_conjunctive             0.8940  0.5150    1.594  0.6711    423707
+  seanet_softmax__mstcn_sep_softmax_conjunctive  0.8800  0.4549    1.015  0.6045    269165
+  seanet_gated_last_attnmax__mstcn_sep_gated_attention_max  0.8540  0.5984    1.779  0.6680     61750
+  resnet__resnet_conjunctive                    0.7720  0.8237    2.952  0.5540    506331
+  fcn__fcn_conjunctive                          0.7420  0.9105    3.826  0.5327    267035
+  MILLET (paper, published)                     0.9240  0.3788   12.768  0.6744
+  wrote results\SEA_NET\webtraffic_comparison.csv
+  wrote results\SEA_NET\figures\webtraffic_acc.png
+  wrote results\SEA_NET\figures\webtraffic_aopcr.png
+  wrote results\SEA_NET\figures\webtraffic_ndcg.png
+
+[log] finished; full output saved to results\SEA_NET\logs\web-compare_2026-07-23_17-59-52.log
