@@ -674,7 +674,7 @@ tmux new -s train
 
 # 2) turn env on
 module load conda
-conda activate seanet
+conda activate /home/urehman/miniforge3/envs/seanet
 
 # 3) get a GPU node (interactive, 4h)
 oarsub -I -l gpu=1,walltime=6:00:00

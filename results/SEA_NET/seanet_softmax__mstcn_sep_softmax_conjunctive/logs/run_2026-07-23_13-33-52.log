@@ -1,0 +1,133 @@
+[log] command 'run' started at 2026-07-23_13-33-52 for model 'seanet_softmax__mstcn_sep_softmax_conjunctive'
+[log] a copy of everything below is being saved to: results/SEA_NET/seanet_softmax__mstcn_sep_softmax_conjunctive/logs/run_2026-07-23_13-33-52.log
+
+=== run: model=seanet_softmax__mstcn_sep_softmax_conjunctive (config sv3/seanet_softmax) dataset=WebTraffic device=cuda mode=full ===
+resolved config:
+  model = sv3/seanet_softmax
+  run.mode = single
+  run.dataset = WebTraffic
+  run.smoke = False
+  run.re_train = True
+  preprocessing.instance_type = single_point
+  preprocessing.window_size = 5
+  preprocessing.window_stride = 5
+  seed = 0
+  device = auto
+  output.results_dir = results/SEA_NET
+  interpretability.dataset = WebTraffic
+  interpretability.n_classes = 3
+  interpretability.per_class = 1
+  mlflow.enabled = True
+  mlflow.experiment_name = SEA-Net
+  mlflow.tracking_uri = sqlite:///mlflow.db
+  mlflow.log_model_weights = True
+  model_config.name = seanet_softmax
+  model_config.use_params = auto
+  model_config.encoder.type = mstcn_sep
+  model_config.encoder.d = 128
+  model_config.encoder.n_blocks = 6
+  model_config.encoder.dropout = 0.2
+  model_config.encoder.max_dilation = 16
+  model_config.encoder.kernels = [5, 11, 23]
+  model_config.pooling.type = softmax_conjunctive
+  model_config.pooling.d_attn = 8
+  model_config.pooling.dropout = 0.2
+  model_config.pooling.positional_encoding = True
+  model_config.pooling.temperature = 1.0
+  model_config.training.n_epochs = 400
+  model_config.training.patience = 60
+  model_config.training.max_batch = 16
+  model_config.training.learning_rate = 0.00125
+  model_config.training.weight_decay = 0.00012
+  model_config.training.label_smoothing = 0.13
+  model_config.training.lambda_entropy = 0.01
+  model_config.training.min_train_for_val = 100
+  model_config.training.val_frac = 0.2
+  model_config.training.optimizer = adam
+  model_config.optuna.enabled = True
+  model_config.optuna.n_trials = 30
+  model_config.optuna.timeout = None
+  model_config.optuna.sampler = tpe
+  model_config.optuna.pruner = median
+  model_config.optuna.save_best_parameters = True
+  model_config.optuna.search_space.training.learning_rate.type = float
+  model_config.optuna.search_space.training.learning_rate.low = 0.0003
+  model_config.optuna.search_space.training.learning_rate.high = 0.005
+  model_config.optuna.search_space.training.learning_rate.log = True
+  model_config.optuna.search_space.training.weight_decay.type = float
+  model_config.optuna.search_space.training.weight_decay.low = 1e-05
+  model_config.optuna.search_space.training.weight_decay.high = 0.0005
+  model_config.optuna.search_space.training.weight_decay.log = True
+  model_config.optuna.search_space.training.label_smoothing.type = float
+  model_config.optuna.search_space.training.label_smoothing.low = 0.0
+  model_config.optuna.search_space.training.label_smoothing.high = 0.2
+  model_config.optuna.search_space.training.lambda_entropy.type = float
+  model_config.optuna.search_space.training.lambda_entropy.low = 0.0
+  model_config.optuna.search_space.training.lambda_entropy.high = 0.05
+  model_config.optuna.search_space.training.max_batch.type = categorical
+  model_config.optuna.search_space.training.max_batch.choices = [8, 16, 32]
+  model_config.optuna.search_space.encoder.d.type = categorical
+  model_config.optuna.search_space.encoder.d.choices = [64, 96, 128]
+  model_config.optuna.search_space.encoder.n_blocks.type = int
+  model_config.optuna.search_space.encoder.n_blocks.low = 3
+  model_config.optuna.search_space.encoder.n_blocks.high = 8
+  model_config.optuna.search_space.encoder.dropout.type = float
+  model_config.optuna.search_space.encoder.dropout.low = 0.1
+  model_config.optuna.search_space.encoder.dropout.high = 0.4
+  model_config.optuna.search_space.encoder.max_dilation.type = categorical
+  model_config.optuna.search_space.encoder.max_dilation.choices = [8, 16, 32]
+  model_config.optuna.search_space.pooling.d_attn.type = categorical
+  model_config.optuna.search_space.pooling.d_attn.choices = [4, 8, 16, 32]
+  model_config.optuna.search_space.pooling.dropout.type = float
+  model_config.optuna.search_space.pooling.dropout.low = 0.1
+  model_config.optuna.search_space.pooling.dropout.high = 0.4
+  model_config.optuna.search_space.pooling.temperature.type = float
+  model_config.optuna.search_space.pooling.temperature.low = 0.2
+  model_config.optuna.search_space.pooling.temperature.high = 5.0
+  model_config.optuna.search_space.pooling.temperature.log = True
+  model_config.records.optuna_best.params.training.learning_rate = 0.0011577365765245713
+  model_config.records.optuna_best.params.training.weight_decay = 3.145649768799423e-05
+  model_config.records.optuna_best.params.training.label_smoothing = 0.017597091084706286
+  model_config.records.optuna_best.params.training.lambda_entropy = 0.048980432248188106
+  model_config.records.optuna_best.params.training.max_batch = 8
+  model_config.records.optuna_best.params.encoder.d = 64
+  model_config.records.optuna_best.params.encoder.n_blocks = 3
+  model_config.records.optuna_best.params.encoder.dropout = 0.22294761630610715
+  model_config.records.optuna_best.params.encoder.max_dilation = 8
+  model_config.records.optuna_best.params.pooling.d_attn = 8
+  model_config.records.optuna_best.params.pooling.dropout = 0.1650404086693623
+  model_config.records.optuna_best.params.pooling.temperature = 1.0454492672536897
+  model_config.records.optuna_best.metrics.test_acc = 0.904
+  model_config.records.optuna_best.metrics.test_loss = 0.3163
+  model_config.records.optuna_best.metrics.test_auroc = 0.9919
+  model_config.records.optuna_best.metrics.val_loss = 0.4227
+  model_config.records.optuna_best.metrics.dataset = WebTraffic
+  model_config.records.optuna_best.metrics.n_trials = 30
+  model_config.records.optuna_best.metrics.recorded = 2026-07-14 14:44:12
+[params] using DEFAULT recipe: `auto` has nothing to compare against yet (optuna-best test_acc 0.9040, default not recorded). This run records the default, then `auto` picks the better of the two.
+  [mlflow] logging runs to experiment 'SEA-Net_seanet_softmax__mstcn_sep_softmax_conjunctive_2026-07-23' at sqlite:///mlflow.db
+  [mlflow] browse later with:  mlflow ui --backend-store-uri sqlite:///mlflow.db
+    stage 1/3: loading data ...
+    stage 2/3: training on 400 series (val=100, C=10, T=1008, batch=16) ...
+    stage 3/3: scoring on 500 test series (accuracy + AOPCR + NDCG) ...
+    [mlflow] versioned model 'seanet_softmax__mstcn_sep_softmax_conjunctive' (id=m-2dd29e2cf69a4c578ddd8e25be20d418) params={'model_size_mb': '3.5392', 'n_model_params': '269165', 'name': 'seanet_softmax'}
+    [mlflow] logged run 'seanet_softmax_WebTraffic'  (train_acc=1.0000 val_acc=0.8800 test_acc=0.8800 test_loss=0.4549)
+
+=== seanet_softmax__mstcn_sep_softmax_conjunctive on WebTraffic ===
+  params          : 269165
+  model_size_mb   : 3.5392
+  n_train         : 400
+  n_val           : 100
+  n_test          : 500
+  series_length   : 1008
+  n_classes       : 10
+  test_acc        : 0.88
+  test_loss       : 0.4549
+  test_aopcr      : 1.0152
+  test_ndcg       : 0.6045
+  train_time_s    : 39.58
+
+  saved -> results/SEA_NET/seanet_softmax__mstcn_sep_softmax_conjunctive/results.csv
+  recorded default metrics -> configs/models/sv3/seanet_softmax.yaml (records.default)
+
+[log] finished; full output saved to results/SEA_NET/seanet_softmax__mstcn_sep_softmax_conjunctive/logs/run_2026-07-23_13-33-52.log

@@ -1,0 +1,19 @@
+[log] command 'results' started at 2026-07-23_15-28-27
+[log] a copy of everything below is being saved to: results/SEA_NET/logs/results_2026-07-23_15-28-27.log
+
+Cross-model comparison over 19 model(s), on the 85 datasets MILLET published (best accuracy first):
+  model                                acc    loss    aopcr   acc W/T/L
+  seanet_gated_last_topk__mstcn_sep_gated_topk_conjunctive  0.8015  0.5531    0.967    17/17/51
+  seanet_gated__mstcn_sep_gated_classwise_conjunctive  0.7900  0.5848    0.486    16/15/54
+Traceback (most recent call last):
+  File "/home/urehman/projects/sea-net/main.py", line 696, in main
+    args.func(args)      # call the function set by set_defaults for the chosen command
+  File "/home/urehman/projects/sea-net/main.py", line 582, in cmd_results
+    compare_models(verbose=True)                              # every model + the cross-model ranking
+  File "/home/urehman/projects/sea-net/seanet/results.py", line 575, in compare_models
+    _print_model_comparison(df, out)
+  File "/home/urehman/projects/sea-net/seanet/results.py", line 592, in _print_model_comparison
+    print(f"  {r['model']:32s} {r['mean_acc_ours']:>7.4f} {r['mean_loss_ours']:>7.4f} "
+ValueError: Unknown format code 's' for object of type 'float'
+
+[log] finished; full output saved to results/SEA_NET/logs/results_2026-07-23_15-28-27.log
