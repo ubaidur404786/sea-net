@@ -1,0 +1,52 @@
+# sv5/seanet_spiketrend_dualstream.yaml
+# Spike/trend encoder + the NEW dual-stream pooling head. Both parts favour "needle in a haystack"
+# evidence: the encoder has a high-pass spike branch, and the pooling focuses on the critical timestep.
+# This is our best bet for spike-like datasets AND for AOPCR.
+#
+# ENCODER = mstcn_sep_spiketrend: TWO branches - a trend branch (smooth, long-range) and a spike branch
+#   (high-pass: x - local_average(x), so only sudden jumps survive) - mixed by a 1x1 conv, then gated.
+#
+# POOLING = dualstream_conjunctive  (ported from DSMIL, Li et al. 2021)
+#   Two streams over encoder features z_j (j = timestep, k = class), then blended:
+#     Stream A (= classwise Conjunctive, safe baseline):
+#         a_j^k = sigmoid((W_A z_j)_k);  p_j^k = classifier(z_j)_k;  g_j^k = a_j^k * p_j^k
+#         Ymean^k = mean_j g_j^k
+#     Stream B (DSMIL "critical timestep" focus):
+#         m_k = argmax_j g_j^k;  q_j = W_q z_j;  U_j^k = softmax_j <q_j, q_{m_k}>;  Yds^k = sum_j U_j^k * p_j^k
+#     Blend:  lam = sigmoid(theta) in [0,1] (learned),  Y^k = (1-lam)*Ymean^k + lam*Yds^k
+#   lam starts ~0 (init_lam) so it can only match or beat Conjunctive.
+#
+# Run it (WebTraffic by default):  python main.py run --model sv5/seanet_spiketrend_dualstream
+
+name: seanet_spiketrend_dualstream
+use_params: default
+
+encoder:
+  type: mstcn_sep_spiketrend   # two branches: trend (smooth) + spike (high-pass), then mixed and gated
+  d: 64                   # width of the trend branch (the main size knob)
+  n_blocks: 4             # depth of the trend branch
+  dropout: 0.2
+  max_dilation: 16
+  kernels: [5, 11, 23]
+  summary: last           # the gate summary that won on WebTraffic: max | mean | last
+  d_spike: 16             # how many spike feature channels (small on purpose)
+  smooth_kernel: 5        # window of the local average in the spike branch (odd, keeps length T)
+
+pooling:
+  type: dualstream_conjunctive
+  d_attn: 8               # width of the attention MLP AND the query vector (W_q: d -> d_attn)
+  init_lam: 0.05          # blend starts near 0 -> begins as plain Conjunctive (safe), training raises it
+  dropout: 0.2
+  positional_encoding: true
+
+training:
+  n_epochs: 400
+  patience: 60
+  max_batch: 16
+  learning_rate: 0.00125
+  weight_decay: 0.00012
+  label_smoothing: 0.13
+  lambda_entropy: 0.01
+  min_train_for_val: 100
+  val_frac: 0.2
+  optimizer: adam

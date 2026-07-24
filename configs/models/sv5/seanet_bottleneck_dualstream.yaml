@@ -1,0 +1,49 @@
+# sv5/seanet_bottleneck_dualstream.yaml
+# Smallest encoder + the NEW dual-stream pooling head. This targets our "small model" end-goal: get the
+# AOPCR/accuracy gains of DSMIL from the cheapest encoder we have.
+#
+# ENCODER = mstcn_sep_bottleneck: same as the plain encoder, but the expensive d->d pointwise 1x1 conv
+#   is factorised into d->r->d (r = d // bottleneck_ratio), cutting most of the parameters.
+#
+# POOLING = dualstream_conjunctive  (ported from DSMIL, Li et al. 2021)
+#   Two streams over encoder features z_j (j = timestep, k = class), then blended:
+#     Stream A (= classwise Conjunctive, safe baseline):
+#         a_j^k = sigmoid((W_A z_j)_k);  p_j^k = classifier(z_j)_k;  g_j^k = a_j^k * p_j^k
+#         Ymean^k = mean_j g_j^k
+#     Stream B (DSMIL "critical timestep" focus, the AOPCR booster):
+#         m_k = argmax_j g_j^k;  q_j = W_q z_j;  U_j^k = softmax_j <q_j, q_{m_k}>;  Yds^k = sum_j U_j^k * p_j^k
+#     Blend:  lam = sigmoid(theta) in [0,1] (learned),  Y^k = (1-lam)*Ymean^k + lam*Yds^k
+#   lam starts ~0 (init_lam) so it can only match or beat Conjunctive.
+#
+# Run it (WebTraffic by default):  python main.py run --model sv5/seanet_bottleneck_dualstream
+
+name: seanet_bottleneck_dualstream
+use_params: default
+
+encoder:
+  type: mstcn_sep_bottleneck   # smallest encoder: the d->d 1x1 conv is factorised to d->r->d
+  d: 64                   # channel width (the main size knob)
+  n_blocks: 4             # how many multi-scale residual blocks are stacked
+  dropout: 0.2
+  max_dilation: 16
+  kernels: [5, 11, 23]
+  bottleneck_ratio: 4     # middle width r = d // 4 (bigger ratio = smaller model)
+
+pooling:
+  type: dualstream_conjunctive
+  d_attn: 8               # width of the attention MLP AND the query vector (W_q: d -> d_attn)
+  init_lam: 0.05          # blend starts near 0 -> begins as plain Conjunctive (safe), training raises it
+  dropout: 0.2
+  positional_encoding: true
+
+training:
+  n_epochs: 400
+  patience: 60
+  max_batch: 16
+  learning_rate: 0.00125
+  weight_decay: 0.00012
+  label_smoothing: 0.13
+  lambda_entropy: 0.01
+  min_train_for_val: 100
+  val_frac: 0.2
+  optimizer: adam

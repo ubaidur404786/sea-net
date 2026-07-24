@@ -31,7 +31,8 @@ cd "$(dirname "$0")/.."      # go to the project root
 source scripts/env.sh        # turn the environment on (prints python + torch/cuda check)
 
 # ---- the models, grouped by VERSION (the folder each config lives in) ----
-# sv1 = paper baselines, sv2 = original SEA-Net, sv3 = pooling family, sv4 = new encoder+pooling work.
+# sv1 = paper baselines, sv2 = original SEA-Net, sv3 = pooling family, sv4 = new encoder+pooling work,
+# sv5 = MIL pooling heads ported from the cancer/pathology papers (gated_attention, dualstream_conjunctive).
 # We AUTO-DISCOVER every config in each folder, so new files (like the cross-product ones) are picked up
 # automatically - no need to hand-list them here.
 list_models() {
@@ -45,7 +46,8 @@ SV1=$(list_models sv1)
 SV2=$(list_models sv2)
 SV3=$(list_models sv3)
 SV4=$(list_models sv4)
-ALL="$SV1 $SV2 $SV3 $SV4"
+SV5=$(list_models sv5)                        # sv5 = MIL heads ported from the cancer/pathology papers
+ALL="$SV1 $SV2 $SV3 $SV4 $SV5"
 
 # ---- phase: "web" (WebTraffic only, fast screen) or "full" (all datasets, real sweep) ----
 PHASE="web"                                   # default
@@ -54,7 +56,7 @@ if [ "$1" = "web" ] || [ "$1" = "full" ]; then PHASE="$1"; shift; fi
 # ---- which models to run ----
 # You can pass:
 #   nothing          -> ALL models (every version)
-#   a version group  -> sv1 | sv2 | sv3 | sv4 | all   (expands to that whole folder)
+#   a version group  -> sv1 | sv2 | sv3 | sv4 | sv5 | all   (expands to that whole folder)
 #   explicit names   -> sv4/seanet_recon sv4/seanet_slim_topk ...
 # IMPORTANT: do NOT type "$SV4" from your shell - that variable only exists INSIDE this script, so from
 # your terminal it is empty. Use the WORD  sv4  instead:   bash scripts/run_all.sh full sv4
@@ -70,6 +72,7 @@ else
       sv2) MODELS="$MODELS $SV2" ;;
       sv3) MODELS="$MODELS $SV3" ;;
       sv4) MODELS="$MODELS $SV4" ;;
+      sv5) MODELS="$MODELS $SV5" ;;
       *)   MODELS="$MODELS $sel" ;;              # an explicit model name like sv4/seanet_recon
     esac
   done

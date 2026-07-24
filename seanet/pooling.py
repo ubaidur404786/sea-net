@@ -23,12 +23,22 @@ Five pooling heads come from millet/model/pooling.py (reused unchanged):
     - "instance"    : MILInstancePooling
     - "gap"         : GlobalAveragePooling
 
-Three more are NEW SEA-Net heads defined at the bottom of THIS file. Each upgrades one weak point of
+More NEW SEA-Net heads are defined at the bottom of THIS file. Each upgrades one weak point of
 Conjunctive pooling, and each is a strict generalisation of it (so a well-trained model can never do
 worse than the Conjunctive baseline - only better):
     - "classwise_conjunctive" : one attention gate PER CLASS (sharper class-specific explanations)
     - "softmax_conjunctive"   : attention normalised OVER TIME (a real distribution + learnable temperature)
     - "adaptive_classwise"    : per-class gate + a learnable mean<->max aggregator   <- recommended default
+    - "topk_conjunctive"      : average only the top-k most-supporting timesteps per class
+    - "attention_max"         : learnable per-class blend of mean-over-time and max-over-time
+
+Two more heads (sv5) are PORTED FROM CANCER / PATHOLOGY MIL PAPERS (bag = slide, instance = patch,
+which is exactly our bag = series, instance = timestep):
+    - "gated_attention"        : gated-attention MIL (Ilse et al. 2018 / the MS-DA-MIL paper 1 family) -
+                                 attention scores gated by tanh(.) * sigmoid(.), softmax over time.
+    - "dualstream_conjunctive" : DSMIL (Li et al. 2021) - Conjunctive PLUS a second "critical-timestep"
+                                 stream that focuses on the most-supporting point, blended by a learnable
+                                 lambda. Aimed straight at our AOPCR gap (it concentrates the evidence).
 See their class docstrings for the simple formulas (in the notation of the MILLET paper).
 
 Related files:
@@ -379,6 +389,139 @@ class AttentionMaxPooling(_AttnPoolingBase):
         }
 
 
+# ======================================================================================
+# sv5 heads - ported from the cancer / pathology MIL papers we read.
+#
+# In those papers a WSI (whole-slide image) is a BAG and each 224x224 patch is an INSTANCE. That is the
+# same shape as our problem: a time series is a bag and each timestep is an instance. So their MIL
+# aggregators (the "pooling" step that turns per-instance features into one bag prediction + an
+# importance map) drop straight onto our (B, d, T) -> bag_logits + interpretation contract.
+# ======================================================================================
+class GatedAttentionPooling(_AttnPoolingBase):
+    """
+    Gated-attention MIL pooling. From Ilse et al. 2018 ("Attention-based Deep MIL"), which is the same
+    attention head used in paper 1 (MS-DA-MIL). We make it PER-CLASS so it fits our interpretation.
+
+    Plain attention scores each timestep with one tanh MLP. "Gated" attention multiplies the tanh branch
+    by a sigmoid branch, so the network can PASS or SUPPRESS each attention feature on its own - a richer,
+    more selective gate than tanh alone.
+
+        A_j        = tanh(V z_j)  *  sigmoid(U z_j)     # (per timestep) gated attention features, * = elementwise
+        s_j^k      = (W A_j)_k                          # a raw attention score per class   (W: d_attn -> C)
+        alpha_j^k  = softmax_j( s_j^k )                 # attention as a distribution OVER TIME (sums to 1)
+        p_j^k      = classifier(z_j)_k                  # per-timestep class logit (same as Conjunctive)
+        Y^k        = sum_j  alpha_j^k * p_j^k           # weighted average over time (length-invariant)
+
+    Layers: two Linear(d_in, d_attn) (the V and U branches), one Linear(d_attn, n_clz) (the scorer W),
+    and one Linear(d_in, n_clz) (the per-timestep classifier). Like softmax_conjunctive the weights sum
+    to 1 over time (so long and short series are on the same scale); the extra sigmoid gate is the only
+    new part. interpretation = alpha * p (per class, per timestep).
+    """
+
+    def __init__(self, d_in: int, n_clz: int, d_attn: int = 8, dropout: float = 0.1,
+                 apply_positional_encoding: bool = True):
+        super().__init__(d_in, n_clz, dropout=dropout, apply_positional_encoding=apply_positional_encoding)
+        self.attn_tanh = nn.Linear(d_in, d_attn)             # the V branch
+        self.attn_gate = nn.Linear(d_in, d_attn)             # the U branch (the sigmoid gate)
+        self.attn_score = nn.Linear(d_attn, n_clz)           # W: turns gated features into per-class scores
+        self.instance_classifier = nn.Linear(d_in, n_clz)
+
+    def forward(self, instance_embeddings: torch.Tensor, pos=None) -> Dict[str, torch.Tensor]:
+        x = self._prepare(instance_embeddings, pos)          # (B, T, d)
+        A = torch.tanh(self.attn_tanh(x)) * torch.sigmoid(self.attn_gate(x))   # (B, T, d_attn) gated features
+        s = self.attn_score(A)                               # (B, T, C) raw scores per class
+        alpha = torch.softmax(s, dim=1)                      # (B, T, C) softmax OVER TIME (dim=1)
+        p = self.instance_classifier(x)                      # (B, T, C) per-timestep class logits
+        contrib = alpha * p                                  # (B, T, C)
+        bag_logits = contrib.sum(dim=1)                      # (B, C) weighted sum (alpha sums to 1 over time)
+        return {
+            "bag_logits": bag_logits,
+            "interpretation": contrib.transpose(1, 2),       # (B, C, T) class-specific importance
+            "instance_logits": p.transpose(1, 2),            # (B, C, T) before the attention weighting
+            "attn": alpha.mean(dim=2, keepdim=True),         # (B, T, 1) mean distribution, for the focus penalty
+        }
+
+
+class DualStreamConjunctivePooling(_AttnPoolingBase):
+    """
+    DSMIL dual-stream pooling (Li et al. 2021), wrapped so it is a STRICT GENERALISATION of classwise
+    Conjunctive (blend starts near Conjunctive, so it can only match or beat the baseline).
+
+    The idea: run two streams and blend them.
+
+    Stream A - the safe baseline (= classwise Conjunctive, a plain mean over time):
+        a_j^k = sigmoid( (W_A z_j)_k )       # per-class gate
+        p_j^k = classifier(z_j)_k            # per-timestep class logit
+        g_j^k = a_j^k * p_j^k                 # gated evidence per timestep
+        Ymean^k = (1/T) sum_j  g_j^k          # mean over time
+
+    Stream B - DSMIL "critical-instance" focusing (this is the new, AOPCR-boosting part):
+        m_k    = argmax_j g_j^k               # the single most-supporting timestep for class k (the "critical" one)
+        q_j    = W_q z_j                       # a small query vector per timestep (W_q: d -> d_attn)
+        U_j^k  = softmax_j( <q_j , q_{m_k}> )  # attention = how SIMILAR each timestep is to the critical one
+        Yds^k  = sum_j  U_j^k * p_j^k          # class evidence re-weighted toward the critical region
+
+    Blend (learnable, starts ~Conjunctive):
+        lam  = sigmoid(theta)  in [0,1]        # one number, learned
+        Y^k  = (1 - lam) * Ymean^k  +  lam * Yds^k
+
+    Why it helps us: Stream B pulls the decision onto the critical timestep AND the timesteps that look
+    like it, so the evidence stays concentrated. Deleting those points then really hurts the prediction
+    -> higher AOPCR. In DSMIL's Figure 1 this also cleans the decision boundary for "needle in a
+    haystack" bags. lam -> 0 recovers Conjunctive exactly, so it is never worse than the baseline.
+    The interpretation returned is the SAME blend the logit uses, so the heat map matches the decision.
+
+    Layers: the Conjunctive attention MLP + classifier (as usual), one extra Linear(d_in, d_attn) for
+    the query, and one scalar blend parameter. Cheap: the attention is measured only against the single
+    critical timestep (not every-timestep-to-every-timestep), so there is no T x T cost.
+    """
+
+    def __init__(self, d_in: int, n_clz: int, d_attn: int = 8, dropout: float = 0.1,
+                 apply_positional_encoding: bool = True, init_lam: float = 0.05):
+        super().__init__(d_in, n_clz, dropout=dropout, apply_positional_encoding=apply_positional_encoding)
+        self.attention_head = nn.Sequential(
+            nn.Linear(d_in, d_attn),
+            nn.Tanh(),
+            nn.Linear(d_attn, n_clz),
+            nn.Sigmoid(),
+        )
+        self.instance_classifier = nn.Linear(d_in, n_clz)
+        self.query = nn.Linear(d_in, d_attn)                 # W_q: small query per timestep (d -> d_attn)
+        # blend lam = sigmoid(theta); start small (init_lam) so training begins at ~Conjunctive (safe).
+        init_lam = min(max(float(init_lam), 1e-3), 1.0 - 1e-3)
+        theta0 = math.log(init_lam / (1.0 - init_lam))       # inverse of sigmoid (the logit)
+        self.lam_param = nn.Parameter(torch.tensor(float(theta0)))
+
+    def forward(self, instance_embeddings: torch.Tensor, pos=None) -> Dict[str, torch.Tensor]:
+        x = self._prepare(instance_embeddings, pos)          # (B, T, d)
+        a = self.attention_head(x)                           # (B, T, C) per-class gates
+        p = self.instance_classifier(x)                      # (B, T, C) per-timestep class logits
+        g = a * p                                            # (B, T, C) gated evidence
+        mean_logit = g.mean(dim=1)                           # (B, C) Stream A: plain mean over time
+
+        # ----- Stream B: focus on the critical timestep of each class -----
+        q = self.query(x)                                    # (B, T, dq) one small query per timestep
+        T = g.shape[1]
+        m = g.argmax(dim=1)                                  # (B, C) index of the critical timestep per class
+        # pick the query at each class's critical timestep. one-hot over time, then matrix-multiply:
+        onehot = F.one_hot(m, num_classes=T).to(q.dtype)     # (B, C, T) a 1 at the critical timestep
+        q_crit = torch.bmm(onehot, q)                        # (B, C, dq) = the critical query for each class
+        # similarity of every timestep's query to the critical query, per class (dot product over dq):
+        sim = (q.unsqueeze(2) * q_crit.unsqueeze(1)).sum(dim=-1)   # (B, T, C)  <q_j, q_{m_k}>
+        U = torch.softmax(sim, dim=1)                        # (B, T, C) attention OVER TIME (sums to 1)
+        ds_logit = (U * p).sum(dim=1)                        # (B, C) Stream B: evidence near the critical point
+
+        lam = torch.sigmoid(self.lam_param)                  # scalar in [0,1], learned
+        bag_logits = (1.0 - lam) * mean_logit + lam * ds_logit    # (B, C) blended
+        interp = (1.0 - lam) * g + lam * (U * p)             # (B, T, C) SAME blend the logit uses
+        return {
+            "bag_logits": bag_logits,
+            "interpretation": interp.transpose(1, 2),        # (B, C, T) class-specific importance
+            "instance_logits": p.transpose(1, 2),
+            "attn": a.mean(dim=2, keepdim=True),             # (B, T, 1) for the focus penalty
+        }
+
+
 # Register the new heads so a config can pick them by name (encoder + pooling are swappable
 # exactly like MILLET's own). has_attn=True: each one accepts a d_attn argument from the config.
 register_pooling("classwise_conjunctive", ClasswiseConjunctivePooling, has_attn=True)
@@ -386,3 +529,5 @@ register_pooling("softmax_conjunctive", SoftmaxConjunctivePooling, has_attn=True
 register_pooling("adaptive_classwise", AdaptiveClasswisePooling, has_attn=True)
 register_pooling("topk_conjunctive", TopKConjunctivePooling, has_attn=True)
 register_pooling("attention_max", AttentionMaxPooling, has_attn=True)
+register_pooling("gated_attention", GatedAttentionPooling, has_attn=True)
+register_pooling("dualstream_conjunctive", DualStreamConjunctivePooling, has_attn=True)

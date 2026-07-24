@@ -1,0 +1,54 @@
+# sv5/seanet_gated_last_dualstream.yaml
+# Our WebTraffic champion encoder (gated, summary=last) + the NEW dual-stream pooling head from DSMIL.
+#
+# ENCODER = mstcn_sep_gated: the multi-scale separable TCN, then ONE "summary gate" that turns useful
+#   feature channels up (residual H*(1+gate), never a LayerNorm - normalising per timestep kills AOPCR).
+#
+# POOLING = dualstream_conjunctive  (ported from DSMIL, Li et al. 2021)
+#   Runs TWO streams over the encoder features z_j (j = timestep, k = class) and blends them:
+#     Stream A (safe baseline = classwise Conjunctive):
+#         a_j^k = sigmoid((W_A z_j)_k)        # per-class gate
+#         p_j^k = classifier(z_j)_k           # per-timestep class logit
+#         g_j^k = a_j^k * p_j^k               # gated evidence per timestep
+#         Ymean^k = mean_j g_j^k              # plain mean over time
+#     Stream B (DSMIL "critical timestep" focus - the AOPCR booster):
+#         m_k   = argmax_j g_j^k              # the single most-supporting timestep for class k
+#         q_j   = W_q z_j                      # a small query vector per timestep
+#         U_j^k = softmax_j <q_j, q_{m_k}>    # attention = similarity of each timestep to the critical one
+#         Yds^k = sum_j U_j^k * p_j^k         # evidence re-weighted toward the critical region
+#     Blend:  lam = sigmoid(theta) in [0,1] (learned),  Y^k = (1-lam)*Ymean^k + lam*Yds^k
+#   lam starts ~0 (init_lam) so it begins as plain Conjunctive (never worse) and training raises it only
+#   if the focusing helps. Keeping evidence CONCENTRATED is aimed straight at our biggest gap: AOPCR.
+#
+# Run it (WebTraffic by default):  python main.py run --model sv5/seanet_gated_last_dualstream
+
+name: seanet_gated_last_dualstream
+use_params: default
+
+encoder:
+  type: mstcn_sep_gated   # MSTCN-separable encoder + one summary gate on top
+  d: 64                   # channel width (the main size knob)
+  n_blocks: 4             # how many multi-scale residual blocks are stacked
+  dropout: 0.2
+  max_dilation: 16        # dilation grows 1,2,4,8 (capped at 16) - keeps each view local
+  kernels: [5, 11, 23]    # three depthwise kernel sizes, summed in every block
+  summary: last           # the gate summary that won on WebTraffic: max | mean | last
+
+pooling:
+  type: dualstream_conjunctive
+  d_attn: 8               # width of the attention MLP AND the query vector (W_q: d -> d_attn)
+  init_lam: 0.05          # blend starts near 0 -> begins as plain Conjunctive (safe), training raises it
+  dropout: 0.2
+  positional_encoding: true
+
+training:
+  n_epochs: 400
+  patience: 60
+  max_batch: 16
+  learning_rate: 0.00125
+  weight_decay: 0.00012
+  label_smoothing: 0.13
+  lambda_entropy: 0.01
+  min_train_for_val: 100
+  val_frac: 0.2
+  optimizer: adam
