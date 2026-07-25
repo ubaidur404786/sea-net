@@ -1,0 +1,2 @@
+dataset,model,encoder,pooling,seed,device,params,model_size_mb,n_train,n_val,n_test,series_length,n_classes,lambda_entropy,test_acc,test_bal_acc,test_auroc,test_loss,test_aopcr,test_ndcg,train_time_s,run_datetime
+WebTraffic,seanet_gated_mean_softmax,mstcn_sep_gated,softmax_conjunctive,0,cuda,61741,1.5028,400,100,500,1008,10,0.01,0.912,0.912,0.992,0.3684,2.0929,0.7651,45.16,2026-07-23 16:53:49

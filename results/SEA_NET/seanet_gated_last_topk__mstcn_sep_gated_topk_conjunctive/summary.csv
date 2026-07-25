@@ -10,10 +10,10 @@ loss_win_tie_loss,59/0/26
 mean_aopcr_ours,0.9674
 mean_aopcr_millet,4.5532
 aopcr_win_tie_loss,3/1/81
-overall_ucr_datasets,91
-overall_mean_acc,0.8041
-overall_mean_loss,0.5544
-overall_mean_aopcr,1.0088
+overall_ucr_datasets,128
+overall_mean_acc,0.7985
+overall_mean_loss,0.6062
+overall_mean_aopcr,1.0877
 webtraffic_acc,0.942
 webtraffic_ndcg,0.7483
 params,61740

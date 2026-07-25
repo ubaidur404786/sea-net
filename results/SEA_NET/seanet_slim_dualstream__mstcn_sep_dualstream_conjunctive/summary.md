@@ -1,0 +1,11 @@
+# seanet_slim_dualstream__mstcn_sep_dualstream_conjunctive - results summary
+
+| metric | value |
+|---|---|
+| model | seanet_slim_dualstream__mstcn_sep_dualstream_conjunctive |
+| millet85_datasets | 0 |
+| overall_ucr_datasets | 0 |
+| webtraffic_acc | 0.86 |
+| webtraffic_ndcg | 0.7454 |
+| params | 58101 |
+| model_size_mb | 1.487 |

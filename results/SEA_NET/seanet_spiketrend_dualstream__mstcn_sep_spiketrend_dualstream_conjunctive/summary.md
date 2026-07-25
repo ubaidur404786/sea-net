@@ -1,0 +1,11 @@
+# seanet_spiketrend_dualstream__mstcn_sep_spiketrend_dualstream_conjunctive - results summary
+
+| metric | value |
+|---|---|
+| model | seanet_spiketrend_dualstream__mstcn_sep_spiketrend_dualstream_conjunctive |
+| millet85_datasets | 0 |
+| overall_ucr_datasets | 0 |
+| webtraffic_acc | 0.556 |
+| webtraffic_ndcg | 0.5099 |
+| params | 67541 |
+| model_size_mb | 1.528 |

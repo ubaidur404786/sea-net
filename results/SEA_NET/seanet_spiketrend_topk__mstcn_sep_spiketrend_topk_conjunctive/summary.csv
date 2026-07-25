@@ -1,0 +1,8 @@
+metric,value
+model,seanet_spiketrend_topk__mstcn_sep_spiketrend_topk_conjunctive
+millet85_datasets,0
+overall_ucr_datasets,0
+webtraffic_acc,0.95
+webtraffic_ndcg,0.756
+params,67020
+model_size_mb,1.525

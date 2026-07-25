@@ -45,3 +45,18 @@ training:
   min_train_for_val: 100
   val_frac: 0.2
   optimizer: adam
+
+# ===== AUTO-FILLED RESULTS (managed by main.py - do not edit below this line) =====
+# These records let you compare the DEFAULT recipe against Optuna's BEST without opening MLflow,
+# and (with `use_params: auto`) train with whichever scored higher. They are filled in for you:
+#   records.default     : metrics from our last real `python main.py run` (default recipe).
+#   records.optuna_best : the params Optuna found + their metrics (`python main.py optuna`).
+
+records:
+  default:
+    metrics:
+      test_acc: 0.918
+      test_loss: 0.3653
+      test_auroc: 0.9936
+      dataset: WebTraffic
+      recorded: '2026-07-25 02:11:40'

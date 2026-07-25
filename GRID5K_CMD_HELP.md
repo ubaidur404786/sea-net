@@ -672,17 +672,23 @@ tmux new -s train
 # tmux attach -t train (Attach to a session in same previous one)
 #tmux kill-session -t train
 
-# 2) turn env on
-module load conda
-conda activate /home/urehman/miniforge3/envs/seanet
 
-# 3) get a GPU node (interactive, 4h)
+
+
+# 2) get a GPU node (interactive, 4h)
 oarsub -I -l gpu=1,walltime=6:00:00
+
+# 3) turn env on
+module load conda
+conda activate /home/urehman/miniforge3/envs/seanet  
+
+
 
 # 4) on the node: test first, then the real run
 cd ~/projects/sea-net
 bash scripts/test_run.sh
 bash scripts/run_all.sh
+
 
 # --- OR, hands-off full run (from the frontend, no node needed first) ---
 oarsub -t besteffort -l gpu=1,walltime=24:00:00 "$HOME/projects/sea-net/scripts/run_all.sh"
@@ -703,6 +709,7 @@ source scripts/env.sh
 python main.py summary --all      # dataset overview table
 python main.py results            # comparison tables + model_comparison.csv
 python main.py report             # every figure
+python main.py web-compare
 ```
 
 ---
