@@ -1,0 +1,11 @@
+# seanet_bottleneck_attnmax__sea_mstcn_sep_bottleneck__sea_attention_max - results summary
+
+| metric | value |
+|---|---|
+| model | seanet_bottleneck_attnmax__sea_mstcn_sep_bottleneck__sea_attention_max |
+| millet85_datasets | 0 |
+| overall_ucr_datasets | 0 |
+| webtraffic_acc | 0.816 |
+| webtraffic_ndcg | 0.6101 |
+| params | 41334 |
+| model_size_mb | 1.428 |

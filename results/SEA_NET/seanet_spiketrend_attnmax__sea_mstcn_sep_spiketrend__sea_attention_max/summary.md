@@ -1,0 +1,11 @@
+# seanet_spiketrend_attnmax__sea_mstcn_sep_spiketrend__sea_attention_max - results summary
+
+| metric | value |
+|---|---|
+| model | seanet_spiketrend_attnmax__sea_mstcn_sep_spiketrend__sea_attention_max |
+| millet85_datasets | 0 |
+| overall_ucr_datasets | 0 |
+| webtraffic_acc | 0.854 |
+| webtraffic_ndcg | 0.6438 |
+| params | 67030 |
+| model_size_mb | 1.526 |

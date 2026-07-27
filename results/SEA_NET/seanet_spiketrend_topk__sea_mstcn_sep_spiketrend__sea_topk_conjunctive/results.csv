@@ -1,0 +1,2 @@
+dataset,model,encoder,pooling,seed,device,params,model_size_mb,n_train,n_val,n_test,series_length,n_classes,lambda_entropy,test_acc,test_bal_acc,test_auroc,test_loss,test_aopcr,test_ndcg,train_time_s,run_datetime
+WebTraffic,seanet_spiketrend_topk,sea_mstcn_sep_spiketrend,sea_topk_conjunctive,0,cuda,67020,1.5254,400,100,500,1008,10,0.01,0.95,0.95,0.9971,0.2877,2.316,0.756,77.09,2026-07-23 17:29:40

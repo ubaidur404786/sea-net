@@ -1,0 +1,26 @@
+[log] command 'paper' started at 2026-07-27_16-06-51
+[log] a copy of everything below is being saved to: results\SEA_NET\logs\paper_2026-07-27_16-06-51.log
+
+Leaderboard: 57 models
+  note: no profile.csv found, so the FLOPs / latency / memory figures are
+        skipped. Run `python scripts/profile_models.py` to add them.
+Per-dataset matrix: 16 fully-swept models x 85 shared datasets
+Traceback (most recent call last):
+  File "D:\Documents\Intership TSC\Projects\SEA_NET\main.py", line 787, in main
+    args.func(args)      # call the function set by set_defaults for the chosen command
+    ^^^^^^^^^^^^^^^
+  File "D:\Documents\Intership TSC\Projects\SEA_NET\main.py", line 629, in cmd_paper
+    generate(refresh=args.refresh, verbose=True)
+  File "D:\Documents\Intership TSC\Projects\SEA_NET\seanet\paper\__init__.py", line 103, in generate
+    F.ablation_figures(lb)
+  File "D:\Documents\Intership TSC\Projects\SEA_NET\seanet\paper\figures.py", line 560, in ablation_figures
+    entry = _group_box(
+            ^^^^^^^^^^^
+  File "D:\Documents\Intership TSC\Projects\SEA_NET\seanet\paper\figures.py", line 520, in _group_box
+    sub = lb.dropna(subset=[metric, group_col])
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\HP\anaconda3\Lib\site-packages\pandas\core\frame.py", line 6670, in dropna
+    raise KeyError(np.array(subset)[check].tolist())
+KeyError: ['encoder']
+
+[log] finished; full output saved to results\SEA_NET\logs\paper_2026-07-27_16-06-51.log

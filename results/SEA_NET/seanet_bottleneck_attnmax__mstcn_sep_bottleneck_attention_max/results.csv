@@ -1,2 +1,0 @@
-dataset,model,encoder,pooling,seed,device,params,model_size_mb,n_train,n_val,n_test,series_length,n_classes,lambda_entropy,test_acc,test_bal_acc,test_auroc,test_loss,test_aopcr,test_ndcg,train_time_s,run_datetime
-WebTraffic,seanet_bottleneck_attnmax,mstcn_sep_bottleneck,attention_max,0,cuda,41334,1.4282,400,100,500,1008,10,0.01,0.816,0.816,0.9767,0.7318,1.7368,0.6101,161.38,2026-07-23 16:31:59

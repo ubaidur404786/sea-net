@@ -1,0 +1,8 @@
+metric,value
+model,resnet__mil_resnet__mil_conjunctive
+millet85_datasets,0
+overall_ucr_datasets,0
+webtraffic_acc,0.772
+webtraffic_ndcg,0.554
+params,506331
+model_size_mb,4.416

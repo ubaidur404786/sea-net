@@ -1,0 +1,16 @@
+model,web_acc,params,size_mb
+gated_mean_topk,0.954,61740,1.502
+conjunctive,0.954,269083,3.539
+gated_max_topk,0.952,61740,1.502
+spiketrend_topk,0.95,67020,1.525
+classwise,0.946,269164,3.539
+recon_adaptive,0.946,62935,1.51
+inputgate_topk,0.946,58092,1.489
+gated_max,0.944,61740,1.502
+gated_last,0.942,61740,1.502
+SEA-Net,0.942,269083,3.539
+gated_last_topk,0.942,61740,1.502
+bottleneck_softmax,0.94,41325,1.428
+recon_topk,0.94,62925,1.51
+gated_last_adaptive,0.938,61750,1.503
+inputgate_adaptive,0.938,58102,1.489

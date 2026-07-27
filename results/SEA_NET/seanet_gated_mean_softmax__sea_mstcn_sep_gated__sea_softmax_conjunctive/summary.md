@@ -1,0 +1,11 @@
+# seanet_gated_mean_softmax__sea_mstcn_sep_gated__sea_softmax_conjunctive - results summary
+
+| metric | value |
+|---|---|
+| model | seanet_gated_mean_softmax__sea_mstcn_sep_gated__sea_softmax_conjunctive |
+| millet85_datasets | 0 |
+| overall_ucr_datasets | 0 |
+| webtraffic_acc | 0.912 |
+| webtraffic_ndcg | 0.7651 |
+| params | 61741 |
+| model_size_mb | 1.503 |

@@ -1,8 +1,0 @@
-dataset,model,encoder,pooling,seed,device,params,model_size_mb,n_train,n_val,n_test,series_length,n_classes,lambda_entropy,test_acc,test_bal_acc,test_auroc,test_loss,test_aopcr,test_ndcg,train_time_s,run_datetime
-WebTraffic,seanet_bottleneck_adaptive,mstcn_sep_bottleneck,adaptive_classwise,0,cuda,41334,1.4282,400,100,500,1008,10,0.01,0.868,0.868,0.9869,0.5591,1.9689,0.6805,69.58,2026-07-23 16:20:36
-Adiac,seanet_bottleneck_adaptive,mstcn_sep_bottleneck,adaptive_classwise,0,cuda,43359,1.4359,328,62,391,176,37,0.01,0.7801,0.7905,0.9812,0.8595,0.1869,,80.98,2026-07-23 16:22:11
-ArrowHead,seanet_bottleneck_adaptive,mstcn_sep_bottleneck,adaptive_classwise,0,cuda,40809,1.4262,36,0,175,251,3,0.01,0.7829,0.8018,0.9493,0.5259,0.2293,,34.4,2026-07-23 16:22:54
-Beef,seanet_bottleneck_adaptive,mstcn_sep_bottleneck,adaptive_classwise,0,cuda,40959,1.4268,30,0,30,470,5,0.01,0.7,0.7,0.9389,0.6484,1.421,,50.53,2026-07-23 16:23:53
-BeetleFly,seanet_bottleneck_adaptive,mstcn_sep_bottleneck,adaptive_classwise,0,cuda,40734,1.426,20,0,20,512,2,0.01,0.75,0.75,0.97,0.4122,0.1929,,21.56,2026-07-23 16:24:19
-BirdChicken,seanet_bottleneck_adaptive,mstcn_sep_bottleneck,adaptive_classwise,0,cuda,40734,1.426,20,0,20,512,2,0.01,0.8,0.8,0.94,0.5104,2.45,,27.08,2026-07-23 16:24:51
-Car,seanet_bottleneck_adaptive,mstcn_sep_bottleneck,adaptive_classwise,0,cuda,40884,1.4265,60,0,60,577,4,0.01,0.85,0.8526,0.9576,0.4306,0.8362,,53.64,2026-07-23 16:25:54

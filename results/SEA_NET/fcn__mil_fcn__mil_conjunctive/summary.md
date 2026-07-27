@@ -1,0 +1,11 @@
+# fcn__mil_fcn__mil_conjunctive - results summary
+
+| metric | value |
+|---|---|
+| model | fcn__mil_fcn__mil_conjunctive |
+| millet85_datasets | 0 |
+| overall_ucr_datasets | 0 |
+| webtraffic_acc | 0.742 |
+| webtraffic_ndcg | 0.5327 |
+| params | 267035 |
+| model_size_mb | 3.474 |

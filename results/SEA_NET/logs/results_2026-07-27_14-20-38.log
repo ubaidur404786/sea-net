@@ -1,0 +1,26 @@
+[log] command 'results' started at 2026-07-27_14-20-38
+[log] a copy of everything below is being saved to: results\SEA_NET\logs\results_2026-07-27_14-20-38.log
+
+Cross-model comparison over 17 model(s), on the 85 datasets MILLET published (best accuracy first):   (40 more have WebTraffic-only results, not shown here)
+  model                                acc    loss    aopcr   acc W/T/L
+  seanet__mstcn_sep_additive        0.8298  0.5088    0.551    24/19/42
+  seanet_classwise__mstcn_sep_classwise_conjunctive  0.8292  0.5113    0.564    27/19/39
+  seanet_conjunctive__mstcn_sep_conjunctive  0.8238  0.5180    0.626    23/20/42
+  seanet_gated_max__mstcn_sep_gated_classwise_conjunctive  0.8237  0.5214    0.619    20/17/48
+  seanet_bottleneck_gatedattn__mstcn_sep_bottleneck_gated_attention  0.8146  0.5330    0.688    23/14/48
+  seanet_recon_adaptive__mstcn_sep_recon_adaptive_classwise  0.8140  0.5502    1.091    19/18/48
+  seanet_inputgate_topk__mstcn_sep_inputgate_topk_conjunctive  0.8131  0.5365    0.964    23/16/46
+  seanet_gated_max_topk__mstcn_sep_gated_topk_conjunctive  0.8108  0.5464    0.936    22/16/47
+  seanet_bottleneck_softmax__mstcn_sep_bottleneck_softmax_conjunctive  0.8106  0.5509    0.759    22/17/46
+  seanet_gated_mean_topk__mstcn_sep_gated_topk_conjunctive  0.8083  0.5560    1.064    19/13/53
+  seanet_recon_topk__mstcn_sep_recon_topk_conjunctive  0.8063  0.5530    1.222    19/19/47
+  seanet_gated_last_gatedattn__mstcn_sep_gated_gated_attention  0.8048  0.5564    0.500    17/15/53
+  seanet_spiketrend_gatedattn__mstcn_sep_spiketrend_gated_attention  0.8039  0.5537    0.682    15/14/56
+  seanet_gated_last_topk__mstcn_sep_gated_topk_conjunctive  0.8015  0.5531    0.967    17/17/51
+  seanet_gated__mstcn_sep_gated_classwise_conjunctive  0.7900  0.5848    0.486    16/15/54
+  seanet_gated_last__mstcn_sep_gated_classwise_conjunctive  0.7888  0.5922    0.535    17/12/56
+  seanet_bottleneck_adaptive__mstcn_sep_bottleneck_adaptive_classwise  0.7772  0.5645    0.886       0/0/6
+  MILLET (the baseline)             0.8445  1.2241    4.553
+  wrote results\SEA_NET\model_comparison.csv
+
+[log] finished; full output saved to results\SEA_NET\logs\results_2026-07-27_14-20-38.log
