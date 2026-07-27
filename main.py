@@ -601,18 +601,24 @@ def cmd_webcompare(args):
     "web-compare" command: WebTraffic-ONLY comparison of every model.
 
     It ranks all models on WebTraffic (accuracy, loss, AOPCR, NDCG, params) next to two baselines - the
-    MILLET PAPER number and our own rerun of the paper baselines - and draws the WebTraffic figure
-    (results/SEA_NET/figures/webtraffic_comparison.png). Both rebuild from whatever has finished, so a
-    new model is picked up automatically the next time you run this. Use it after the WebTraffic screen
-    (`bash scripts/run_all.sh web`).
+    MILLET PAPER number and our own rerun of the paper baselines - and draws three kinds of figure:
+      - webtraffic_acc/aopcr/ndcg.png  : every model, one metric per figure,
+      - webtraffic_tier_ge95..ge90.png : the PAPER figures - models grouped by accuracy tier so each
+        figure has only a few models (clean, not a meshed-up wall of bars),
+      - winner_dashboard.png           : the single best model (WebTraffic + UCR) shown in detail.
+    Everything rebuilds from whatever has finished, so a new model is picked up automatically the next
+    time you run this. Use it after the WebTraffic screen (`bash scripts/run_all.sh web`).
 
     args : parsed arguments (unused).
     returns : nothing.
     """
     from seanet.results import compare_webtraffic
-    from seanet.report import plot_webtraffic_comparison
+    from seanet.report import (plot_webtraffic_comparison, plot_webtraffic_tiers,
+                               plot_winner_dashboard)
     compare_webtraffic(verbose=True)
-    for p in plot_webtraffic_comparison():
+    # draw: the per-metric bars, the clean accuracy-TIER figures (>=95%..>=90%), and the winner hero.
+    figs = (plot_webtraffic_comparison() + plot_webtraffic_tiers() + plot_winner_dashboard())
+    for p in figs:
         print(f"  wrote {p}")
 
 
@@ -700,7 +706,7 @@ def main():
     p.set_defaults(func=cmd_report)
 
     # web-compare (WebTraffic-only comparison, with the paper baseline)
-    p = sub.add_parser("web-compare", help="WebTraffic-only comparison of all models vs the MILLET paper + our reran baselines")
+    p = sub.add_parser("web-compare", help="WebTraffic comparison of all models vs MILLET: table + accuracy-tier figures + winner")
     p.set_defaults(func=cmd_webcompare)
 
     args = parser.parse_args()

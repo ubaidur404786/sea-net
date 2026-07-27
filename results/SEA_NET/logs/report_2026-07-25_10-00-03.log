@@ -1,0 +1,959 @@
+[log] command 'report' started at 2026-07-25_10-00-03
+[log] a copy of everything below is being saved to: results\SEA_NET\logs\report_2026-07-25_10-00-03.log
+
+=== SEA-Net report ===
+
+--- fcn__fcn_conjunctive ---
+  fcn__fcn_conjunctive: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : fcn__fcn_conjunctive
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.742
+  webtraffic_ndcg         : 0.5327
+  params                  : 267035
+  model_size_mb           : 3.474
+
+--- millet__inceptiontime_conjunctive ---
+  millet__inceptiontime_conjunctive: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : millet__inceptiontime_conjunctive
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.894
+  webtraffic_ndcg         : 0.6711
+  params                  : 423707
+  model_size_mb           : 4.11
+
+--- resnet__resnet_conjunctive ---
+  resnet__resnet_conjunctive: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : resnet__resnet_conjunctive
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.772
+  webtraffic_ndcg         : 0.554
+  params                  : 506331
+  model_size_mb           : 4.416
+
+--- seanet__mstcn_sep_additive ---
+  model                   : seanet__mstcn_sep_additive
+  millet85_datasets       : 85
+  mean_acc_ours           : 0.8298
+  mean_acc_millet         : 0.8445
+  acc_win_tie_loss        : 24/19/42
+  mean_loss_ours          : 0.5088
+  mean_loss_millet        : 1.2241
+  loss_win_tie_loss       : 60/2/23
+  mean_aopcr_ours         : 0.5511
+  mean_aopcr_millet       : 4.5532
+  aopcr_win_tie_loss      : 3/0/82
+  overall_ucr_datasets    : 128
+  overall_mean_acc        : 0.8277
+  overall_mean_loss       : 0.5502
+  overall_mean_aopcr      : 0.6459
+  webtraffic_acc          : 0.942
+  webtraffic_ndcg         : 0.7291
+  params                  : 269083
+  model_size_mb           : 3.539
+
+--- seanet_acp__mstcn_sep_adaptive_classwise ---
+  seanet_acp__mstcn_sep_adaptive_classwise: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_acp__mstcn_sep_adaptive_classwise
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.918
+  webtraffic_ndcg         : 0.6188
+  params                  : 269174
+  model_size_mb           : 3.539
+
+--- seanet_bottleneck__mstcn_sep_bottleneck_classwise_conjunctive ---
+  seanet_bottleneck__mstcn_sep_bottleneck_classwise_conjunctive: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_bottleneck__mstcn_sep_bottleneck_classwise_conjunctive
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.902
+  webtraffic_ndcg         : 0.7325
+  params                  : 41324
+  model_size_mb           : 1.428
+
+--- seanet_bottleneck_adaptive__mstcn_sep_bottleneck_adaptive_classwise ---
+  model                   : seanet_bottleneck_adaptive__mstcn_sep_bottleneck_adaptive_classwise
+  millet85_datasets       : 6
+  mean_acc_ours           : 0.7772
+  mean_acc_millet         : 0.8827
+  acc_win_tie_loss        : 0/0/6
+  mean_loss_ours          : 0.5645
+  mean_loss_millet        : 0.6432
+  loss_win_tie_loss       : 3/1/2
+  mean_aopcr_ours         : 0.8861
+  mean_aopcr_millet       : 5.9673
+  aopcr_win_tie_loss      : 0/0/6
+  overall_ucr_datasets    : 6
+  overall_mean_acc        : 0.7772
+  overall_mean_loss       : 0.5645
+  overall_mean_aopcr      : 0.8861
+  webtraffic_acc          : 0.868
+  webtraffic_ndcg         : 0.6805
+  params                  : 41334
+  model_size_mb           : 1.428
+
+--- seanet_bottleneck_attnmax__mstcn_sep_bottleneck_attention_max ---
+  seanet_bottleneck_attnmax__mstcn_sep_bottleneck_attention_max: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_bottleneck_attnmax__mstcn_sep_bottleneck_attention_max
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.816
+  webtraffic_ndcg         : 0.6101
+  params                  : 41334
+  model_size_mb           : 1.428
+
+--- seanet_bottleneck_dualstream__mstcn_sep_bottleneck_dualstream_conjunctive ---
+  seanet_bottleneck_dualstream__mstcn_sep_bottleneck_dualstream_conjunctive: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_bottleneck_dualstream__mstcn_sep_bottleneck_dualstream_conjunctive
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.824
+  webtraffic_ndcg         : 0.6516
+  params                  : 41845
+  model_size_mb           : 1.431
+
+--- seanet_bottleneck_gatedattn__mstcn_sep_bottleneck_gated_attention ---
+  model                   : seanet_bottleneck_gatedattn__mstcn_sep_bottleneck_gated_attention
+  millet85_datasets       : 85
+  mean_acc_ours           : 0.8146
+  mean_acc_millet         : 0.8445
+  acc_win_tie_loss        : 23/14/48
+  mean_loss_ours          : 0.533
+  mean_loss_millet        : 1.2241
+  loss_win_tie_loss       : 59/1/25
+  mean_aopcr_ours         : 0.6877
+  mean_aopcr_millet       : 4.5532
+  aopcr_win_tie_loss      : 5/0/80
+  overall_ucr_datasets    : 128
+  overall_mean_acc        : 0.8127
+  overall_mean_loss       : 0.5839
+  overall_mean_aopcr      : 0.8544
+  webtraffic_acc          : 0.93
+  webtraffic_ndcg         : 0.7413
+  params                  : 41844
+  model_size_mb           : 1.43
+
+--- seanet_bottleneck_softmax__mstcn_sep_bottleneck_softmax_conjunctive ---
+  model                   : seanet_bottleneck_softmax__mstcn_sep_bottleneck_softmax_conjunctive
+  millet85_datasets       : 85
+  mean_acc_ours           : 0.8106
+  mean_acc_millet         : 0.8445
+  acc_win_tie_loss        : 22/17/46
+  mean_loss_ours          : 0.5509
+  mean_loss_millet        : 1.2241
+  loss_win_tie_loss       : 58/1/26
+  mean_aopcr_ours         : 0.7592
+  mean_aopcr_millet       : 4.5532
+  aopcr_win_tie_loss      : 3/0/82
+  overall_ucr_datasets    : 128
+  overall_mean_acc        : 0.8072
+  overall_mean_loss       : 0.6001
+  overall_mean_aopcr      : 0.9435
+  webtraffic_acc          : 0.94
+  webtraffic_ndcg         : 0.7401
+  params                  : 41325
+  model_size_mb           : 1.428
+
+--- seanet_bottleneck_topk__mstcn_sep_bottleneck_topk_conjunctive ---
+  seanet_bottleneck_topk__mstcn_sep_bottleneck_topk_conjunctive: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_bottleneck_topk__mstcn_sep_bottleneck_topk_conjunctive
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.938
+  webtraffic_ndcg         : 0.7768
+  params                  : 41324
+  model_size_mb           : 1.428
+
+--- seanet_classwise__mstcn_sep_classwise_conjunctive ---
+  model                   : seanet_classwise__mstcn_sep_classwise_conjunctive
+  millet85_datasets       : 85
+  mean_acc_ours           : 0.8292
+  mean_acc_millet         : 0.8445
+  acc_win_tie_loss        : 27/19/39
+  mean_loss_ours          : 0.5113
+  mean_loss_millet        : 1.2241
+  loss_win_tie_loss       : 60/1/24
+  mean_aopcr_ours         : 0.5642
+  mean_aopcr_millet       : 4.5532
+  aopcr_win_tie_loss      : 3/0/82
+  overall_ucr_datasets    : 128
+  overall_mean_acc        : 0.8279
+  overall_mean_loss       : 0.5541
+  overall_mean_aopcr      : 0.6543
+  webtraffic_acc          : 0.946
+  webtraffic_ndcg         : 0.686
+  params                  : 269164
+  model_size_mb           : 3.539
+
+--- seanet_conjunctive__mstcn_sep_conjunctive ---
+  model                   : seanet_conjunctive__mstcn_sep_conjunctive
+  millet85_datasets       : 85
+  mean_acc_ours           : 0.8238
+  mean_acc_millet         : 0.8445
+  acc_win_tie_loss        : 23/20/42
+  mean_loss_ours          : 0.518
+  mean_loss_millet        : 1.2241
+  loss_win_tie_loss       : 57/5/23
+  mean_aopcr_ours         : 0.6257
+  mean_aopcr_millet       : 4.5532
+  aopcr_win_tie_loss      : 4/0/81
+  overall_ucr_datasets    : 128
+  overall_mean_acc        : 0.824
+  overall_mean_loss       : 0.5564
+  overall_mean_aopcr      : 0.6847
+  webtraffic_acc          : 0.954
+  webtraffic_ndcg         : 0.6983
+  params                  : 269083
+  model_size_mb           : 3.539
+
+--- seanet_gated__mstcn_sep_gated_classwise_conjunctive ---
+  model                   : seanet_gated__mstcn_sep_gated_classwise_conjunctive
+  millet85_datasets       : 85
+  mean_acc_ours           : 0.79
+  mean_acc_millet         : 0.8445
+  acc_win_tie_loss        : 16/15/54
+  mean_loss_ours          : 0.5848
+  mean_loss_millet        : 1.2241
+  loss_win_tie_loss       : 55/1/29
+  mean_aopcr_ours         : 0.4856
+  mean_aopcr_millet       : 4.5532
+  aopcr_win_tie_loss      : 3/0/82
+  overall_ucr_datasets    : 128
+  overall_mean_acc        : 0.7876
+  overall_mean_loss       : 0.6391
+  overall_mean_aopcr      : 0.5997
+  webtraffic_acc          : 0.93
+  webtraffic_ndcg         : 0.6374
+  params                  : 61740
+  model_size_mb           : 1.502
+
+--- seanet_gated_last__mstcn_sep_gated_classwise_conjunctive ---
+  model                   : seanet_gated_last__mstcn_sep_gated_classwise_conjunctive
+  millet85_datasets       : 85
+  mean_acc_ours           : 0.7888
+  mean_acc_millet         : 0.8445
+  acc_win_tie_loss        : 17/12/56
+  mean_loss_ours          : 0.5922
+  mean_loss_millet        : 1.2241
+  loss_win_tie_loss       : 55/0/30
+  mean_aopcr_ours         : 0.535
+  mean_aopcr_millet       : 4.5532
+  aopcr_win_tie_loss      : 3/0/82
+  overall_ucr_datasets    : 128
+  overall_mean_acc        : 0.7826
+  overall_mean_loss       : 0.6512
+  overall_mean_aopcr      : 0.6312
+  webtraffic_acc          : 0.942
+  webtraffic_ndcg         : 0.7417
+  params                  : 61740
+  model_size_mb           : 1.502
+
+--- seanet_gated_last_adaptive__mstcn_sep_gated_adaptive_classwise ---
+  seanet_gated_last_adaptive__mstcn_sep_gated_adaptive_classwise: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_gated_last_adaptive__mstcn_sep_gated_adaptive_classwise
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.938
+  webtraffic_ndcg         : 0.7929
+  params                  : 61750
+  model_size_mb           : 1.503
+
+--- seanet_gated_last_attnmax__mstcn_sep_gated_attention_max ---
+  seanet_gated_last_attnmax__mstcn_sep_gated_attention_max: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_gated_last_attnmax__mstcn_sep_gated_attention_max
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.854
+  webtraffic_ndcg         : 0.668
+  params                  : 61750
+  model_size_mb           : 1.503
+
+--- seanet_gated_last_dualstream__mstcn_sep_gated_dualstream_conjunctive ---
+  seanet_gated_last_dualstream__mstcn_sep_gated_dualstream_conjunctive: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_gated_last_dualstream__mstcn_sep_gated_dualstream_conjunctive
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.736
+  webtraffic_ndcg         : 0.6373
+  params                  : 62261
+  model_size_mb           : 1.505
+
+--- seanet_gated_last_gatedattn__mstcn_sep_gated_gated_attention ---
+  model                   : seanet_gated_last_gatedattn__mstcn_sep_gated_gated_attention
+  millet85_datasets       : 85
+  mean_acc_ours           : 0.8048
+  mean_acc_millet         : 0.8445
+  acc_win_tie_loss        : 17/15/53
+  mean_loss_ours          : 0.5564
+  mean_loss_millet        : 1.2241
+  loss_win_tie_loss       : 58/0/27
+  mean_aopcr_ours         : 0.4998
+  mean_aopcr_millet       : 4.5532
+  aopcr_win_tie_loss      : 3/0/82
+  overall_ucr_datasets    : 128
+  overall_mean_acc        : 0.797
+  overall_mean_loss       : 0.6178
+  overall_mean_aopcr      : 0.6745
+  webtraffic_acc          : 0.918
+  webtraffic_ndcg         : 0.757
+  params                  : 62260
+  model_size_mb           : 1.505
+
+--- seanet_gated_last_softmax__mstcn_sep_gated_softmax_conjunctive ---
+  seanet_gated_last_softmax__mstcn_sep_gated_softmax_conjunctive: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_gated_last_softmax__mstcn_sep_gated_softmax_conjunctive
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.92
+  webtraffic_ndcg         : 0.7378
+  params                  : 61741
+  model_size_mb           : 1.503
+
+--- seanet_gated_last_topk__mstcn_sep_gated_topk_conjunctive ---
+  model                   : seanet_gated_last_topk__mstcn_sep_gated_topk_conjunctive
+  millet85_datasets       : 85
+  mean_acc_ours           : 0.8015
+  mean_acc_millet         : 0.8445
+  acc_win_tie_loss        : 17/17/51
+  mean_loss_ours          : 0.5531
+  mean_loss_millet        : 1.2241
+  loss_win_tie_loss       : 59/0/26
+  mean_aopcr_ours         : 0.9674
+  mean_aopcr_millet       : 4.5532
+  aopcr_win_tie_loss      : 3/1/81
+  overall_ucr_datasets    : 128
+  overall_mean_acc        : 0.7985
+  overall_mean_loss       : 0.6062
+  overall_mean_aopcr      : 1.0877
+  webtraffic_acc          : 0.942
+  webtraffic_ndcg         : 0.7483
+  params                  : 61740
+  model_size_mb           : 1.502
+
+--- seanet_gated_max__mstcn_sep_gated_classwise_conjunctive ---
+  model                   : seanet_gated_max__mstcn_sep_gated_classwise_conjunctive
+  millet85_datasets       : 85
+  mean_acc_ours           : 0.8237
+  mean_acc_millet         : 0.8445
+  acc_win_tie_loss        : 20/17/48
+  mean_loss_ours          : 0.5214
+  mean_loss_millet        : 1.2241
+  loss_win_tie_loss       : 61/0/24
+  mean_aopcr_ours         : 0.6192
+  mean_aopcr_millet       : 4.5532
+  aopcr_win_tie_loss      : 4/0/81
+  overall_ucr_datasets    : 128
+  overall_mean_acc        : 0.8231
+  overall_mean_loss       : 0.5594
+  overall_mean_aopcr      : 0.7164
+  webtraffic_acc          : 0.944
+  webtraffic_ndcg         : 0.5924
+  params                  : 61740
+  model_size_mb           : 1.502
+
+--- seanet_gated_max_adaptive__mstcn_sep_gated_adaptive_classwise ---
+  seanet_gated_max_adaptive__mstcn_sep_gated_adaptive_classwise: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_gated_max_adaptive__mstcn_sep_gated_adaptive_classwise
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.906
+  webtraffic_ndcg         : 0.7286
+  params                  : 61750
+  model_size_mb           : 1.503
+
+--- seanet_gated_max_attnmax__mstcn_sep_gated_attention_max ---
+  seanet_gated_max_attnmax__mstcn_sep_gated_attention_max: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_gated_max_attnmax__mstcn_sep_gated_attention_max
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.886
+  webtraffic_ndcg         : 0.5754
+  params                  : 61750
+  model_size_mb           : 1.503
+
+--- seanet_gated_max_softmax__mstcn_sep_gated_softmax_conjunctive ---
+  seanet_gated_max_softmax__mstcn_sep_gated_softmax_conjunctive: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_gated_max_softmax__mstcn_sep_gated_softmax_conjunctive
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.914
+  webtraffic_ndcg         : 0.776
+  params                  : 61741
+  model_size_mb           : 1.503
+
+--- seanet_gated_max_topk__mstcn_sep_gated_topk_conjunctive ---
+  model                   : seanet_gated_max_topk__mstcn_sep_gated_topk_conjunctive
+  millet85_datasets       : 85
+  mean_acc_ours           : 0.8108
+  mean_acc_millet         : 0.8445
+  acc_win_tie_loss        : 22/16/47
+  mean_loss_ours          : 0.5464
+  mean_loss_millet        : 1.2241
+  loss_win_tie_loss       : 59/0/26
+  mean_aopcr_ours         : 0.936
+  mean_aopcr_millet       : 4.5532
+  aopcr_win_tie_loss      : 5/1/79
+  overall_ucr_datasets    : 128
+  overall_mean_acc        : 0.8114
+  overall_mean_loss       : 0.5868
+  overall_mean_aopcr      : 1.1164
+  webtraffic_acc          : 0.952
+  webtraffic_ndcg         : 0.7185
+  params                  : 61740
+  model_size_mb           : 1.502
+
+--- seanet_gated_mean__mstcn_sep_gated_classwise_conjunctive ---
+  seanet_gated_mean__mstcn_sep_gated_classwise_conjunctive: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_gated_mean__mstcn_sep_gated_classwise_conjunctive
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.902
+  webtraffic_ndcg         : 0.7139
+  params                  : 61740
+  model_size_mb           : 1.502
+
+--- seanet_gated_mean_adaptive__mstcn_sep_gated_adaptive_classwise ---
+  seanet_gated_mean_adaptive__mstcn_sep_gated_adaptive_classwise: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_gated_mean_adaptive__mstcn_sep_gated_adaptive_classwise
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.86
+  webtraffic_ndcg         : 0.731
+  params                  : 61750
+  model_size_mb           : 1.503
+
+--- seanet_gated_mean_attnmax__mstcn_sep_gated_attention_max ---
+  seanet_gated_mean_attnmax__mstcn_sep_gated_attention_max: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_gated_mean_attnmax__mstcn_sep_gated_attention_max
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.832
+  webtraffic_ndcg         : 0.7042
+  params                  : 61750
+  model_size_mb           : 1.503
+
+--- seanet_gated_mean_softmax__mstcn_sep_gated_softmax_conjunctive ---
+  seanet_gated_mean_softmax__mstcn_sep_gated_softmax_conjunctive: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_gated_mean_softmax__mstcn_sep_gated_softmax_conjunctive
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.912
+  webtraffic_ndcg         : 0.7651
+  params                  : 61741
+  model_size_mb           : 1.503
+
+--- seanet_gated_mean_topk__mstcn_sep_gated_topk_conjunctive ---
+  model                   : seanet_gated_mean_topk__mstcn_sep_gated_topk_conjunctive
+  millet85_datasets       : 85
+  mean_acc_ours           : 0.8083
+  mean_acc_millet         : 0.8445
+  acc_win_tie_loss        : 19/13/53
+  mean_loss_ours          : 0.556
+  mean_loss_millet        : 1.2241
+  loss_win_tie_loss       : 58/1/26
+  mean_aopcr_ours         : 1.0636
+  mean_aopcr_millet       : 4.5532
+  aopcr_win_tie_loss      : 4/0/81
+  overall_ucr_datasets    : 116
+  overall_mean_acc        : 0.813
+  overall_mean_loss       : 0.5669
+  overall_mean_aopcr      : 1.211
+  webtraffic_acc          : 0.954
+  webtraffic_ndcg         : 0.7721
+  params                  : 61740
+  model_size_mb           : 1.502
+
+--- seanet_inputgate__mstcn_sep_inputgate_classwise_conjunctive ---
+  seanet_inputgate__mstcn_sep_inputgate_classwise_conjunctive: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_inputgate__mstcn_sep_inputgate_classwise_conjunctive
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.914
+  webtraffic_ndcg         : 0.7145
+  params                  : 58092
+  model_size_mb           : 1.489
+
+--- seanet_inputgate_adaptive__mstcn_sep_inputgate_adaptive_classwise ---
+  seanet_inputgate_adaptive__mstcn_sep_inputgate_adaptive_classwise: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_inputgate_adaptive__mstcn_sep_inputgate_adaptive_classwise
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.938
+  webtraffic_ndcg         : 0.7767
+  params                  : 58102
+  model_size_mb           : 1.489
+
+--- seanet_inputgate_attnmax__mstcn_sep_inputgate_attention_max ---
+  seanet_inputgate_attnmax__mstcn_sep_inputgate_attention_max: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_inputgate_attnmax__mstcn_sep_inputgate_attention_max
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.858
+  webtraffic_ndcg         : 0.6997
+  params                  : 58102
+  model_size_mb           : 1.489
+
+--- seanet_inputgate_softmax__mstcn_sep_inputgate_softmax_conjunctive ---
+  seanet_inputgate_softmax__mstcn_sep_inputgate_softmax_conjunctive: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_inputgate_softmax__mstcn_sep_inputgate_softmax_conjunctive
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.894
+  webtraffic_ndcg         : 0.6955
+  params                  : 58093
+  model_size_mb           : 1.489
+
+--- seanet_inputgate_topk__mstcn_sep_inputgate_topk_conjunctive ---
+  model                   : seanet_inputgate_topk__mstcn_sep_inputgate_topk_conjunctive
+  millet85_datasets       : 85
+  mean_acc_ours           : 0.8131
+  mean_acc_millet         : 0.8445
+  acc_win_tie_loss        : 23/16/46
+  mean_loss_ours          : 0.5365
+  mean_loss_millet        : 1.2241
+  loss_win_tie_loss       : 60/1/24
+  mean_aopcr_ours         : 0.9636
+  mean_aopcr_millet       : 4.5532
+  aopcr_win_tie_loss      : 3/1/81
+  overall_ucr_datasets    : 128
+  overall_mean_acc        : 0.8107
+  overall_mean_loss       : 0.5823
+  overall_mean_aopcr      : 1.1415
+  webtraffic_acc          : 0.946
+  webtraffic_ndcg         : 0.7482
+  params                  : 58092
+  model_size_mb           : 1.489
+
+--- seanet_recon__mstcn_sep_recon_classwise_conjunctive ---
+  seanet_recon__mstcn_sep_recon_classwise_conjunctive: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_recon__mstcn_sep_recon_classwise_conjunctive
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.91
+  webtraffic_ndcg         : 0.6804
+  params                  : 62925
+  model_size_mb           : 1.51
+
+--- seanet_recon_adaptive__mstcn_sep_recon_adaptive_classwise ---
+  model                   : seanet_recon_adaptive__mstcn_sep_recon_adaptive_classwise
+  millet85_datasets       : 85
+  mean_acc_ours           : 0.814
+  mean_acc_millet         : 0.8445
+  acc_win_tie_loss        : 19/18/48
+  mean_loss_ours          : 0.5502
+  mean_loss_millet        : 1.2241
+  loss_win_tie_loss       : 58/1/26
+  mean_aopcr_ours         : 1.0913
+  mean_aopcr_millet       : 4.5532
+  aopcr_win_tie_loss      : 4/0/81
+  overall_ucr_datasets    : 128
+  overall_mean_acc        : 0.8095
+  overall_mean_loss       : 0.5977
+  overall_mean_aopcr      : 1.2209
+  webtraffic_acc          : 0.946
+  webtraffic_ndcg         : 0.7679
+  params                  : 62935
+  model_size_mb           : 1.51
+
+--- seanet_recon_attnmax__mstcn_sep_recon_attention_max ---
+  seanet_recon_attnmax__mstcn_sep_recon_attention_max: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_recon_attnmax__mstcn_sep_recon_attention_max
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.892
+  webtraffic_ndcg         : 0.7245
+  params                  : 62935
+  model_size_mb           : 1.51
+
+--- seanet_recon_softmax__mstcn_sep_recon_softmax_conjunctive ---
+  seanet_recon_softmax__mstcn_sep_recon_softmax_conjunctive: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_recon_softmax__mstcn_sep_recon_softmax_conjunctive
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.932
+  webtraffic_ndcg         : 0.723
+  params                  : 62926
+  model_size_mb           : 1.51
+
+--- seanet_recon_topk__mstcn_sep_recon_topk_conjunctive ---
+  model                   : seanet_recon_topk__mstcn_sep_recon_topk_conjunctive
+  millet85_datasets       : 85
+  mean_acc_ours           : 0.8063
+  mean_acc_millet         : 0.8445
+  acc_win_tie_loss        : 19/19/47
+  mean_loss_ours          : 0.553
+  mean_loss_millet        : 1.2241
+  loss_win_tie_loss       : 59/0/26
+  mean_aopcr_ours         : 1.2221
+  mean_aopcr_millet       : 4.5532
+  aopcr_win_tie_loss      : 5/0/80
+  overall_ucr_datasets    : 128
+  overall_mean_acc        : 0.8046
+  overall_mean_loss       : 0.5947
+  overall_mean_aopcr      : 1.3165
+  webtraffic_acc          : 0.94
+  webtraffic_ndcg         : 0.6984
+  params                  : 62925
+  model_size_mb           : 1.51
+
+--- seanet_slim__mstcn_sep_classwise_conjunctive ---
+  seanet_slim__mstcn_sep_classwise_conjunctive: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_slim__mstcn_sep_classwise_conjunctive
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.916
+  webtraffic_ndcg         : 0.7185
+  params                  : 57580
+  model_size_mb           : 1.484
+
+--- seanet_slim_adaptive__mstcn_sep_adaptive_classwise ---
+  seanet_slim_adaptive__mstcn_sep_adaptive_classwise: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_slim_adaptive__mstcn_sep_adaptive_classwise
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.93
+  webtraffic_ndcg         : 0.7928
+  params                  : 57590
+  model_size_mb           : 1.485
+
+--- seanet_slim_attnmax__mstcn_sep_attention_max ---
+  seanet_slim_attnmax__mstcn_sep_attention_max: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_slim_attnmax__mstcn_sep_attention_max
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.714
+  webtraffic_ndcg         : 0.5318
+  params                  : 57590
+  model_size_mb           : 1.485
+
+--- seanet_slim_dualstream__mstcn_sep_dualstream_conjunctive ---
+  seanet_slim_dualstream__mstcn_sep_dualstream_conjunctive: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_slim_dualstream__mstcn_sep_dualstream_conjunctive
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.86
+  webtraffic_ndcg         : 0.7454
+  params                  : 58101
+  model_size_mb           : 1.487
+
+--- seanet_slim_gatedattn__mstcn_sep_gated_attention ---
+  seanet_slim_gatedattn__mstcn_sep_gated_attention: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_slim_gatedattn__mstcn_sep_gated_attention
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.888
+  webtraffic_ndcg         : 0.7101
+  params                  : 58100
+  model_size_mb           : 1.487
+
+--- seanet_slim_softmax__mstcn_sep_softmax_conjunctive ---
+  seanet_slim_softmax__mstcn_sep_softmax_conjunctive: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_slim_softmax__mstcn_sep_softmax_conjunctive
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.89
+  webtraffic_ndcg         : 0.7049
+  params                  : 57581
+  model_size_mb           : 1.485
+
+--- seanet_slim_topk__mstcn_sep_topk_conjunctive ---
+  seanet_slim_topk__mstcn_sep_topk_conjunctive: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_slim_topk__mstcn_sep_topk_conjunctive
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.932
+  webtraffic_ndcg         : 0.7776
+  params                  : 57580
+  model_size_mb           : 1.484
+
+--- seanet_softmax__mstcn_sep_softmax_conjunctive ---
+  seanet_softmax__mstcn_sep_softmax_conjunctive: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_softmax__mstcn_sep_softmax_conjunctive
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.88
+  webtraffic_ndcg         : 0.6045
+  params                  : 269165
+  model_size_mb           : 3.539
+
+--- seanet_spiketrend__mstcn_sep_spiketrend_classwise_conjunctive ---
+  seanet_spiketrend__mstcn_sep_spiketrend_classwise_conjunctive: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_spiketrend__mstcn_sep_spiketrend_classwise_conjunctive
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.904
+  webtraffic_ndcg         : 0.6985
+  params                  : 67020
+  model_size_mb           : 1.525
+
+--- seanet_spiketrend_adaptive__mstcn_sep_spiketrend_adaptive_classwise ---
+  seanet_spiketrend_adaptive__mstcn_sep_spiketrend_adaptive_classwise: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_spiketrend_adaptive__mstcn_sep_spiketrend_adaptive_classwise
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.934
+  webtraffic_ndcg         : 0.7471
+  params                  : 67030
+  model_size_mb           : 1.526
+
+--- seanet_spiketrend_attnmax__mstcn_sep_spiketrend_attention_max ---
+  seanet_spiketrend_attnmax__mstcn_sep_spiketrend_attention_max: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_spiketrend_attnmax__mstcn_sep_spiketrend_attention_max
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.854
+  webtraffic_ndcg         : 0.6438
+  params                  : 67030
+  model_size_mb           : 1.526
+
+--- seanet_spiketrend_dualstream__mstcn_sep_spiketrend_dualstream_conjunctive ---
+  seanet_spiketrend_dualstream__mstcn_sep_spiketrend_dualstream_conjunctive: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_spiketrend_dualstream__mstcn_sep_spiketrend_dualstream_conjunctive
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.556
+  webtraffic_ndcg         : 0.5099
+  params                  : 67541
+  model_size_mb           : 1.528
+
+--- seanet_spiketrend_gatedattn__mstcn_sep_spiketrend_gated_attention ---
+  model                   : seanet_spiketrend_gatedattn__mstcn_sep_spiketrend_gated_attention
+  millet85_datasets       : 85
+  mean_acc_ours           : 0.8039
+  mean_acc_millet         : 0.8445
+  acc_win_tie_loss        : 15/14/56
+  mean_loss_ours          : 0.5537
+  mean_loss_millet        : 1.2241
+  loss_win_tie_loss       : 58/1/26
+  mean_aopcr_ours         : 0.6818
+  mean_aopcr_millet       : 4.5532
+  aopcr_win_tie_loss      : 4/0/81
+  overall_ucr_datasets    : 128
+  overall_mean_acc        : 0.8007
+  overall_mean_loss       : 0.6124
+  overall_mean_aopcr      : 0.8118
+  webtraffic_acc          : 0.93
+  webtraffic_ndcg         : 0.7205
+  params                  : 67540
+  model_size_mb           : 1.528
+
+--- seanet_spiketrend_softmax__mstcn_sep_spiketrend_softmax_conjunctive ---
+  seanet_spiketrend_softmax__mstcn_sep_spiketrend_softmax_conjunctive: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_spiketrend_softmax__mstcn_sep_spiketrend_softmax_conjunctive
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.878
+  webtraffic_ndcg         : 0.665
+  params                  : 67021
+  model_size_mb           : 1.526
+
+--- seanet_spiketrend_topk__mstcn_sep_spiketrend_topk_conjunctive ---
+  seanet_spiketrend_topk__mstcn_sep_spiketrend_topk_conjunctive: no dataset with a MILLET baseline finished yet - skipping the comparison figures.
+  model                   : seanet_spiketrend_topk__mstcn_sep_spiketrend_topk_conjunctive
+  millet85_datasets       : 0
+  overall_ucr_datasets    : 0
+  webtraffic_acc          : 0.95
+  webtraffic_ndcg         : 0.756
+  params                  : 67020
+  model_size_mb           : 1.525
+
+=== which model wins? ===
+Cross-model comparison over 17 model(s), on the 85 datasets MILLET published (best accuracy first):   (40 more have WebTraffic-only results, not shown here)
+  model                                acc    loss    aopcr   acc W/T/L
+  seanet__mstcn_sep_additive        0.8298  0.5088    0.551    24/19/42
+  seanet_classwise__mstcn_sep_classwise_conjunctive  0.8292  0.5113    0.564    27/19/39
+  seanet_conjunctive__mstcn_sep_conjunctive  0.8238  0.5180    0.626    23/20/42
+  seanet_gated_max__mstcn_sep_gated_classwise_conjunctive  0.8237  0.5214    0.619    20/17/48
+  seanet_bottleneck_gatedattn__mstcn_sep_bottleneck_gated_attention  0.8146  0.5330    0.688    23/14/48
+  seanet_recon_adaptive__mstcn_sep_recon_adaptive_classwise  0.8140  0.5502    1.091    19/18/48
+  seanet_inputgate_topk__mstcn_sep_inputgate_topk_conjunctive  0.8131  0.5365    0.964    23/16/46
+  seanet_gated_max_topk__mstcn_sep_gated_topk_conjunctive  0.8108  0.5464    0.936    22/16/47
+  seanet_bottleneck_softmax__mstcn_sep_bottleneck_softmax_conjunctive  0.8106  0.5509    0.759    22/17/46
+  seanet_gated_mean_topk__mstcn_sep_gated_topk_conjunctive  0.8083  0.5560    1.064    19/13/53
+  seanet_recon_topk__mstcn_sep_recon_topk_conjunctive  0.8063  0.5530    1.222    19/19/47
+  seanet_gated_last_gatedattn__mstcn_sep_gated_gated_attention  0.8048  0.5564    0.500    17/15/53
+  seanet_spiketrend_gatedattn__mstcn_sep_spiketrend_gated_attention  0.8039  0.5537    0.682    15/14/56
+  seanet_gated_last_topk__mstcn_sep_gated_topk_conjunctive  0.8015  0.5531    0.967    17/17/51
+  seanet_gated__mstcn_sep_gated_classwise_conjunctive  0.7900  0.5848    0.486    16/15/54
+  seanet_gated_last__mstcn_sep_gated_classwise_conjunctive  0.7888  0.5922    0.535    17/12/56
+  seanet_bottleneck_adaptive__mstcn_sep_bottleneck_adaptive_classwise  0.7772  0.5645    0.886       0/0/6
+  MILLET (the baseline)             0.8445  1.2241    4.553
+  wrote results\SEA_NET\model_comparison.csv
+
+wrote 171 figures:
+   results\SEA_NET\figures\data_summary.png
+   results\SEA_NET\fcn__fcn_conjunctive\figures\results.png
+   results\SEA_NET\millet__inceptiontime_conjunctive\figures\results.png
+   results\SEA_NET\resnet__resnet_conjunctive\figures\results.png
+   results\SEA_NET\seanet__mstcn_sep_additive\figures\results.png
+   results\SEA_NET\seanet__mstcn_sep_additive\figures\acc_scatter.png
+   results\SEA_NET\seanet__mstcn_sep_additive\figures\loss_scatter.png
+   results\SEA_NET\seanet__mstcn_sep_additive\figures\aopcr_scatter.png
+   results\SEA_NET\seanet__mstcn_sep_additive\figures\win_tie_loss.png
+   results\SEA_NET\seanet__mstcn_sep_additive\figures\means.png
+   results\SEA_NET\seanet__mstcn_sep_additive\figures\acc_diff.png
+   results\SEA_NET\seanet_acp__mstcn_sep_adaptive_classwise\figures\results.png
+   results\SEA_NET\seanet_bottleneck__mstcn_sep_bottleneck_classwise_conjunctive\figures\results.png
+   results\SEA_NET\seanet_bottleneck_adaptive__mstcn_sep_bottleneck_adaptive_classwise\figures\results.png
+   results\SEA_NET\seanet_bottleneck_adaptive__mstcn_sep_bottleneck_adaptive_classwise\figures\acc_scatter.png
+   results\SEA_NET\seanet_bottleneck_adaptive__mstcn_sep_bottleneck_adaptive_classwise\figures\loss_scatter.png
+   results\SEA_NET\seanet_bottleneck_adaptive__mstcn_sep_bottleneck_adaptive_classwise\figures\aopcr_scatter.png
+   results\SEA_NET\seanet_bottleneck_adaptive__mstcn_sep_bottleneck_adaptive_classwise\figures\win_tie_loss.png
+   results\SEA_NET\seanet_bottleneck_adaptive__mstcn_sep_bottleneck_adaptive_classwise\figures\means.png
+   results\SEA_NET\seanet_bottleneck_adaptive__mstcn_sep_bottleneck_adaptive_classwise\figures\acc_diff.png
+   results\SEA_NET\seanet_bottleneck_attnmax__mstcn_sep_bottleneck_attention_max\figures\results.png
+   results\SEA_NET\seanet_bottleneck_dualstream__mstcn_sep_bottleneck_dualstream_conjunctive\figures\results.png
+   results\SEA_NET\seanet_bottleneck_gatedattn__mstcn_sep_bottleneck_gated_attention\figures\results.png
+   results\SEA_NET\seanet_bottleneck_gatedattn__mstcn_sep_bottleneck_gated_attention\figures\acc_scatter.png
+   results\SEA_NET\seanet_bottleneck_gatedattn__mstcn_sep_bottleneck_gated_attention\figures\loss_scatter.png
+   results\SEA_NET\seanet_bottleneck_gatedattn__mstcn_sep_bottleneck_gated_attention\figures\aopcr_scatter.png
+   results\SEA_NET\seanet_bottleneck_gatedattn__mstcn_sep_bottleneck_gated_attention\figures\win_tie_loss.png
+   results\SEA_NET\seanet_bottleneck_gatedattn__mstcn_sep_bottleneck_gated_attention\figures\means.png
+   results\SEA_NET\seanet_bottleneck_gatedattn__mstcn_sep_bottleneck_gated_attention\figures\acc_diff.png
+   results\SEA_NET\seanet_bottleneck_softmax__mstcn_sep_bottleneck_softmax_conjunctive\figures\results.png
+   results\SEA_NET\seanet_bottleneck_softmax__mstcn_sep_bottleneck_softmax_conjunctive\figures\acc_scatter.png
+   results\SEA_NET\seanet_bottleneck_softmax__mstcn_sep_bottleneck_softmax_conjunctive\figures\loss_scatter.png
+   results\SEA_NET\seanet_bottleneck_softmax__mstcn_sep_bottleneck_softmax_conjunctive\figures\aopcr_scatter.png
+   results\SEA_NET\seanet_bottleneck_softmax__mstcn_sep_bottleneck_softmax_conjunctive\figures\win_tie_loss.png
+   results\SEA_NET\seanet_bottleneck_softmax__mstcn_sep_bottleneck_softmax_conjunctive\figures\means.png
+   results\SEA_NET\seanet_bottleneck_softmax__mstcn_sep_bottleneck_softmax_conjunctive\figures\acc_diff.png
+   results\SEA_NET\seanet_bottleneck_topk__mstcn_sep_bottleneck_topk_conjunctive\figures\results.png
+   results\SEA_NET\seanet_classwise__mstcn_sep_classwise_conjunctive\figures\results.png
+   results\SEA_NET\seanet_classwise__mstcn_sep_classwise_conjunctive\figures\acc_scatter.png
+   results\SEA_NET\seanet_classwise__mstcn_sep_classwise_conjunctive\figures\loss_scatter.png
+   results\SEA_NET\seanet_classwise__mstcn_sep_classwise_conjunctive\figures\aopcr_scatter.png
+   results\SEA_NET\seanet_classwise__mstcn_sep_classwise_conjunctive\figures\win_tie_loss.png
+   results\SEA_NET\seanet_classwise__mstcn_sep_classwise_conjunctive\figures\means.png
+   results\SEA_NET\seanet_classwise__mstcn_sep_classwise_conjunctive\figures\acc_diff.png
+   results\SEA_NET\seanet_conjunctive__mstcn_sep_conjunctive\figures\results.png
+   results\SEA_NET\seanet_conjunctive__mstcn_sep_conjunctive\figures\acc_scatter.png
+   results\SEA_NET\seanet_conjunctive__mstcn_sep_conjunctive\figures\loss_scatter.png
+   results\SEA_NET\seanet_conjunctive__mstcn_sep_conjunctive\figures\aopcr_scatter.png
+   results\SEA_NET\seanet_conjunctive__mstcn_sep_conjunctive\figures\win_tie_loss.png
+   results\SEA_NET\seanet_conjunctive__mstcn_sep_conjunctive\figures\means.png
+   results\SEA_NET\seanet_conjunctive__mstcn_sep_conjunctive\figures\acc_diff.png
+   results\SEA_NET\seanet_gated__mstcn_sep_gated_classwise_conjunctive\figures\results.png
+   results\SEA_NET\seanet_gated__mstcn_sep_gated_classwise_conjunctive\figures\acc_scatter.png
+   results\SEA_NET\seanet_gated__mstcn_sep_gated_classwise_conjunctive\figures\loss_scatter.png
+   results\SEA_NET\seanet_gated__mstcn_sep_gated_classwise_conjunctive\figures\aopcr_scatter.png
+   results\SEA_NET\seanet_gated__mstcn_sep_gated_classwise_conjunctive\figures\win_tie_loss.png
+   results\SEA_NET\seanet_gated__mstcn_sep_gated_classwise_conjunctive\figures\means.png
+   results\SEA_NET\seanet_gated__mstcn_sep_gated_classwise_conjunctive\figures\acc_diff.png
+   results\SEA_NET\seanet_gated_last__mstcn_sep_gated_classwise_conjunctive\figures\results.png
+   results\SEA_NET\seanet_gated_last__mstcn_sep_gated_classwise_conjunctive\figures\acc_scatter.png
+   results\SEA_NET\seanet_gated_last__mstcn_sep_gated_classwise_conjunctive\figures\loss_scatter.png
+   results\SEA_NET\seanet_gated_last__mstcn_sep_gated_classwise_conjunctive\figures\aopcr_scatter.png
+   results\SEA_NET\seanet_gated_last__mstcn_sep_gated_classwise_conjunctive\figures\win_tie_loss.png
+   results\SEA_NET\seanet_gated_last__mstcn_sep_gated_classwise_conjunctive\figures\means.png
+   results\SEA_NET\seanet_gated_last__mstcn_sep_gated_classwise_conjunctive\figures\acc_diff.png
+   results\SEA_NET\seanet_gated_last_adaptive__mstcn_sep_gated_adaptive_classwise\figures\results.png
+   results\SEA_NET\seanet_gated_last_attnmax__mstcn_sep_gated_attention_max\figures\results.png
+   results\SEA_NET\seanet_gated_last_dualstream__mstcn_sep_gated_dualstream_conjunctive\figures\results.png
+   results\SEA_NET\seanet_gated_last_gatedattn__mstcn_sep_gated_gated_attention\figures\results.png
+   results\SEA_NET\seanet_gated_last_gatedattn__mstcn_sep_gated_gated_attention\figures\acc_scatter.png
+   results\SEA_NET\seanet_gated_last_gatedattn__mstcn_sep_gated_gated_attention\figures\loss_scatter.png
+   results\SEA_NET\seanet_gated_last_gatedattn__mstcn_sep_gated_gated_attention\figures\aopcr_scatter.png
+   results\SEA_NET\seanet_gated_last_gatedattn__mstcn_sep_gated_gated_attention\figures\win_tie_loss.png
+   results\SEA_NET\seanet_gated_last_gatedattn__mstcn_sep_gated_gated_attention\figures\means.png
+   results\SEA_NET\seanet_gated_last_gatedattn__mstcn_sep_gated_gated_attention\figures\acc_diff.png
+   results\SEA_NET\seanet_gated_last_softmax__mstcn_sep_gated_softmax_conjunctive\figures\results.png
+   results\SEA_NET\seanet_gated_last_topk__mstcn_sep_gated_topk_conjunctive\figures\results.png
+   results\SEA_NET\seanet_gated_last_topk__mstcn_sep_gated_topk_conjunctive\figures\acc_scatter.png
+   results\SEA_NET\seanet_gated_last_topk__mstcn_sep_gated_topk_conjunctive\figures\loss_scatter.png
+   results\SEA_NET\seanet_gated_last_topk__mstcn_sep_gated_topk_conjunctive\figures\aopcr_scatter.png
+   results\SEA_NET\seanet_gated_last_topk__mstcn_sep_gated_topk_conjunctive\figures\win_tie_loss.png
+   results\SEA_NET\seanet_gated_last_topk__mstcn_sep_gated_topk_conjunctive\figures\means.png
+   results\SEA_NET\seanet_gated_last_topk__mstcn_sep_gated_topk_conjunctive\figures\acc_diff.png
+   results\SEA_NET\seanet_gated_max__mstcn_sep_gated_classwise_conjunctive\figures\results.png
+   results\SEA_NET\seanet_gated_max__mstcn_sep_gated_classwise_conjunctive\figures\acc_scatter.png
+   results\SEA_NET\seanet_gated_max__mstcn_sep_gated_classwise_conjunctive\figures\loss_scatter.png
+   results\SEA_NET\seanet_gated_max__mstcn_sep_gated_classwise_conjunctive\figures\aopcr_scatter.png
+   results\SEA_NET\seanet_gated_max__mstcn_sep_gated_classwise_conjunctive\figures\win_tie_loss.png
+   results\SEA_NET\seanet_gated_max__mstcn_sep_gated_classwise_conjunctive\figures\means.png
+   results\SEA_NET\seanet_gated_max__mstcn_sep_gated_classwise_conjunctive\figures\acc_diff.png
+   results\SEA_NET\seanet_gated_max_adaptive__mstcn_sep_gated_adaptive_classwise\figures\results.png
+   results\SEA_NET\seanet_gated_max_attnmax__mstcn_sep_gated_attention_max\figures\results.png
+   results\SEA_NET\seanet_gated_max_softmax__mstcn_sep_gated_softmax_conjunctive\figures\results.png
+   results\SEA_NET\seanet_gated_max_topk__mstcn_sep_gated_topk_conjunctive\figures\results.png
+   results\SEA_NET\seanet_gated_max_topk__mstcn_sep_gated_topk_conjunctive\figures\acc_scatter.png
+   results\SEA_NET\seanet_gated_max_topk__mstcn_sep_gated_topk_conjunctive\figures\loss_scatter.png
+   results\SEA_NET\seanet_gated_max_topk__mstcn_sep_gated_topk_conjunctive\figures\aopcr_scatter.png
+   results\SEA_NET\seanet_gated_max_topk__mstcn_sep_gated_topk_conjunctive\figures\win_tie_loss.png
+   results\SEA_NET\seanet_gated_max_topk__mstcn_sep_gated_topk_conjunctive\figures\means.png
+   results\SEA_NET\seanet_gated_max_topk__mstcn_sep_gated_topk_conjunctive\figures\acc_diff.png
+   results\SEA_NET\seanet_gated_mean__mstcn_sep_gated_classwise_conjunctive\figures\results.png
+   results\SEA_NET\seanet_gated_mean_adaptive__mstcn_sep_gated_adaptive_classwise\figures\results.png
+   results\SEA_NET\seanet_gated_mean_attnmax__mstcn_sep_gated_attention_max\figures\results.png
+   results\SEA_NET\seanet_gated_mean_softmax__mstcn_sep_gated_softmax_conjunctive\figures\results.png
+   results\SEA_NET\seanet_gated_mean_topk__mstcn_sep_gated_topk_conjunctive\figures\results.png
+   results\SEA_NET\seanet_gated_mean_topk__mstcn_sep_gated_topk_conjunctive\figures\acc_scatter.png
+   results\SEA_NET\seanet_gated_mean_topk__mstcn_sep_gated_topk_conjunctive\figures\loss_scatter.png
+   results\SEA_NET\seanet_gated_mean_topk__mstcn_sep_gated_topk_conjunctive\figures\aopcr_scatter.png
+   results\SEA_NET\seanet_gated_mean_topk__mstcn_sep_gated_topk_conjunctive\figures\win_tie_loss.png
+   results\SEA_NET\seanet_gated_mean_topk__mstcn_sep_gated_topk_conjunctive\figures\means.png
+   results\SEA_NET\seanet_gated_mean_topk__mstcn_sep_gated_topk_conjunctive\figures\acc_diff.png
+   results\SEA_NET\seanet_inputgate__mstcn_sep_inputgate_classwise_conjunctive\figures\results.png
+   results\SEA_NET\seanet_inputgate_adaptive__mstcn_sep_inputgate_adaptive_classwise\figures\results.png
+   results\SEA_NET\seanet_inputgate_attnmax__mstcn_sep_inputgate_attention_max\figures\results.png
+   results\SEA_NET\seanet_inputgate_softmax__mstcn_sep_inputgate_softmax_conjunctive\figures\results.png
+   results\SEA_NET\seanet_inputgate_topk__mstcn_sep_inputgate_topk_conjunctive\figures\results.png
+   results\SEA_NET\seanet_inputgate_topk__mstcn_sep_inputgate_topk_conjunctive\figures\acc_scatter.png
+   results\SEA_NET\seanet_inputgate_topk__mstcn_sep_inputgate_topk_conjunctive\figures\loss_scatter.png
+   results\SEA_NET\seanet_inputgate_topk__mstcn_sep_inputgate_topk_conjunctive\figures\aopcr_scatter.png
+   results\SEA_NET\seanet_inputgate_topk__mstcn_sep_inputgate_topk_conjunctive\figures\win_tie_loss.png
+   results\SEA_NET\seanet_inputgate_topk__mstcn_sep_inputgate_topk_conjunctive\figures\means.png
+   results\SEA_NET\seanet_inputgate_topk__mstcn_sep_inputgate_topk_conjunctive\figures\acc_diff.png
+   results\SEA_NET\seanet_recon__mstcn_sep_recon_classwise_conjunctive\figures\results.png
+   results\SEA_NET\seanet_recon_adaptive__mstcn_sep_recon_adaptive_classwise\figures\results.png
+   results\SEA_NET\seanet_recon_adaptive__mstcn_sep_recon_adaptive_classwise\figures\acc_scatter.png
+   results\SEA_NET\seanet_recon_adaptive__mstcn_sep_recon_adaptive_classwise\figures\loss_scatter.png
+   results\SEA_NET\seanet_recon_adaptive__mstcn_sep_recon_adaptive_classwise\figures\aopcr_scatter.png
+   results\SEA_NET\seanet_recon_adaptive__mstcn_sep_recon_adaptive_classwise\figures\win_tie_loss.png
+   results\SEA_NET\seanet_recon_adaptive__mstcn_sep_recon_adaptive_classwise\figures\means.png
+   results\SEA_NET\seanet_recon_adaptive__mstcn_sep_recon_adaptive_classwise\figures\acc_diff.png
+   results\SEA_NET\seanet_recon_attnmax__mstcn_sep_recon_attention_max\figures\results.png
+   results\SEA_NET\seanet_recon_softmax__mstcn_sep_recon_softmax_conjunctive\figures\results.png
+   results\SEA_NET\seanet_recon_topk__mstcn_sep_recon_topk_conjunctive\figures\results.png
+   results\SEA_NET\seanet_recon_topk__mstcn_sep_recon_topk_conjunctive\figures\acc_scatter.png
+   results\SEA_NET\seanet_recon_topk__mstcn_sep_recon_topk_conjunctive\figures\loss_scatter.png
+   results\SEA_NET\seanet_recon_topk__mstcn_sep_recon_topk_conjunctive\figures\aopcr_scatter.png
+   results\SEA_NET\seanet_recon_topk__mstcn_sep_recon_topk_conjunctive\figures\win_tie_loss.png
+   results\SEA_NET\seanet_recon_topk__mstcn_sep_recon_topk_conjunctive\figures\means.png
+   results\SEA_NET\seanet_recon_topk__mstcn_sep_recon_topk_conjunctive\figures\acc_diff.png
+   results\SEA_NET\seanet_slim__mstcn_sep_classwise_conjunctive\figures\results.png
+   results\SEA_NET\seanet_slim_adaptive__mstcn_sep_adaptive_classwise\figures\results.png
+   results\SEA_NET\seanet_slim_attnmax__mstcn_sep_attention_max\figures\results.png
+   results\SEA_NET\seanet_slim_dualstream__mstcn_sep_dualstream_conjunctive\figures\results.png
+   results\SEA_NET\seanet_slim_gatedattn__mstcn_sep_gated_attention\figures\results.png
+   results\SEA_NET\seanet_slim_softmax__mstcn_sep_softmax_conjunctive\figures\results.png
+   results\SEA_NET\seanet_slim_topk__mstcn_sep_topk_conjunctive\figures\results.png
+   results\SEA_NET\seanet_softmax__mstcn_sep_softmax_conjunctive\figures\results.png
+   results\SEA_NET\seanet_spiketrend__mstcn_sep_spiketrend_classwise_conjunctive\figures\results.png
+   results\SEA_NET\seanet_spiketrend_adaptive__mstcn_sep_spiketrend_adaptive_classwise\figures\results.png
+   results\SEA_NET\seanet_spiketrend_attnmax__mstcn_sep_spiketrend_attention_max\figures\results.png
+   results\SEA_NET\seanet_spiketrend_dualstream__mstcn_sep_spiketrend_dualstream_conjunctive\figures\results.png
+   results\SEA_NET\seanet_spiketrend_gatedattn__mstcn_sep_spiketrend_gated_attention\figures\results.png
+   results\SEA_NET\seanet_spiketrend_gatedattn__mstcn_sep_spiketrend_gated_attention\figures\acc_scatter.png
+   results\SEA_NET\seanet_spiketrend_gatedattn__mstcn_sep_spiketrend_gated_attention\figures\loss_scatter.png
+   results\SEA_NET\seanet_spiketrend_gatedattn__mstcn_sep_spiketrend_gated_attention\figures\aopcr_scatter.png
+   results\SEA_NET\seanet_spiketrend_gatedattn__mstcn_sep_spiketrend_gated_attention\figures\win_tie_loss.png
+   results\SEA_NET\seanet_spiketrend_gatedattn__mstcn_sep_spiketrend_gated_attention\figures\means.png
+   results\SEA_NET\seanet_spiketrend_gatedattn__mstcn_sep_spiketrend_gated_attention\figures\acc_diff.png
+   results\SEA_NET\seanet_spiketrend_softmax__mstcn_sep_spiketrend_softmax_conjunctive\figures\results.png
+   results\SEA_NET\seanet_spiketrend_topk__mstcn_sep_spiketrend_topk_conjunctive\figures\results.png
+   results\SEA_NET\figures\model_comparison.png
+   results\SEA_NET\figures\webtraffic_acc.png
+   results\SEA_NET\figures\webtraffic_aopcr.png
+   results\SEA_NET\figures\webtraffic_ndcg.png
+   results\SEA_NET\figures\webtraffic_tier_ge95.png
+   results\SEA_NET\figures\webtraffic_tier_ge94.png
+   results\SEA_NET\figures\webtraffic_tier_ge93.png
+   results\SEA_NET\figures\webtraffic_tier_ge92.png
+   results\SEA_NET\figures\webtraffic_tier_ge91.png
+   results\SEA_NET\figures\webtraffic_tier_ge90.png
+   results\SEA_NET\figures\winner_dashboard.png
+
+[log] finished; full output saved to results\SEA_NET\logs\report_2026-07-25_10-00-03.log

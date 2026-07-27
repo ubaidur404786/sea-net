@@ -708,9 +708,14 @@ oarstat -u
 source scripts/env.sh
 python main.py summary --all      # dataset overview table
 python main.py results            # comparison tables + model_comparison.csv
-python main.py report             # every figure
-python main.py web-compare
+python main.py report             # every figure (per-model + cross-model + tiers + winner)
+python main.py web-compare        # WebTraffic table + accuracy-TIER figures (>=95%..>=90%) + winner
 ```
+
+NOTE on parallel nodes: every model writes to its OWN folder (results/SEA_NET/<model>/), so two
+nodes never clash. The comparison tables/figures are REBUILT (overwritten) from whatever model
+folders exist on the machine you run them on - so first gather all results/SEA_NET/<model>/ folders
+onto one place, then run results/report/web-compare there.
 
 ---
 

@@ -670,6 +670,7 @@ def webtraffic_table(models: Optional[List[str]] = None) -> pd.DataFrame:
             "aopcr": num("test_aopcr"),
             "ndcg": num("test_ndcg"),
             "params": num("params"),
+            "size_mb": num("model_size_mb"),   # weight-file size in MB (the "small model" goal)
         })
     df = pd.DataFrame(rows)
     if not df.empty:
