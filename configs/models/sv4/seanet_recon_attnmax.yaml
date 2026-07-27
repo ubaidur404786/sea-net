@@ -8,7 +8,7 @@ name: seanet_recon_attnmax
 use_params: default
 
 encoder:
-  type: mstcn_sep_recon
+  type: sea_mstcn_sep_recon
   d: 64
   n_blocks: 4
   dropout: 0.2
@@ -17,7 +17,7 @@ encoder:
   d_res: 16
 
 pooling:
-  type: attention_max
+  type: sea_attention_max
   d_attn: 8
   dropout: 0.2
   positional_encoding: true

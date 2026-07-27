@@ -9,7 +9,7 @@ name: seanet_gated_last
 use_params: default
 
 encoder:
-  type: mstcn_sep_gated
+  type: sea_mstcn_sep_gated
   d: 64
   n_blocks: 4
   dropout: 0.2
@@ -18,7 +18,7 @@ encoder:
   summary: last           # this file: LAST timestep (a local view; kept so we can compare all three)
 
 pooling:
-  type: classwise_conjunctive
+  type: sea_classwise_conjunctive
   d_attn: 8
   dropout: 0.2
   positional_encoding: true

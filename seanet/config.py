@@ -12,7 +12,7 @@ What this file is for:
         cfg.seed                         -> 0
         cfg.model_config.training.learning_rate   -> 0.00125
 
-    It also names the model: model_folder_name(cfg) -> "seanet__mstcn_sep_additive"
+    It also names the model: model_folder_name(cfg) -> "seanet__sea_mstcn_sep__mil_additive"
     (config file name + encoder + pooling). That name is the folder all of this model's results go
     in - see seanet/results.py.
 
@@ -340,31 +340,46 @@ def to_flat_dict(cfg, prefix: str = "") -> Dict:
 # --------------------------------------------------------------------------------------
 # The model id: what a model IS, in one UNIQUE name.
 #
-# The name has two parts joined by a double underscore: "<config file name>__<encoder>_<pooling>",
-# e.g. "seanet_slim__mstcn_sep_classwise_conjunctive". That name is the folder its results live in
-# (results/SEA_NET/seanet_slim__mstcn_sep_classwise_conjunctive/).
+# THREE parts, joined by a double underscore:
+#
+#       <config file name>__<encoder>__<pooling>
+#       seanet_slim       __sea_mstcn_sep__sea_classwise_conjunctive
+#
+# That name is the folder its results live in (results/SEA_NET/<model id>/).
+#
+# Why "sea_" and "mil_" prefixes:
+#   Every encoder and pooling name says WHO it came from - "sea_" is ours, "mil_" is MILLET's,
+#   reused unchanged. So you can read any folder name, figure label or paper table row and see
+#   immediately which half of the model is new and which is the baseline, without opening the code.
 #
 # Why the config file name is in front:
 #   Two different config files can build the SAME encoder+pooling pair but still be different
-#   experiments - e.g. seanet_slim (d=32) and seanet_classwise (d=128) are both mstcn_sep +
-#   classwise_conjunctive. If we named the folder after the encoder+pooling ALONE, those two would
-#   share one folder and overwrite each other's results (and one would wrongly show as "already
-#   done" for the other). Putting the config file name first gives every config its OWN folder, so
-#   the name can never clash. The encoder_pooling part stays so you can still read what the network
-#   IS at a glance.
+#   experiments - e.g. seanet_slim (d=32) and seanet_classwise (d=128) are both sea_mstcn_sep +
+#   sea_classwise_conjunctive. If we named the folder after the encoder+pooling ALONE, those two
+#   would share one folder and overwrite each other's results (and one would wrongly show as
+#   "already done" for the other). Putting the config file name first gives every config its OWN
+#   folder, so the name can never clash.
+#
+# Why "__" between ALL THREE parts (this changed in seanetv5):
+#   The old name used a single underscore between encoder and pooling
+#   ("seanet_slim__sea_mstcn_sep__sea_classwise_conjunctive"), and that was impossible to split back: is the
+#   encoder "mstcn_sep" or "mstcn_sep_classwise"? Both were real registry names. With "__" between
+#   all three parts, model_id.split("__") gives exactly [config, encoder, pooling], every time -
+#   which is what lets the figures and the paper tables label the encoder and the pooling
+#   separately without any guessing. See split_model_id() below.
 # --------------------------------------------------------------------------------------
 def model_folder_name(cfg) -> str:
     """
-    Build the unique model id: "<config file name>__<encoder type>_<pooling type>",
-    e.g. "seanet_slim__mstcn_sep_classwise_conjunctive".
+    Build the unique model id: "<config file name>__<encoder type>__<pooling type>",
+    e.g. "seanet_slim__sea_mstcn_sep__sea_classwise_conjunctive".
 
     This is the name of the folder that holds this model's results, logs and figures. Every config
     file maps to its own unique one:
-        seanet.yaml             -> seanet__mstcn_sep_additive
-        seanet_slim.yaml        -> seanet_slim__mstcn_sep_classwise_conjunctive
-        seanet_classwise.yaml   -> seanet_classwise__mstcn_sep_classwise_conjunctive
-        seanet_acp.yaml         -> seanet_acp__mstcn_sep_adaptive_classwise
-        millet.yaml             -> millet__inceptiontime_conjunctive
+        seanet.yaml             -> seanet__sea_mstcn_sep__mil_additive
+        seanet_slim.yaml        -> seanet_slim__sea_mstcn_sep__sea_classwise_conjunctive
+        seanet_classwise.yaml   -> seanet_classwise__sea_mstcn_sep__sea_classwise_conjunctive
+        seanet_acp.yaml         -> seanet_acp__sea_mstcn_sep__sea_adaptive_classwise
+        millet.yaml             -> millet__mil_inceptiontime__mil_conjunctive
 
     cfg : a loaded config (from load_config). It must carry cfg.model (the config file name), because
           that is the part of the name that guarantees uniqueness.
@@ -385,4 +400,37 @@ def model_folder_name(cfg) -> str:
     # exactly as before - the version prefix must not turn into a nested results folder (that would
     # hide the results from discover_models, which only scans the top level).
     config_name = os.path.basename(config_name)
-    return f"{config_name}__{encoder}_{pooling}"
+    return f"{config_name}__{encoder}__{pooling}"
+
+
+def split_model_id(model_id: str) -> tuple:
+    """
+    Split a model id back into its three parts: (config name, encoder, pooling).
+
+    This is the reverse of model_folder_name, and it is exact because the three parts are joined by
+    "__" (a double underscore) while the parts themselves only ever contain single underscores.
+
+        split_model_id("seanet_slim__sea_mstcn_sep__sea_classwise_conjunctive")
+        -> ("seanet_slim", "sea_mstcn_sep", "sea_classwise_conjunctive")
+
+    Use it whenever a figure or a table needs to name the encoder and the pooling separately.
+
+    model_id : the folder name of a model.
+    returns : (config, encoder, pooling). If the id is an old two-part name (no "__" before the
+              pooling), the missing parts come back as empty strings rather than raising - that way
+              a stale folder left on disk cannot crash a report.
+    """
+    parts = model_id.split("__")
+    while len(parts) < 3:
+        parts.append("")
+    return parts[0], parts[1], parts[2]
+
+
+def is_ours(name: str) -> bool:
+    """True if an encoder / pooling name is one of OURS (it starts with "sea_")."""
+    return name.startswith("sea_")
+
+
+def is_millet(name: str) -> bool:
+    """True if an encoder / pooling name is MILLET's, reused unchanged (it starts with "mil_")."""
+    return name.startswith("mil_")

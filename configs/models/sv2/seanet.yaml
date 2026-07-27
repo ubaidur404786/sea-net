@@ -18,7 +18,7 @@ use_params: auto
 
 # ---- the encoder (feature extractor): turns each timestep into a 128-d feature vector ----
 encoder:
-  type: mstcn_sep        # our "Multi-Scale separable TCN" encoder
+  type: sea_mstcn_sep        # our "Multi-Scale separable TCN" encoder
   d: 128                 # channel width the encoder works with
   n_blocks: 6            # how many residual blocks are stacked
   dropout: 0.2           # dropout inside the encoder blocks
@@ -27,7 +27,7 @@ encoder:
 
 # ---- the pooling head: turns per-timestep features into a prediction + importance scores ----
 pooling:
-  type: additive         # MILLET's MILAdditivePooling (reused unchanged)
+  type: mil_additive         # MILLET's MILAdditivePooling (reused unchanged)
   d_attn: 8              # width of the small attention MLP
   dropout: 0.2
   positional_encoding: true

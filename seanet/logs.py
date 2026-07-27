@@ -11,7 +11,7 @@ What this file is for:
 Where the log goes:
     A log belongs to the MODEL it was run for, so it is saved next to that model's results:
 
-        results/SEA_NET/mstcn_sep_additive/logs/train_2026-07-17_14-02-11.log
+        results/SEA_NET/seanet__sea_mstcn_sep__mil_additive/logs/train_2026-07-17_14-02-11.log
 
     Every run gets its own file, named with the command plus the date and time, so nothing is ever
     overwritten - run the same model ten times and you keep all ten records, in order.
@@ -24,7 +24,7 @@ Where the log goes:
     Grid5000 training record travels with the repo.
 
 How to use it (see main.py):
-    start_logging("train", model_id="mstcn_sep_additive")     # -> <model>/logs/train_<date-time>.log
+    start_logging("train", model_id="seanet__sea_mstcn_sep__mil_additive")     # -> <model>/logs/train_<date-time>.log
     start_logging("report")                                   # -> results/SEA_NET/logs/report_<date-time>.log
     start_logging("run", model_id=..., smoke=True)            # -> <model>/logs/smoke/run_<date-time>.log
 
@@ -68,7 +68,7 @@ def log_dir_for(model_id: Optional[str] = None, smoke: bool = False) -> str:
     """
     Work out which folder a log file belongs in.
 
-    model_id : the model this run is for (e.g. "mstcn_sep_additive"); None for commands that belong
+    model_id : the model this run is for (e.g. "seanet__sea_mstcn_sep__mil_additive"); None for commands that belong
                to no model (summary, report), which use the shared results/SEA_NET/logs/ folder.
     smoke : if True, use the logs/smoke/ subfolder (git-ignored - throwaway checks are not kept).
     returns : the folder path.

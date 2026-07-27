@@ -12,11 +12,24 @@ Input / output contract (the same for EVERY encoder, so they are interchangeable
     Output : per-timestep features, shape (B, d, T)   (T is unchanged).
     Every encoder also exposes an attribute `.d_out` = d, so the pooling head knows the width.
 
+Naming rule: every registered name says WHO it came from, so a results folder or a figure label can
+be read without opening any code.
+    "sea_..." = OURS   (written for this project, defined in this file)
+    "mil_..." = MILLET (reused from millet/, code untouched)
+
 The encoders registered here today:
-    - "mstcn_sep"     : SEA-Net's own multi-scale depthwise-separable TCN (defined in this file).
-    - "inceptiontime" : MILLET's InceptionTime backbone (reused from millet/).
-    - "fcn"           : MILLET's FCN backbone (reused from millet/).
-    - "resnet"        : MILLET's ResNet backbone (reused from millet/).
+    OURS - the SEA-Net family (all multi-scale depthwise-separable TCNs, defined in this file):
+    - "sea_mstcn_sep"            : the plain encoder (the original SEA-Net).
+    - "sea_mstcn_sep_gated"      : plus one summary gate on top.
+    - "sea_mstcn_sep_spiketrend" : two branches (smooth trend + high-pass spike), mixed and gated.
+    - "sea_mstcn_sep_bottleneck" : the smallest one (the d->d 1x1 conv is factorised through d->r->d).
+    - "sea_mstcn_sep_inputgate"  : a gate read straight off the raw input.
+    - "sea_mstcn_sep_recon"      : adds features made from the reconstruction residual.
+
+    MILLET - the paper's own backbones, reused unchanged from millet/:
+    - "mil_inceptiontime" : InceptionTime (the paper's baseline encoder).
+    - "mil_fcn"           : FCN.
+    - "mil_resnet"        : ResNet.
 
 Related files:
     - seanet/model.py   -> build_model_from_config() calls build_encoder() from here, then pairs the
@@ -445,7 +458,7 @@ def register_encoder(name: str) -> Callable:
     return decorator
 
 
-@register_encoder("mstcn_sep")
+@register_encoder("sea_mstcn_sep")
 def _build_mstcn_sep(cfg, n_in: int) -> nn.Module:
     """Build the SEA-Net encoder from its config block."""
     return MSTCNSepEncoder(
@@ -458,7 +471,7 @@ def _build_mstcn_sep(cfg, n_in: int) -> nn.Module:
     )
 
 
-@register_encoder("mstcn_sep_gated")
+@register_encoder("sea_mstcn_sep_gated")
 def _build_mstcn_sep_gated(cfg, n_in: int) -> nn.Module:
     """Build the self-gating SEA-Net encoder. Same config as mstcn_sep plus an optional `summary`."""
     return MSTCNSepGatedEncoder(
@@ -472,7 +485,7 @@ def _build_mstcn_sep_gated(cfg, n_in: int) -> nn.Module:
     )
 
 
-@register_encoder("mstcn_sep_spiketrend")
+@register_encoder("sea_mstcn_sep_spiketrend")
 def _build_mstcn_sep_spiketrend(cfg, n_in: int) -> nn.Module:
     """Build the spike/trend dual-branch encoder. Same config as mstcn_sep_gated plus d_spike/smooth_kernel."""
     return MSTCNSepSpikeTrendEncoder(
@@ -488,7 +501,7 @@ def _build_mstcn_sep_spiketrend(cfg, n_in: int) -> nn.Module:
     )
 
 
-@register_encoder("mstcn_sep_bottleneck")
+@register_encoder("sea_mstcn_sep_bottleneck")
 def _build_mstcn_sep_bottleneck(cfg, n_in: int) -> nn.Module:
     """Build the bottleneck (smaller) encoder. Same config as mstcn_sep plus optional bottleneck_ratio."""
     return MSTCNSepBottleneckEncoder(
@@ -502,7 +515,7 @@ def _build_mstcn_sep_bottleneck(cfg, n_in: int) -> nn.Module:
     )
 
 
-@register_encoder("mstcn_sep_inputgate")
+@register_encoder("sea_mstcn_sep_inputgate")
 def _build_mstcn_sep_inputgate(cfg, n_in: int) -> nn.Module:
     """Build the input-gate encoder. Same config as mstcn_sep plus optional gate_kernel."""
     return MSTCNSepInputGateEncoder(
@@ -516,7 +529,7 @@ def _build_mstcn_sep_inputgate(cfg, n_in: int) -> nn.Module:
     )
 
 
-@register_encoder("mstcn_sep_recon")
+@register_encoder("sea_mstcn_sep_recon")
 def _build_mstcn_sep_recon(cfg, n_in: int) -> nn.Module:
     """Build the reconstruction-residual encoder. Same config as mstcn_sep plus optional d_res."""
     return MSTCNSepReconEncoder(
@@ -530,7 +543,7 @@ def _build_mstcn_sep_recon(cfg, n_in: int) -> nn.Module:
     )
 
 
-@register_encoder("inceptiontime")
+@register_encoder("mil_inceptiontime")
 def _build_inceptiontime(cfg, n_in: int) -> nn.Module:
     """Build MILLET's InceptionTime backbone. Output width = 4 * out_channels (default 128)."""
     out_channels = getattr(cfg, "out_channels", 32)
@@ -539,7 +552,7 @@ def _build_inceptiontime(cfg, n_in: int) -> nn.Module:
     return enc
 
 
-@register_encoder("fcn")
+@register_encoder("mil_fcn")
 def _build_fcn(cfg, n_in: int) -> nn.Module:
     """Build MILLET's FCN backbone (fixed 128-channel output)."""
     enc = backbone.FCNFeatureExtractor(n_in)
@@ -547,7 +560,7 @@ def _build_fcn(cfg, n_in: int) -> nn.Module:
     return enc
 
 
-@register_encoder("resnet")
+@register_encoder("mil_resnet")
 def _build_resnet(cfg, n_in: int) -> nn.Module:
     """Build MILLET's ResNet backbone (fixed 128-channel output)."""
     enc = backbone.ResNetFeatureExtractor(n_in)

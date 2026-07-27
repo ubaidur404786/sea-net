@@ -5,7 +5,7 @@
 # seanet/model.py. If you select this model today ("model: transformer"), the pipeline will stop
 # with a clear "not implemented yet" message instead of doing something surprising.
 #
-# When the transformer is added, "type: transformer" below will map to a real encoder class and
+# When the transformer is added, "type: sea_transformer" below will map to a real encoder class and
 # these values will become its real hyperparameters.
 
 name: transformer
@@ -13,7 +13,7 @@ implemented: false       # the model factory checks this flag and refuses to bui
 
 # ---- draft encoder settings (shape only, not used until the model is implemented) ----
 encoder:
-  type: transformer
+  type: sea_transformer
   d_model: 128           # feature width
   n_heads: 8             # number of attention heads
   n_layers: 4            # number of transformer blocks
@@ -21,7 +21,7 @@ encoder:
 
 # ---- pooling: reuse the same MIL pooling head as the other models ----
 pooling:
-  type: additive
+  type: mil_additive
   d_attn: 8
   dropout: 0.2
   positional_encoding: true

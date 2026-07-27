@@ -26,7 +26,7 @@ name: seanet_gated_last_dualstream
 use_params: default
 
 encoder:
-  type: mstcn_sep_gated   # MSTCN-separable encoder + one summary gate on top
+  type: sea_mstcn_sep_gated   # MSTCN-separable encoder + one summary gate on top
   d: 64                   # channel width (the main size knob)
   n_blocks: 4             # how many multi-scale residual blocks are stacked
   dropout: 0.2
@@ -35,7 +35,7 @@ encoder:
   summary: last           # the gate summary that won on WebTraffic: max | mean | last
 
 pooling:
-  type: dualstream_conjunctive
+  type: sea_dualstream_conjunctive
   d_attn: 8               # width of the attention MLP AND the query vector (W_q: d -> d_attn)
   init_lam: 0.05          # blend starts near 0 -> begins as plain Conjunctive (safe), training raises it
   dropout: 0.2

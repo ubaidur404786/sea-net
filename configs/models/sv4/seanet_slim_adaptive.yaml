@@ -8,7 +8,7 @@ name: seanet_slim_adaptive
 use_params: default
 
 encoder:
-  type: mstcn_sep
+  type: sea_mstcn_sep
   d: 64
   n_blocks: 4
   dropout: 0.2
@@ -16,7 +16,7 @@ encoder:
   kernels: [5, 11, 23]
 
 pooling:
-  type: adaptive_classwise
+  type: sea_adaptive_classwise
   d_attn: 8
   dropout: 0.2
   positional_encoding: true

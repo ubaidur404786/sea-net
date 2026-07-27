@@ -23,9 +23,9 @@ What "--model" means:
     reads configs/models/seanet.yaml. That file says which encoder and which pooling head to use.
 
 One config file = one results folder, with a UNIQUE name:
-    A model's folder is named "<config file name>__<encoder>_<pooling>". So configs/models/seanet.yaml
-    (encoder mstcn_sep + pooling additive) writes everything into
-    results/SEA_NET/seanet__mstcn_sep_additive/ - its results.csv, its done_train_dataset.txt, its
+    A model's folder is named "<config file name>__<encoder>__<pooling>". So configs/models/seanet.yaml
+    (encoder sea_mstcn_sep + pooling mil_additive) writes everything into
+    results/SEA_NET/seanet__sea_mstcn_sep__mil_additive/ - its results.csv, its done_train_dataset.txt, its
     logs, its figures, its interpretation figures. The config file name is in front so two configs
     that build the same encoder+pooling (e.g. seanet_slim vs seanet_classwise) never share a folder.
     Nothing is shared, so you can sweep several models and compare them fairly afterwards with
@@ -132,7 +132,7 @@ def _resolve_model(args):
     Load the config a command will run with, and work out the model id it writes under.
 
     Every model-specific command resolves its model exactly the same way, so that reading lives here
-    once: the --config file, the --model override, and the "<config>__<encoder>_<pooling>" id that
+    once: the --config file, the --model override, and the "<config>__<encoder>__<pooling>" id that
     names the results folder. main() calls this BEFORE start_logging, so the log lands right.
 
     args : the parsed command-line arguments.
@@ -582,6 +582,53 @@ def cmd_results(args):
     compare_models(verbose=True)                              # every model + the cross-model ranking
 
 
+def cmd_leaderboard(args):
+    """
+    "leaderboard" command: ONE table with every model, best WebTraffic accuracy first.
+
+    This is the "which model do we keep?" table. WebTraffic is our fast screen (every model runs it),
+    so ranking by it puts every model on the same page. The UCR columns are filled in for the models
+    that went on to the full 129-dataset sweep and left EMPTY for the ones that were only screened -
+    empty means "not run yet", never zero.
+
+    It rebuilds from each model's own results.csv every time, so a new model shows up by itself and a
+    re-trained model's numbers replace themselves. Writes results/SEA_NET/leaderboard.csv.
+
+    args : parsed arguments (args.fast).
+    returns : nothing.
+    """
+    from seanet.results import build_leaderboard
+    build_leaderboard(refresh=not args.fast, verbose=True)
+
+
+def cmd_paper(args):
+    """
+    "paper" command: build every figure and table for the paper submission.
+
+    Different from "report": report draws every model on one chart, which is useful while
+    experimenting but far too crowded for a paper page. This builds publication figures where each
+    one answers a single scientific question, saved as PDF + SVG + 600 dpi PNG and sorted into
+    paper-section folders under results/paper_figures/:
+
+      01_main_figures/  the few figures that go in the body (benchmark bands, Pareto, significance)
+      02_ablation/      what each encoder / pooling head actually contributes
+      03_appendix/      every model, every dataset, the detailed versions
+      04_web/           WebTraffic, the only dataset with per-timestep ground truth
+      05_statistics/    ranks, head-to-head wins, correlations
+      tables/           the same numbers as LaTeX + CSV + Markdown
+
+    It also writes figures.json (title / caption / label / the question each figure answers) and
+    figures.tex, so a figure can be pasted straight into Overleaf with its caption already written.
+
+    Nothing is retrained: every number comes from the saved results.
+
+    args : parsed arguments (args.refresh).
+    returns : nothing.
+    """
+    from seanet.paper import generate
+    generate(refresh=args.refresh, verbose=True)
+
+
 def cmd_report(args):
     """
     "report" command: build every figure and summary table from the finished results.
@@ -700,6 +747,20 @@ def main():
     p.add_argument("--config", default=os.path.join("configs", "main.yaml"), help="path to main.yaml")
     p.add_argument("--model", help="report only this model config (default: every model with results)")
     p.set_defaults(func=cmd_results)
+
+    # leaderboard (one table, every model, best WebTraffic accuracy first)
+    p = sub.add_parser("leaderboard", help="one table of every model ranked by WebTraffic accuracy "
+                                           "(UCR columns empty for models only screened)")
+    p.add_argument("--fast", action="store_true",
+                   help="reuse model_comparison.csv instead of recomputing every model's UCR comparison")
+    p.set_defaults(func=cmd_leaderboard)
+
+    # paper (publication figures + tables + LaTeX glue)
+    p = sub.add_parser("paper", help="build the paper's figures and tables (PDF+SVG+PNG, LaTeX "
+                                     "captions) under results/paper_figures/")
+    p.add_argument("--refresh", action="store_true",
+                   help="recompute the leaderboard first (slower; default reuses the saved one)")
+    p.set_defaults(func=cmd_paper)
 
     # report (every figure + summary table)
     p = sub.add_parser("report", help="generate every figure + summary table under results/SEA_NET/")

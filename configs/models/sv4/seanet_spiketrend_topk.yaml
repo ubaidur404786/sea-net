@@ -8,7 +8,7 @@ name: seanet_spiketrend_topk
 use_params: default
 
 encoder:
-  type: mstcn_sep_spiketrend
+  type: sea_mstcn_sep_spiketrend
   d: 64
   n_blocks: 4
   dropout: 0.2
@@ -19,7 +19,7 @@ encoder:
   smooth_kernel: 5
 
 pooling:
-  type: topk_conjunctive
+  type: sea_topk_conjunctive
   d_attn: 8
   dropout: 0.2
   positional_encoding: true

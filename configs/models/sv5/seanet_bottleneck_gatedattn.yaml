@@ -18,7 +18,7 @@ name: seanet_bottleneck_gatedattn
 use_params: default
 
 encoder:
-  type: mstcn_sep_bottleneck   # smallest encoder: the d->d 1x1 conv is factorised to d->r->d
+  type: sea_mstcn_sep_bottleneck   # smallest encoder: the d->d 1x1 conv is factorised to d->r->d
   d: 64                   # channel width (the main size knob)
   n_blocks: 4             # how many multi-scale residual blocks are stacked
   dropout: 0.2
@@ -27,7 +27,7 @@ encoder:
   bottleneck_ratio: 4     # middle width r = d // 4 (bigger ratio = smaller model)
 
 pooling:
-  type: gated_attention
+  type: sea_gated_attention
   d_attn: 8               # width of the two attention branches (tanh V and sigmoid U)
   dropout: 0.2
   positional_encoding: true

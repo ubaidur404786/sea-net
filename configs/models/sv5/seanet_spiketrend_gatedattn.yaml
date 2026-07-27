@@ -18,7 +18,7 @@ name: seanet_spiketrend_gatedattn
 use_params: default
 
 encoder:
-  type: mstcn_sep_spiketrend   # two branches: trend (smooth) + spike (high-pass), then mixed and gated
+  type: sea_mstcn_sep_spiketrend   # two branches: trend (smooth) + spike (high-pass), then mixed and gated
   d: 64                   # width of the trend branch (the main size knob)
   n_blocks: 4             # depth of the trend branch
   dropout: 0.2
@@ -29,7 +29,7 @@ encoder:
   smooth_kernel: 5        # window of the local average in the spike branch (odd, keeps length T)
 
 pooling:
-  type: gated_attention
+  type: sea_gated_attention
   d_attn: 8               # width of the two attention branches (tanh V and sigmoid U)
   dropout: 0.2
   positional_encoding: true

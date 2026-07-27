@@ -8,7 +8,7 @@ name: seanet_bottleneck_softmax
 use_params: default
 
 encoder:
-  type: mstcn_sep_bottleneck
+  type: sea_mstcn_sep_bottleneck
   d: 64
   n_blocks: 4
   dropout: 0.2
@@ -17,7 +17,7 @@ encoder:
   bottleneck_ratio: 4
 
 pooling:
-  type: softmax_conjunctive
+  type: sea_softmax_conjunctive
   d_attn: 8
   dropout: 0.2
   positional_encoding: true

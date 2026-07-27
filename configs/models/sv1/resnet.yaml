@@ -7,11 +7,11 @@ name: resnet
 
 # ---- the encoder: MILLET's ResNet backbone (fixed 128-channel output) ----
 encoder:
-  type: resnet
+  type: mil_resnet
 
 # ---- pooling: Conjunctive, to match how MILLET evaluates its backbones ----
 pooling:
-  type: conjunctive
+  type: mil_conjunctive
   d_attn: 8
   dropout: 0.1
   positional_encoding: true

@@ -22,7 +22,7 @@ name: seanet_spiketrend_dualstream
 use_params: default
 
 encoder:
-  type: mstcn_sep_spiketrend   # two branches: trend (smooth) + spike (high-pass), then mixed and gated
+  type: sea_mstcn_sep_spiketrend   # two branches: trend (smooth) + spike (high-pass), then mixed and gated
   d: 64                   # width of the trend branch (the main size knob)
   n_blocks: 4             # depth of the trend branch
   dropout: 0.2
@@ -33,7 +33,7 @@ encoder:
   smooth_kernel: 5        # window of the local average in the spike branch (odd, keeps length T)
 
 pooling:
-  type: dualstream_conjunctive
+  type: sea_dualstream_conjunctive
   d_attn: 8               # width of the attention MLP AND the query vector (W_q: d -> d_attn)
   init_lam: 0.05          # blend starts near 0 -> begins as plain Conjunctive (safe), training raises it
   dropout: 0.2

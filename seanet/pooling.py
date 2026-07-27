@@ -16,29 +16,37 @@ Input / output contract (the same for EVERY pooling head, so they are interchang
     which the training loop uses for the optional focus penalty. The others do not, and the training
     loop simply skips the penalty when "attn" is absent, so every pooling head still trains.
 
-Five pooling heads come from millet/model/pooling.py (reused unchanged):
-    - "additive"    : MILAdditivePooling   (SEA-Net uses this)
-    - "conjunctive" : MILConjunctivePooling (the MILLET baseline uses this)
-    - "attention"   : MILAttentionPooling
-    - "instance"    : MILInstancePooling
-    - "gap"         : GlobalAveragePooling
+Naming rule: every registered name says WHO it came from, so a results folder or a figure label can
+be read without opening any code.
+    "mil_..." = MILLET (reused from millet/, code untouched)
+    "sea_..." = OURS   (written for this project, defined at the bottom of this file)
 
-More NEW SEA-Net heads are defined at the bottom of THIS file. Each upgrades one weak point of
-Conjunctive pooling, and each is a strict generalisation of it (so a well-trained model can never do
-worse than the Conjunctive baseline - only better):
-    - "classwise_conjunctive" : one attention gate PER CLASS (sharper class-specific explanations)
-    - "softmax_conjunctive"   : attention normalised OVER TIME (a real distribution + learnable temperature)
-    - "adaptive_classwise"    : per-class gate + a learnable mean<->max aggregator   <- recommended default
-    - "topk_conjunctive"      : average only the top-k most-supporting timesteps per class
-    - "attention_max"         : learnable per-class blend of mean-over-time and max-over-time
+MILLET - five heads reused unchanged from millet/model/pooling.py:
+    - "mil_additive"    : MILAdditivePooling    (the original SEA-Net uses this)
+    - "mil_conjunctive" : MILConjunctivePooling (the MILLET baseline uses this)
+    - "mil_attention"   : MILAttentionPooling
+    - "mil_instance"    : MILInstancePooling
+    - "mil_gap"         : GlobalAveragePooling
 
-Two more heads (sv5) are PORTED FROM CANCER / PATHOLOGY MIL PAPERS (bag = slide, instance = patch,
-which is exactly our bag = series, instance = timestep):
-    - "gated_attention"        : gated-attention MIL (Ilse et al. 2018 / the MS-DA-MIL paper 1 family) -
-                                 attention scores gated by tanh(.) * sigmoid(.), softmax over time.
-    - "dualstream_conjunctive" : DSMIL (Li et al. 2021) - Conjunctive PLUS a second "critical-timestep"
-                                 stream that focuses on the most-supporting point, blended by a learnable
-                                 lambda. Aimed straight at our AOPCR gap (it concentrates the evidence).
+OURS - defined at the bottom of THIS file. Each upgrades one weak point of Conjunctive pooling, and
+each is a strict generalisation of it (so a well-trained model can never do worse than the
+Conjunctive baseline - only better):
+    - "sea_classwise_conjunctive" : one attention gate PER CLASS (sharper class-specific explanations)
+    - "sea_softmax_conjunctive"   : attention normalised OVER TIME (a real distribution + learnable temperature)
+    - "sea_adaptive_classwise"    : per-class gate + a learnable mean<->max aggregator  <- recommended default
+    - "sea_topk_conjunctive"      : average only the top-k most-supporting timesteps per class
+    - "sea_attention_max"         : learnable per-class blend of mean-over-time and max-over-time
+
+OURS too, but the IDEA was taken from two cancer / pathology MIL papers on whole-slide images
+(there a bag = one slide and an instance = one image patch, which is exactly our bag = one series
+and instance = one timestep). We changed the architecture to fit our setting, so the code is ours;
+the papers are credited in the class docstrings and belong in the references:
+    - "sea_gated_attention"        : gated attention, from the MS-DA-MIL line of work (Ilse et al. 2018
+                                     gated attention). We made it PER CLASS, which the original is not.
+    - "sea_dualstream_conjunctive" : the two-stream idea from DSMIL (Li et al. 2021). We wrapped it as a
+                                     strict generalisation of classwise Conjunctive (learnable blend
+                                     starting at lambda ~ 0), and dropped their contrastive pretraining.
+                                     Aimed straight at our AOPCR gap (it concentrates the evidence).
 See their class docstrings for the simple formulas (in the notation of the MILLET paper).
 
 Related files:
@@ -60,12 +68,18 @@ from millet.model import pooling as millet_pooling
 # The pooling registry: name -> (pooling class, does_it_have_an_attention_MLP?).
 # The "has_attn" flag tells us whether to pass d_attn (only the attention-based heads take it).
 # --------------------------------------------------------------------------------------
+#
+# Naming rule: the name says WHO the head came from, so a results folder or a figure label can be
+# read without opening any code.
+#   "mil_..." = MILLET's own head, reused unchanged from millet/model/pooling.py
+#   "sea_..." = OURS, written for this project (in this file)
+# --------------------------------------------------------------------------------------
 POOLING_REGISTRY: Dict[str, Tuple[Type[nn.Module], bool]] = {
-    "additive":    (millet_pooling.MILAdditivePooling, True),
-    "conjunctive": (millet_pooling.MILConjunctivePooling, True),
-    "attention":   (millet_pooling.MILAttentionPooling, True),
-    "instance":    (millet_pooling.MILInstancePooling, False),
-    "gap":         (millet_pooling.GlobalAveragePooling, False),
+    "mil_additive":    (millet_pooling.MILAdditivePooling, True),
+    "mil_conjunctive": (millet_pooling.MILConjunctivePooling, True),
+    "mil_attention":   (millet_pooling.MILAttentionPooling, True),
+    "mil_instance":    (millet_pooling.MILInstancePooling, False),
+    "mil_gap":         (millet_pooling.GlobalAveragePooling, False),
 }
 
 
@@ -524,10 +538,10 @@ class DualStreamConjunctivePooling(_AttnPoolingBase):
 
 # Register the new heads so a config can pick them by name (encoder + pooling are swappable
 # exactly like MILLET's own). has_attn=True: each one accepts a d_attn argument from the config.
-register_pooling("classwise_conjunctive", ClasswiseConjunctivePooling, has_attn=True)
-register_pooling("softmax_conjunctive", SoftmaxConjunctivePooling, has_attn=True)
-register_pooling("adaptive_classwise", AdaptiveClasswisePooling, has_attn=True)
-register_pooling("topk_conjunctive", TopKConjunctivePooling, has_attn=True)
-register_pooling("attention_max", AttentionMaxPooling, has_attn=True)
-register_pooling("gated_attention", GatedAttentionPooling, has_attn=True)
-register_pooling("dualstream_conjunctive", DualStreamConjunctivePooling, has_attn=True)
+register_pooling("sea_classwise_conjunctive", ClasswiseConjunctivePooling, has_attn=True)
+register_pooling("sea_softmax_conjunctive", SoftmaxConjunctivePooling, has_attn=True)
+register_pooling("sea_adaptive_classwise", AdaptiveClasswisePooling, has_attn=True)
+register_pooling("sea_topk_conjunctive", TopKConjunctivePooling, has_attn=True)
+register_pooling("sea_attention_max", AttentionMaxPooling, has_attn=True)
+register_pooling("sea_gated_attention", GatedAttentionPooling, has_attn=True)
+register_pooling("sea_dualstream_conjunctive", DualStreamConjunctivePooling, has_attn=True)

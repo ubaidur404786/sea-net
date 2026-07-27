@@ -11,7 +11,7 @@ name: seanet_bottleneck
 use_params: default
 
 encoder:
-  type: mstcn_sep_bottleneck
+  type: sea_mstcn_sep_bottleneck
   d: 64
   n_blocks: 4
   dropout: 0.2
@@ -20,7 +20,7 @@ encoder:
   bottleneck_ratio: 4     # middle width r = d // 4 (bigger ratio = smaller model). try 2 / 4 / 8
 
 pooling:
-  type: classwise_conjunctive
+  type: sea_classwise_conjunctive
   d_attn: 8
   dropout: 0.2
   positional_encoding: true

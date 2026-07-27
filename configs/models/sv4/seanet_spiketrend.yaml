@@ -21,7 +21,7 @@ use_params: default        # measure THIS model as written (no Optuna record yet
 
 # ---- the encoder: trend branch + spike branch + self-gate ----
 encoder:
-  type: mstcn_sep_spiketrend
+  type: sea_mstcn_sep_spiketrend
   d: 64                   # width of the trend branch (same as the gated run)
   n_blocks: 4             # depth of the trend branch
   dropout: 0.2
@@ -33,7 +33,7 @@ encoder:
 
 # ---- the pooling head: same as the winning run ----
 pooling:
-  type: classwise_conjunctive
+  type: sea_classwise_conjunctive
   d_attn: 8
   dropout: 0.2
   positional_encoding: true

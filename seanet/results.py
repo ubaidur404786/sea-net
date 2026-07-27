@@ -10,8 +10,8 @@ What this file is for:
 
 One config file = ONE FOLDER, with a unique name
 ------------------------------------------------
-A model's folder is named "<config file name>__<encoder>_<pooling>", e.g.
-"seanet__mstcn_sep_additive" (see seanet/config.model_folder_name). The config file name is in front
+A model's folder is named "<config file name>__<encoder>__<pooling>", e.g.
+"seanet__sea_mstcn_sep__mil_additive" (see seanet/config.model_folder_name). The config file name is in front
 so two configs that build the same encoder+pooling never share a folder. Everything a model produces
 lives in its own folder, so two models can never mix their numbers up:
 
@@ -21,7 +21,7 @@ lives in its own folder, so two models can never mix their numbers up:
       figures/                   <- shared: the cross-model figure
       logs/                      <- shared: logs of commands that belong to no model (summary, report)
 
-      seanet__mstcn_sep_additive/        <- ONE model
+      seanet__sea_mstcn_sep__mil_additive/        <- ONE model
         results.csv                      <- one row per dataset (best accuracy kept, see save_result_row)
         done_train_dataset.txt           <- the "what is finished" list (the resume switch)
         comparison_vs_millet.csv         <- our numbers next to MILLET's, per dataset
@@ -30,7 +30,7 @@ lives in its own folder, so two models can never mix their numbers up:
         figures/                         <- this model's figures
         interpretation/                  <- this model's explanation figures
 
-      seanet_acp__mstcn_sep_adaptive_classwise/   <- another model, same layout
+      seanet_acp__sea_mstcn_sep__sea_adaptive_classwise/   <- another model, same layout
         ...
 
 How resuming works (done_train_dataset.txt)
@@ -66,10 +66,11 @@ from typing import Dict, List, Optional
 import numpy as np
 import pandas as pd
 
+from seanet.config import is_millet, is_ours, split_model_id
 from seanet.data import UCR_128_DATASETS, WEB_TRAFFIC, read_our_csv
 
 # --------------------------------------------------------------------------------------
-# 1. Paths - everything is keyed by the model id ("<encoder>_<pooling>")
+# 1. Paths - everything is keyed by the model id ("<config>__<encoder>__<pooling>")
 # --------------------------------------------------------------------------------------
 RESULTS_ROOT = os.path.join("results", "SEA_NET")     # everything SEA-Net writes lives under here
 
@@ -88,7 +89,7 @@ SHARED_LOGS_DIR = os.path.join(RESULTS_ROOT, "logs")                        # lo
 
 
 def model_dir(model_id: str) -> str:
-    """The one folder that holds everything for a model, e.g. results/SEA_NET/mstcn_sep_additive."""
+    """The one folder that holds everything for a model, e.g. results/SEA_NET/seanet__sea_mstcn_sep__mil_additive."""
     return os.path.join(RESULTS_ROOT, model_id)
 
 
@@ -212,7 +213,7 @@ def load_done(model_id: str) -> set:
     """
     Read a model's done_train_dataset.txt into a set of dataset names.
 
-    model_id : the model id, e.g. "mstcn_sep_additive".
+    model_id : the model id, e.g. "seanet__sea_mstcn_sep__mil_additive".
     returns : set of finished dataset names (empty set if the file does not exist yet).
     """
     path = done_txt(model_id)
@@ -356,7 +357,7 @@ def build_comparison(model_id: str, out: Optional[str] = None, verbose: bool = T
     WebTraffic is left out on purpose (it is not a UCR dataset; `python main.py webtraffic` checks
     it against its own baseline, and it is the only one with NDCG).
 
-    model_id : which model to compare, e.g. "mstcn_sep_additive".
+    model_id : which model to compare, e.g. "seanet__sea_mstcn_sep__mil_additive".
     out : where to write the csv (defaults to that model's comparison_vs_millet.csv).
     verbose : if True, also print the win/tie/loss summary.
     returns : the comparison DataFrame (also saved to `out`).
@@ -713,4 +714,228 @@ def _print_webtraffic_comparison(df: pd.DataFrame, out: str) -> None:
         nd = f"{paper.get('ndcg'):>7.4f}" if 'ndcg' in paper else f"{'-':>7s}"
         print(f"  {'MILLET (paper, published)':44s} {paper.get('acc', float('nan')):>7.4f} "
               f"{paper.get('loss', float('nan')):>7.4f} {paper.get('aopcr', float('nan')):>8.3f} {nd}")
+    print(f"  wrote {out}")
+
+
+# --------------------------------------------------------------------------------------
+# 7. The leaderboard: ONE table with every model, best WebTraffic accuracy first
+#
+# Why this table exists on top of the two above:
+#   - webtraffic_comparison.csv ranks by WebTraffic but shows ONLY WebTraffic columns,
+#   - model_comparison.csv has the UCR columns but ranks by UCR accuracy, so a model we only
+#     screened on WebTraffic sinks to the bottom with blanks.
+# We screen every model on WebTraffic first and only send the winners to the full 129-dataset
+# sweep, so the question we actually ask is "who won the screen, and how did they then do on UCR?".
+# The leaderboard answers exactly that: sorted by WebTraffic accuracy, UCR columns filled in for
+# the models that went on to the full sweep and LEFT EMPTY for the ones that did not. Empty is
+# information here - it means "screened only, not swept yet", not "missing data".
+#
+# It is REBUILT from scratch every time you run it, straight out of each model's own results.csv.
+# So there is nothing to keep in sync by hand: a new model appears by itself, and a re-trained
+# model's numbers are replaced by themselves.
+# --------------------------------------------------------------------------------------
+LEADERBOARD_CSV = os.path.join(RESULTS_ROOT, "leaderboard.csv")
+
+# Old name -> new name. The two source tables use different words for the same thing
+# ("mean_acc_ours", "overall_mean_acc", "acc"...), which is confusing when they sit side by side.
+# Here every column gets a prefix that says WHERE the number comes from:
+#   web_*     = the WebTraffic dataset alone (our fast screen; the only dataset with NDCG)
+#   ucr85_*   = the 85 UCR datasets the MILLET paper published (the fair head-to-head)
+#   ucr_all_* = every UCR dataset we trained (no paper baseline exists for these)
+#   millet_*  = the paper's own means over the same 85, so the bar to beat is in the same row
+_LEADERBOARD_RENAMES = {
+    "acc": "web_acc", "loss": "web_loss", "aopcr": "web_aopcr", "ndcg": "web_ndcg",
+    "millet85_datasets": "ucr85_n",
+    "mean_acc_ours": "ucr85_acc", "mean_loss_ours": "ucr85_loss", "mean_aopcr_ours": "ucr85_aopcr",
+    "acc_win_tie_loss": "ucr85_acc_wtl", "loss_win_tie_loss": "ucr85_loss_wtl",
+    "aopcr_win_tie_loss": "ucr85_aopcr_wtl",
+    "mean_acc_millet": "millet_acc", "mean_loss_millet": "millet_loss",
+    "mean_aopcr_millet": "millet_aopcr",
+    "overall_ucr_datasets": "ucr_all_n",
+    "overall_mean_acc": "ucr_all_acc", "overall_mean_loss": "ucr_all_loss",
+    "overall_mean_aopcr": "ucr_all_aopcr",
+}
+
+# The column order of the file. Reads left to right like the question we ask: who is it, how did it
+# do on the screen, how big is it, then how did it do on the real benchmark, then the bar to beat.
+LEADERBOARD_COLUMNS = [
+    "rank", "model", "config", "encoder", "pooling", "origin",
+    "web_acc", "web_loss", "web_aopcr", "web_ndcg",
+    "params", "size_mb",
+    "ucr85_n", "ucr85_acc", "ucr85_loss", "ucr85_aopcr",
+    "ucr85_acc_wtl", "ucr85_loss_wtl", "ucr85_aopcr_wtl",
+    "ucr_all_n", "ucr_all_acc", "ucr_all_loss", "ucr_all_aopcr",
+    "millet_acc", "millet_loss", "millet_aopcr",
+]
+
+
+def origin_label(encoder: str, pooling: str) -> str:
+    """
+    Say in one word how much of a model is new: "millet", "ours" or "half-ours".
+
+    Both halves carry their own origin tag ("sea_" = ours, "mil_" = MILLET's), so this just reads
+    them. It is the column to sort by when writing the paper - it separates "the baseline we rerun",
+    "our encoder with the paper's head" and "fully our model" without reading any name in detail.
+
+    encoder : the encoder name out of the model id.
+    pooling : the pooling name out of the model id.
+    returns : "millet" | "ours" | "half-ours" (or "?" if a name carries no tag).
+    """
+    enc_ours, pool_ours = is_ours(encoder), is_ours(pooling)
+    enc_mil, pool_mil = is_millet(encoder), is_millet(pooling)
+    if enc_ours and pool_ours:
+        return "ours"
+    if enc_mil and pool_mil:
+        return "millet"
+    if (enc_ours and pool_mil) or (enc_mil and pool_ours):
+        return "half-ours"
+    return "?"                                                 # an untagged name (should not happen)
+
+
+def build_leaderboard(models: Optional[List[str]] = None, out: str = LEADERBOARD_CSV,
+                      refresh: bool = True, verbose: bool = True) -> pd.DataFrame:
+    """
+    Build the one-file leaderboard: every model, best WebTraffic accuracy first, UCR columns
+    filled in where the full sweep has finished and left empty where it has not.
+
+    How it works (it does not compute anything new - it joins the two tables we already build):
+      1. webtraffic_table() gives the WebTraffic row of every model,
+      2. compare_models() gives the UCR head-to-head numbers of every model,
+      3. we join them on the model name with an OUTER join, so a model that appears in only one of
+         the two still gets a row (its other columns simply stay empty),
+      4. sort by WebTraffic accuracy, highest first. A model with no WebTraffic result yet goes to
+         the bottom (na_position="last") instead of being dropped.
+
+    Why an OUTER join and not an inner one: an inner join would keep only models present in BOTH
+    tables, which would silently hide every WebTraffic-only model - exactly the ones we are trying
+    to screen. Empty cells are the honest answer.
+
+    models : which models to include (default: every model that has a results.csv).
+    out : where to write the table (default: results/SEA_NET/leaderboard.csv).
+    refresh : True = recompute each model's UCR comparison first (slower, always correct).
+              False = reuse the model_comparison.csv already on disk (fast, for a quick re-look).
+    verbose : print the table after writing it.
+    returns : the leaderboard as a DataFrame (also saved to `out`).
+    """
+    web = webtraffic_table(models)                              # model, acc, loss, aopcr, ndcg, params, size_mb
+
+    # the UCR side. Refreshing also rewrites model_comparison.csv + each model's summary, so the
+    # leaderboard can never disagree with the other tables.
+    if refresh:
+        full = compare_models(models, verbose=False)
+    elif os.path.exists(MODEL_COMPARISON_CSV):
+        full = read_our_csv(MODEL_COMPARISON_CSV)               # tolerant read (the csv-padding tool)
+    else:
+        full = pd.DataFrame()
+
+    if web.empty and full.empty:
+        if verbose:
+            print("No results yet - run e.g. `bash scripts/run_all.sh web` first.")
+        return pd.DataFrame()
+
+    # params / size_mb are in BOTH tables and identical, so keep one copy (the WebTraffic one).
+    if not full.empty:
+        full = full.drop(columns=[c for c in ("params", "model_size_mb") if c in full.columns])
+
+    # join the two sides on the model name. "outer" = keep every model from either side.
+    if web.empty:
+        df = full.copy()
+    elif full.empty:
+        df = web.copy()
+    else:
+        df = web.merge(full, on="model", how="outer")
+
+    df = df.rename(columns=_LEADERBOARD_RENAMES)
+
+    # Split the model id into its three parts and store them as their own columns. A model id is
+    # "<config>__<encoder>__<pooling>", so this is exact (see seanet/config.split_model_id).
+    # "origin" then says in one word how new the model is, which is the column you sort by when
+    # writing the paper: is this MILLET's model, half ours, or fully ours?
+    parts = df["model"].astype(str).apply(split_model_id)
+    df["config"] = parts.str[0]
+    df["encoder"] = parts.str[1]
+    df["pooling"] = parts.str[2]
+    df["origin"] = [origin_label(e, p) for e, p in zip(df["encoder"], df["pooling"])]
+
+    # sort by the screen result, best first; models with no WebTraffic row sink to the bottom.
+    if "web_acc" in df.columns:
+        df = df.sort_values("web_acc", ascending=False, na_position="last")
+    df = df.reset_index(drop=True)
+    df.insert(0, "rank", range(1, len(df) + 1))
+
+    df = _round_leaderboard(df)
+    # keep our column order, and quietly ignore any column that does not exist yet
+    df = df[[c for c in LEADERBOARD_COLUMNS if c in df.columns]]
+
+    os.makedirs(os.path.dirname(out), exist_ok=True)
+    df.to_csv(out, index=False)
+    if verbose:
+        _print_leaderboard(df, out)
+    return df
+
+
+def _round_leaderboard(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Make the numbers readable: 4 decimals for metrics, 3 for the file size, whole numbers for counts.
+
+    df : the joined leaderboard frame.
+    returns : the same frame with its numeric columns rounded (unknown columns are left alone).
+    """
+    four = ["web_acc", "web_loss", "web_aopcr", "web_ndcg",
+            "ucr85_acc", "ucr85_loss", "ucr85_aopcr",
+            "ucr_all_acc", "ucr_all_loss", "ucr_all_aopcr",
+            "millet_acc", "millet_loss", "millet_aopcr"]
+    for col in four:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce").round(4)
+    if "size_mb" in df.columns:
+        df["size_mb"] = pd.to_numeric(df["size_mb"], errors="coerce").round(3)
+    # counts stay whole numbers. Int64 (capital I) is pandas' integer type that ALLOWS empty cells -
+    # plain int cannot hold a blank, and a plain float would print "128.0" instead of "128".
+    for col in ["params", "ucr85_n", "ucr_all_n"]:
+        if col in df.columns:
+            df[col] = pd.to_numeric(df[col], errors="coerce").astype("Int64")
+    return df
+
+
+def _print_leaderboard(df: pd.DataFrame, out: str) -> None:
+    """
+    Print the leaderboard as a plain text table, then the paper's WebTraffic number as the bar to beat.
+
+    A dash means "not run yet" - it is never a zero.
+
+    df : the finished leaderboard frame.
+    out : the path it was written to (just for the message).
+    returns : nothing.
+    """
+    def cell(value, width: int, decimals: int = 4) -> str:
+        """One number as text, or a dash when it is empty."""
+        if pd.isna(value):
+            return f"{'-':>{width}s}"
+        if decimals == 0:
+            return f"{int(value):>{width}d}"
+        return f"{float(value):>{width}.{decimals}f}"
+
+    n_swept = int(df["ucr85_n"].notna().sum()) if "ucr85_n" in df.columns else 0
+    print(f"Leaderboard: {len(df)} model(s), best WebTraffic accuracy first "
+          f"({n_swept} of them also finished the full UCR sweep; '-' means not run yet).")
+    print(f"  {'#':>3s} {'model':56s} {'web_acc':>8s} {'web_ndcg':>9s} {'params':>8s} "
+          f"{'ucr85_n':>8s} {'ucr85_acc':>10s} {'ucr85_aopcr':>12s}")
+    for _, r in df.iterrows():
+        print(f"  {int(r['rank']):>3d} {str(r['model'])[:56]:56s} "
+              f"{cell(r.get('web_acc'), 8)} {cell(r.get('web_ndcg'), 9)} "
+              f"{cell(r.get('params'), 8, 0)} {cell(r.get('ucr85_n'), 8, 0)} "
+              f"{cell(r.get('ucr85_acc'), 10)} {cell(r.get('ucr85_aopcr'), 12)}")
+    # the bar to beat, on the same two datasets. Both numbers come from files, never hardcoded:
+    # the WebTraffic ones from results/WebTraffic/InceptionTime/, the UCR ones from the millet_*
+    # columns we just joined in (they are the paper's means, so the same on every row).
+    paper = webtraffic_paper_baseline()
+    p_acc = df["millet_acc"].dropna() if "millet_acc" in df.columns else pd.Series(dtype=float)
+    p_aopcr = df["millet_aopcr"].dropna() if "millet_aopcr" in df.columns else pd.Series(dtype=float)
+    if paper or len(p_acc):
+        print(f"  {'':>3s} {'MILLET (paper, published)':56s} "
+              f"{cell(paper.get('acc', float('nan')), 8)} {cell(paper.get('ndcg', float('nan')), 9)} "
+              f"{'-':>8s} {'-':>8s} "
+              f"{cell(p_acc.iloc[0] if len(p_acc) else float('nan'), 10)} "
+              f"{cell(p_aopcr.iloc[0] if len(p_aopcr) else float('nan'), 12)}")
     print(f"  wrote {out}")

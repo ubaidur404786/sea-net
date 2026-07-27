@@ -50,39 +50,44 @@ import pandas as pd
 
 from seanet import data as D
 from seanet import results as R
+# these three read a model id; they live in config.py, which is torch-free, so importing it here
+# keeps report.py torch-free too (it must stay importable on its own for the notebook).
+from seanet.config import is_millet, split_model_id
 
 # the shared figure (not tied to one model) lives with the other shared outputs
 SHARED_FIGURES_DIR = R.SHARED_FIGURES_DIR
 DATA_SUMMARY_FIG = os.path.join(SHARED_FIGURES_DIR, "data_summary.png")
 
-# The MILLET baseline models: an encoder MILLET published, with MILLET's own pooling head. Anything
-# else is one of OUR new pooling heads, drawn in orange so it stands out in the comparison figure.
-# We list only the "<encoder>_<pooling>" part here, because a model id now starts with the config
-# file name (e.g. "seanet__mstcn_sep_additive"); is_baseline() strips that prefix before comparing,
-# so adding a new config file never means editing this set.
-BASELINE_MODELS = {"inceptiontime_conjunctive", "fcn_conjunctive", "resnet_conjunctive",
-                   "mstcn_sep_conjunctive", "mstcn_sep_additive"}
+# Telling OUR work from MILLET's, straight off the model id.
+#
+# A model id is "<config>__<encoder>__<pooling>", and every encoder / pooling name carries its own
+# origin tag: "sea_" = ours, "mil_" = MILLET's, reused unchanged (see seanet/config.py). So these
+# two questions are now just a prefix check - there is no hand-written list of model names to keep
+# up to date any more, and a brand-new encoder or head is classified correctly the day it is added.
 
 
 def is_baseline(model_id: str) -> bool:
-    """True if a model id's encoder_pooling part is one of MILLET's baseline combinations."""
-    return model_id.split("__")[-1] in BASELINE_MODELS       # drop the "<config>__" prefix first
+    """
+    True if NOTHING in this model is ours - a MILLET encoder AND a MILLET pooling head.
 
-
-# the reran PAPER baselines use one of these encoder backbones (our own encoders all start "mstcn_sep")
-PAPER_BACKBONES = ("inceptiontime", "fcn", "resnet")
+    These are the paper's own models, rerun here under our training recipe. Everything else has at
+    least one new part, and is drawn in orange so it stands out in the comparison figures.
+    """
+    _config, encoder, pooling = split_model_id(model_id)
+    return is_millet(encoder) and is_millet(pooling)
 
 
 def is_paper_baseline(model_id: str) -> bool:
     """
-    True ONLY for our rerun of the paper baselines (InceptionTime / FCN / ResNet backbones).
+    True ONLY for our rerun of the paper baselines - the ones using a MILLET ENCODER
+    (InceptionTime / FCN / ResNet), whatever pooling head sits on top.
 
-    Unlike is_baseline (which also flags our encoder when it uses a MILLET pooling head), this checks
-    the ENCODER, so seanet_conjunctive / seanet (additive) count as OUR models here - which is what we
-    want when we colour "our models vs the reran baselines" on the WebTraffic figure.
+    Unlike is_baseline (which needs BOTH halves to be MILLET's), this asks only about the encoder.
+    That is what we want when colouring "our encoders vs the paper's encoders" on the WebTraffic
+    figure: seanet_conjunctive (our encoder + MILLET's head) counts as OURS there.
     """
-    encoder = model_id.split("__")[-1].split("_")[0]         # first word of "<encoder>_<pooling>"
-    return encoder in PAPER_BACKBONES
+    _config, encoder, _pooling = split_model_id(model_id)
+    return is_millet(encoder)
 
 
 def short_labels(models: List[str]) -> Dict[str, str]:
@@ -254,7 +259,7 @@ def plot_model_figures(model_id: str, verbose: bool = True) -> List[str]:
     """
     Draw every figure for ONE model, into results/SEA_NET/<model_id>/figures/.
 
-    model_id : the model to draw, e.g. "mstcn_sep_additive".
+    model_id : the model to draw, e.g. "seanet__sea_mstcn_sep__mil_additive".
     verbose : print what was written.
     returns : the list of saved figure paths.
     """
@@ -302,7 +307,7 @@ def plot_model_comparison(cross: pd.DataFrame, figdir: str = SHARED_FIGURES_DIR)
     """
     if cross.empty or "mean_acc_ours" not in cross.columns:
         return []
-    # Model ids are long ("<config>__<encoder>_<pooling>"), so with many models the x-axis becomes an
+    # Model ids are long ("<config>__<encoder>__<pooling>"), so with many models the x-axis becomes an
     # unreadable wall of text. Instead we give every model a SHORT code (m1, m2, ...) - fixed once here
     # so the same code means the same model in all three panels - and print a legend under the figure.
     code = short_labels(list(cross["model"]))                # {full model id -> "m1"/"m2"/...}
@@ -426,7 +431,7 @@ ACC_TIERS = [0.95, 0.94, 0.93, 0.92, 0.91, 0.90]
 
 
 def _short_name(model_id: str) -> str:
-    """Turn a long model id ('seanet_x__mstcn_sep_dualstream') into just its config name for a label."""
+    """Turn a long model id ('seanet_x__sea_mstcn_sep__sea_dualstream_conjunctive') into just its config name for a label."""
     return model_id.split("__")[0]
 
 
@@ -654,8 +659,12 @@ def plot_winner_dashboard(figdir: str = SHARED_FIGURES_DIR) -> List[str]:
 
     # Row 2, panel 3: a plain-words summary box (the headline numbers, spelled out).
     a = ax[1, 2]; a.axis("off")
+    # the id splits cleanly into its three parts, so we can name the two halves separately and say
+    # which of them is ours ("sea_") and which is MILLET's ("mil_") - that is the whole story of the model
+    _cfg, w_encoder, w_pooling = split_model_id(winner)
     lines = [f"WINNER: {_short_name(winner)}",
-             f"encoder+pooling: {winner.split('__')[-1]}",
+             f"encoder: {w_encoder}  ({'MILLET' if is_millet(w_encoder) else 'ours'})",
+             f"pooling: {w_pooling}  ({'MILLET' if is_millet(w_pooling) else 'ours'})",
              "",
              f"WebTraffic acc : {row['acc']:.3f}" + (f"   (MILLET {paper['acc']:.3f})" if 'acc' in paper else ""),
              f"WebTraffic AOPCR: {row['aopcr']:.2f}" + (f"   (MILLET {paper['aopcr']:.2f})" if 'aopcr' in paper else ""),

@@ -11,7 +11,7 @@ name: seanet_inputgate
 use_params: default
 
 encoder:
-  type: mstcn_sep_inputgate
+  type: sea_mstcn_sep_inputgate
   d: 64
   n_blocks: 4
   dropout: 0.2
@@ -20,7 +20,7 @@ encoder:
   gate_kernel: 7          # window of the conv that reads the raw input to build the gate
 
 pooling:
-  type: classwise_conjunctive
+  type: sea_classwise_conjunctive
   d_attn: 8
   dropout: 0.2
   positional_encoding: true

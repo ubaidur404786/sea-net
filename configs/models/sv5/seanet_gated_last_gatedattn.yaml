@@ -20,7 +20,7 @@ name: seanet_gated_last_gatedattn
 use_params: default
 
 encoder:
-  type: mstcn_sep_gated   # MSTCN-separable encoder + one summary gate on top
+  type: sea_mstcn_sep_gated   # MSTCN-separable encoder + one summary gate on top
   d: 64                   # channel width (the main size knob)
   n_blocks: 4             # how many multi-scale residual blocks are stacked
   dropout: 0.2
@@ -29,7 +29,7 @@ encoder:
   summary: last           # the gate summary that won on WebTraffic: max | mean | last
 
 pooling:
-  type: gated_attention
+  type: sea_gated_attention
   d_attn: 8               # width of the two attention branches (tanh V and sigmoid U)
   dropout: 0.2
   positional_encoding: true

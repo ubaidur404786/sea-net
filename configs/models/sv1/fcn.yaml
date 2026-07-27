@@ -8,11 +8,11 @@ name: fcn
 
 # ---- the encoder: MILLET's FCN backbone (fixed 128-channel output) ----
 encoder:
-  type: fcn
+  type: mil_fcn
 
 # ---- pooling: Conjunctive, to match how MILLET evaluates its backbones ----
 pooling:
-  type: conjunctive
+  type: mil_conjunctive
   d_attn: 8
   dropout: 0.1
   positional_encoding: true

@@ -23,24 +23,24 @@ SV4 = os.path.join(HERE, "configs", "models", "sv4")
 # all share d=64 / 4 blocks; only the type (and a couple of extra knobs) differ.
 ENC_COMMON = "  d: 64\n  n_blocks: 4\n  dropout: 0.2\n  max_dilation: 16\n  kernels: [5, 11, 23]\n"
 ENCODERS = {
-    "slim":       "  type: mstcn_sep\n" + ENC_COMMON,                                   # plain encoder
-    "gated_max":  "  type: mstcn_sep_gated\n" + ENC_COMMON + "  summary: max\n",
-    "gated_mean": "  type: mstcn_sep_gated\n" + ENC_COMMON + "  summary: mean\n",
-    "gated_last": "  type: mstcn_sep_gated\n" + ENC_COMMON + "  summary: last\n",
-    "spiketrend": "  type: mstcn_sep_spiketrend\n" + ENC_COMMON + "  summary: last\n  d_spike: 16\n  smooth_kernel: 5\n",
-    "bottleneck": "  type: mstcn_sep_bottleneck\n" + ENC_COMMON + "  bottleneck_ratio: 4\n",
-    "inputgate":  "  type: mstcn_sep_inputgate\n" + ENC_COMMON + "  gate_kernel: 7\n",
-    "recon":      "  type: mstcn_sep_recon\n" + ENC_COMMON + "  d_res: 16\n",
+    "slim":       "  type: sea_mstcn_sep\n" + ENC_COMMON,                                   # plain encoder
+    "gated_max":  "  type: sea_mstcn_sep_gated\n" + ENC_COMMON + "  summary: max\n",
+    "gated_mean": "  type: sea_mstcn_sep_gated\n" + ENC_COMMON + "  summary: mean\n",
+    "gated_last": "  type: sea_mstcn_sep_gated\n" + ENC_COMMON + "  summary: last\n",
+    "spiketrend": "  type: sea_mstcn_sep_spiketrend\n" + ENC_COMMON + "  summary: last\n  d_spike: 16\n  smooth_kernel: 5\n",
+    "bottleneck": "  type: sea_mstcn_sep_bottleneck\n" + ENC_COMMON + "  bottleneck_ratio: 4\n",
+    "inputgate":  "  type: sea_mstcn_sep_inputgate\n" + ENC_COMMON + "  gate_kernel: 7\n",
+    "recon":      "  type: sea_mstcn_sep_recon\n" + ENC_COMMON + "  d_res: 16\n",
 }
 
 # ---- our poolings: short name -> the YAML lines for its "pooling" block ----
 POOL_COMMON = "  d_attn: 8\n  dropout: 0.2\n  positional_encoding: true\n"
 POOLINGS = {
-    "classwise": "  type: classwise_conjunctive\n" + POOL_COMMON,
-    "softmax":   "  type: softmax_conjunctive\n" + POOL_COMMON + "  temperature: 1.0\n",
-    "adaptive":  "  type: adaptive_classwise\n" + POOL_COMMON + "  init_beta: 0.3\n",
-    "topk":      "  type: topk_conjunctive\n" + POOL_COMMON + "  top_frac: 0.1\n",
-    "attnmax":   "  type: attention_max\n" + POOL_COMMON + "  init_lam: 0.5\n",
+    "classwise": "  type: sea_classwise_conjunctive\n" + POOL_COMMON,
+    "softmax":   "  type: sea_softmax_conjunctive\n" + POOL_COMMON + "  temperature: 1.0\n",
+    "adaptive":  "  type: sea_adaptive_classwise\n" + POOL_COMMON + "  init_beta: 0.3\n",
+    "topk":      "  type: sea_topk_conjunctive\n" + POOL_COMMON + "  top_frac: 0.1\n",
+    "attnmax":   "  type: sea_attention_max\n" + POOL_COMMON + "  init_lam: 0.5\n",
 }
 
 # the training recipe is identical for every combo (so the only difference is encoder + pooling)

@@ -10,7 +10,7 @@ name: seanet_gated_last_attnmax
 use_params: default
 
 encoder:
-  type: mstcn_sep_gated
+  type: sea_mstcn_sep_gated
   d: 64
   n_blocks: 4
   dropout: 0.2
@@ -19,7 +19,7 @@ encoder:
   summary: last
 
 pooling:
-  type: attention_max
+  type: sea_attention_max
   d_attn: 8
   dropout: 0.2
   positional_encoding: true

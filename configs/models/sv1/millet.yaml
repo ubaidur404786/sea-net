@@ -14,11 +14,11 @@ name: millet
 
 # ---- the encoder: MILLET's InceptionTime feature extractor (outputs 128 channels) ----
 encoder:
-  type: inceptiontime
+  type: mil_inceptiontime
 
 # ---- the pooling head: MILLET's Conjunctive pooling ----
 pooling:
-  type: conjunctive
+  type: mil_conjunctive
   d_attn: 8
   dropout: 0.1
   positional_encoding: true
