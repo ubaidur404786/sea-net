@@ -1,0 +1,240 @@
+[log] command 'report' started at 2026-07-20_23-47-27
+[log] a copy of everything below is being saved to: results/SEA_NET/logs/report_2026-07-20_23-47-27.log
+
+=== SEA-Net report ===
+
+--- fcn_conjunctive ---
+  model                   : fcn_conjunctive
+  millet85_datasets       : 84
+  mean_acc_ours           : 0.8029
+  mean_acc_millet         : 0.8433
+  acc_win_tie_loss        : 12/17/55
+  mean_loss_ours          : 0.5854
+  mean_loss_millet        : 1.2321
+  loss_win_tie_loss       : 51/1/32
+  mean_aopcr_ours         : 0.6864
+  mean_aopcr_millet       : 4.5579
+  aopcr_win_tie_loss      : 3/0/81
+  overall_ucr_datasets    : 124
+  overall_mean_acc        : 0.7867
+  overall_mean_loss       : 0.6494
+  overall_mean_aopcr      : 0.7549
+  webtraffic_acc          : 0.566
+  params                  : 271131
+  model_size_mb           : 3.489
+
+--- inceptiontime_conjunctive ---
+  model                   : inceptiontime_conjunctive
+  millet85_datasets       : 54
+  mean_acc_ours           : 0.7783
+  mean_acc_millet         : 0.8318
+  acc_win_tie_loss        : 10/7/37
+  mean_loss_ours          : 0.6297
+  mean_loss_millet        : 1.2362
+  loss_win_tie_loss       : 37/1/16
+  mean_aopcr_ours         : 0.0604
+  mean_aopcr_millet       : 4.9375
+  aopcr_win_tie_loss      : 2/0/52
+  overall_ucr_datasets    : 86
+  overall_mean_acc        : 0.7609
+  overall_mean_loss       : 0.7335
+  overall_mean_aopcr      : 0.3711
+  webtraffic_acc          : 0.752
+  params                  : 493979
+  model_size_mb           : 4.378
+
+--- mstcn_sep_adaptive_classwise ---
+  model                   : mstcn_sep_adaptive_classwise
+  millet85_datasets       : 85
+  mean_acc_ours           : 0.7959
+  mean_acc_millet         : 0.8445
+  acc_win_tie_loss        : 16/14/55
+  mean_loss_ours          : 0.5739
+  mean_loss_millet        : 1.2241
+  loss_win_tie_loss       : 55/2/28
+  mean_aopcr_ours         : 0.3222
+  mean_aopcr_millet       : 4.5532
+  aopcr_win_tie_loss      : 4/0/81
+  overall_ucr_datasets    : 128
+  overall_mean_acc        : 0.7845
+  overall_mean_loss       : 0.6451
+  overall_mean_aopcr      : 0.3546
+  webtraffic_acc          : 0.734
+  params                  : 272758
+  model_size_mb           : 3.553
+
+--- mstcn_sep_additive ---
+  model                   : mstcn_sep_additive
+  millet85_datasets       : 85
+  mean_acc_ours           : 0.7988
+  mean_acc_millet         : 0.8445
+  acc_win_tie_loss        : 16/14/55
+  mean_loss_ours          : 0.5674
+  mean_loss_millet        : 1.2241
+  loss_win_tie_loss       : 55/1/29
+  mean_aopcr_ours         : 0.2134
+  mean_aopcr_millet       : 4.5532
+  aopcr_win_tie_loss      : 3/0/82
+  overall_ucr_datasets    : 128
+  overall_mean_acc        : 0.7881
+  overall_mean_loss       : 0.6335
+  overall_mean_aopcr      : 0.2547
+  webtraffic_acc          : 0.704
+  params                  : 272667
+  model_size_mb           : 3.552
+
+--- mstcn_sep_classwise_conjunctive ---
+  model                   : mstcn_sep_classwise_conjunctive
+  millet85_datasets       : 85
+  mean_acc_ours           : 0.802
+  mean_acc_millet         : 0.8445
+  acc_win_tie_loss        : 22/12/51
+  mean_loss_ours          : 0.5598
+  mean_loss_millet        : 1.2241
+  loss_win_tie_loss       : 57/3/25
+  mean_aopcr_ours         : 0.2451
+  mean_aopcr_millet       : 4.5532
+  aopcr_win_tie_loss      : 3/0/82
+  overall_ucr_datasets    : 128
+  overall_mean_acc        : 0.7921
+  overall_mean_loss       : 0.6247
+  overall_mean_aopcr      : 0.2891
+  webtraffic_acc          : 0.782
+  params                  : 272748
+  model_size_mb           : 3.553
+
+--- mstcn_sep_conjunctive ---
+  model                   : mstcn_sep_conjunctive
+  millet85_datasets       : 85
+  mean_acc_ours           : 0.8003
+  mean_acc_millet         : 0.8445
+  acc_win_tie_loss        : 19/15/51
+  mean_loss_ours          : 0.5637
+  mean_loss_millet        : 1.2241
+  loss_win_tie_loss       : 55/2/28
+  mean_aopcr_ours         : 0.2031
+  mean_aopcr_millet       : 4.5532
+  aopcr_win_tie_loss      : 3/0/82
+  overall_ucr_datasets    : 128
+  overall_mean_acc        : 0.7899
+  overall_mean_loss       : 0.632
+  overall_mean_aopcr      : 0.2535
+  webtraffic_acc          : 0.714
+  params                  : 272667
+  model_size_mb           : 3.552
+
+--- mstcn_sep_softmax_conjunctive ---
+  model                   : mstcn_sep_softmax_conjunctive
+  millet85_datasets       : 53
+  mean_acc_ours           : 0.7978
+  mean_acc_millet         : 0.8406
+  acc_win_tie_loss        : 12/6/35
+  mean_loss_ours          : 0.5811
+  mean_loss_millet        : 1.2208
+  loss_win_tie_loss       : 38/2/13
+  mean_aopcr_ours         : 0.2256
+  mean_aopcr_millet       : 4.1739
+  aopcr_win_tie_loss      : 3/0/50
+  overall_ucr_datasets    : 53
+  overall_mean_acc        : 0.7978
+  overall_mean_loss       : 0.5811
+  overall_mean_aopcr      : 0.2256
+  webtraffic_acc          : 0.714
+  params                  : 272749
+  model_size_mb           : 3.553
+
+--- resnet_conjunctive ---
+  model                   : resnet_conjunctive
+  millet85_datasets       : 84
+  mean_acc_ours           : 0.8056
+  mean_acc_millet         : 0.8433
+  acc_win_tie_loss        : 15/11/58
+  mean_loss_ours          : 0.5743
+  mean_loss_millet        : 1.2321
+  loss_win_tie_loss       : 52/2/30
+  mean_aopcr_ours         : 0.7005
+  mean_aopcr_millet       : 4.5579
+  aopcr_win_tie_loss      : 4/0/80
+  overall_ucr_datasets    : 124
+  overall_mean_acc        : 0.7914
+  overall_mean_loss       : 0.6439
+  overall_mean_aopcr      : 0.8361
+  webtraffic_acc          : 0.572
+  params                  : 508635
+  model_size_mb           : 4.424
+
+=== which model wins? ===
+Cross-model comparison over 8 model(s), on the 85 datasets MILLET published (best accuracy first):
+  model                                acc    loss    aopcr   acc W/T/L
+  resnet_conjunctive                0.8056  0.5743    0.701    15/11/58
+  fcn_conjunctive                   0.8029  0.5854    0.686    12/17/55
+  mstcn_sep_classwise_conjunctive   0.8020  0.5598    0.245    22/12/51
+  mstcn_sep_conjunctive             0.8003  0.5637    0.203    19/15/51
+  mstcn_sep_additive                0.7988  0.5674    0.213    16/14/55
+  mstcn_sep_softmax_conjunctive     0.7978  0.5811    0.226     12/6/35
+  mstcn_sep_adaptive_classwise      0.7959  0.5739    0.322    16/14/55
+  inceptiontime_conjunctive         0.7783  0.6297    0.060     10/7/37
+  MILLET (the baseline)             0.8433  1.2321    4.558
+  wrote results/SEA_NET/model_comparison.csv
+
+wrote 58 figures:
+   results/SEA_NET/figures/data_summary.png
+   results/SEA_NET/fcn_conjunctive/figures/results.png
+   results/SEA_NET/fcn_conjunctive/figures/acc_scatter.png
+   results/SEA_NET/fcn_conjunctive/figures/loss_scatter.png
+   results/SEA_NET/fcn_conjunctive/figures/aopcr_scatter.png
+   results/SEA_NET/fcn_conjunctive/figures/win_tie_loss.png
+   results/SEA_NET/fcn_conjunctive/figures/means.png
+   results/SEA_NET/fcn_conjunctive/figures/acc_diff.png
+   results/SEA_NET/inceptiontime_conjunctive/figures/results.png
+   results/SEA_NET/inceptiontime_conjunctive/figures/acc_scatter.png
+   results/SEA_NET/inceptiontime_conjunctive/figures/loss_scatter.png
+   results/SEA_NET/inceptiontime_conjunctive/figures/aopcr_scatter.png
+   results/SEA_NET/inceptiontime_conjunctive/figures/win_tie_loss.png
+   results/SEA_NET/inceptiontime_conjunctive/figures/means.png
+   results/SEA_NET/inceptiontime_conjunctive/figures/acc_diff.png
+   results/SEA_NET/mstcn_sep_adaptive_classwise/figures/results.png
+   results/SEA_NET/mstcn_sep_adaptive_classwise/figures/acc_scatter.png
+   results/SEA_NET/mstcn_sep_adaptive_classwise/figures/loss_scatter.png
+   results/SEA_NET/mstcn_sep_adaptive_classwise/figures/aopcr_scatter.png
+   results/SEA_NET/mstcn_sep_adaptive_classwise/figures/win_tie_loss.png
+   results/SEA_NET/mstcn_sep_adaptive_classwise/figures/means.png
+   results/SEA_NET/mstcn_sep_adaptive_classwise/figures/acc_diff.png
+   results/SEA_NET/mstcn_sep_additive/figures/results.png
+   results/SEA_NET/mstcn_sep_additive/figures/acc_scatter.png
+   results/SEA_NET/mstcn_sep_additive/figures/loss_scatter.png
+   results/SEA_NET/mstcn_sep_additive/figures/aopcr_scatter.png
+   results/SEA_NET/mstcn_sep_additive/figures/win_tie_loss.png
+   results/SEA_NET/mstcn_sep_additive/figures/means.png
+   results/SEA_NET/mstcn_sep_additive/figures/acc_diff.png
+   results/SEA_NET/mstcn_sep_classwise_conjunctive/figures/results.png
+   results/SEA_NET/mstcn_sep_classwise_conjunctive/figures/acc_scatter.png
+   results/SEA_NET/mstcn_sep_classwise_conjunctive/figures/loss_scatter.png
+   results/SEA_NET/mstcn_sep_classwise_conjunctive/figures/aopcr_scatter.png
+   results/SEA_NET/mstcn_sep_classwise_conjunctive/figures/win_tie_loss.png
+   results/SEA_NET/mstcn_sep_classwise_conjunctive/figures/means.png
+   results/SEA_NET/mstcn_sep_classwise_conjunctive/figures/acc_diff.png
+   results/SEA_NET/mstcn_sep_conjunctive/figures/results.png
+   results/SEA_NET/mstcn_sep_conjunctive/figures/acc_scatter.png
+   results/SEA_NET/mstcn_sep_conjunctive/figures/loss_scatter.png
+   results/SEA_NET/mstcn_sep_conjunctive/figures/aopcr_scatter.png
+   results/SEA_NET/mstcn_sep_conjunctive/figures/win_tie_loss.png
+   results/SEA_NET/mstcn_sep_conjunctive/figures/means.png
+   results/SEA_NET/mstcn_sep_conjunctive/figures/acc_diff.png
+   results/SEA_NET/mstcn_sep_softmax_conjunctive/figures/results.png
+   results/SEA_NET/mstcn_sep_softmax_conjunctive/figures/acc_scatter.png
+   results/SEA_NET/mstcn_sep_softmax_conjunctive/figures/loss_scatter.png
+   results/SEA_NET/mstcn_sep_softmax_conjunctive/figures/aopcr_scatter.png
+   results/SEA_NET/mstcn_sep_softmax_conjunctive/figures/win_tie_loss.png
+   results/SEA_NET/mstcn_sep_softmax_conjunctive/figures/means.png
+   results/SEA_NET/mstcn_sep_softmax_conjunctive/figures/acc_diff.png
+   results/SEA_NET/resnet_conjunctive/figures/results.png
+   results/SEA_NET/resnet_conjunctive/figures/acc_scatter.png
+   results/SEA_NET/resnet_conjunctive/figures/loss_scatter.png
+   results/SEA_NET/resnet_conjunctive/figures/aopcr_scatter.png
+   results/SEA_NET/resnet_conjunctive/figures/win_tie_loss.png
+   results/SEA_NET/resnet_conjunctive/figures/means.png
+   results/SEA_NET/resnet_conjunctive/figures/acc_diff.png
+   results/SEA_NET/figures/model_comparison.png
+
+[log] finished; full output saved to results/SEA_NET/logs/report_2026-07-20_23-47-27.log

@@ -72,6 +72,9 @@ def generate(refresh: bool = False, verbose: bool = True) -> Dict:
         print("No results yet. Train some models first, then run `python main.py leaderboard`.")
         return {"figures": [], "tables": [], "written": {}}
     lb = PD.with_profile(lb)                                 # adds FLOPs / latency / memory if measured
+    # one label per model, computed from EVERY model at once so collisions are resolved the same
+    # way in every figure (see style.build_label_map).
+    S.build_label_map(list(lb["model"]))
 
     have_cost = any(c in lb.columns and lb[c].notna().any() for c in ("flops_m", "infer_ms"))
     if verbose:

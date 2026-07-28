@@ -29,6 +29,33 @@ def _labels(models: List[str]) -> List[str]:
     return [S.shorten(m, 20) for m in models]
 
 
+def _is_ours(model_id: str) -> bool:
+    """
+    True for a model whose ENCODER is ours, False for the paper's own backbones.
+
+    Two cases have to be handled explicitly. The published-MILLET row we add to the ranking has no
+    "__" in its name at all, so a naive split would treat it as ours and colour it blue - which would
+    hide the baseline in plain sight. And a model like seanet_conjunctive has OUR encoder with
+    MILLET's pooling head: it counts as ours here (the encoder is the claim) and the dagger in its
+    label carries the reused-head information.
+    """
+    name = str(model_id)
+    if name.startswith("MILLET"):
+        return False
+    parts = name.split("__")
+    return not parts[1].startswith("mil_") if len(parts) > 1 else True
+
+
+def _provenance_legend(ax) -> None:
+    """The colour + dagger legend, placed ABOVE the axes so it can never cover a bar."""
+    handles = [plt.Rectangle((0, 0), 1, 1, fc=S.C_OURS, ec="none"),
+               plt.Rectangle((0, 0), 1, 1, fc=S.C_BASELINE, ec="none"),
+               ]
+    labels = ["Ours", "Published / reproduced baseline"]
+    ax.legend(handles, labels, loc="lower center", bbox_to_anchor=(0.5, 1.0),
+              ncol=2, frameon=False, fontsize=7, borderaxespad=0.4)
+
+
 # ======================================================================================
 # 1. The critical difference diagram - the single most expected figure in a TSC paper
 # ======================================================================================
@@ -99,10 +126,7 @@ def critical_difference(mat: pd.DataFrame, higher_better: bool = True,
         x_end = x_left if left_side else x_right
         ax.plot([rank, rank], [y_axis, y], color=S.C_NEUTRAL, lw=0.8, zorder=2)
         ax.plot([rank, x_end], [y, y], color=S.C_NEUTRAL, lw=0.8, zorder=2)
-        parts = str(model).split("__")
-        ours = not parts[1].startswith("mil_") if len(parts) > 1 else True
-        if str(model).startswith("MILLET"):
-            ours = False
+        ours = _is_ours(model)
         ax.text(x_end, y + 0.14, f"{_labels([model])[0]} ({rank:.2f})",
                 ha="left" if left_side else "right", va="bottom", fontsize=7,
                 color=S.C_OURS if ours else S.C_BASELINE)
@@ -126,7 +150,8 @@ def critical_difference(mat: pd.DataFrame, higher_better: bool = True,
                  f"the left. A thick horizontal bar joins models whose pairwise differences are not "
                  f"statistically significant under a Wilcoxon signed-rank test with Holm correction "
                  f"at alpha={alpha}; models sharing a bar cannot be separated by this evidence. "
-                 f"Blue names are models proposed in this work."),
+                 f"Labels read '<encoder>__<pooling>', abbreviated, where sea\\_ marks a component "
+                 f"introduced in this work and mil\\_ one reused unchanged from MILLET."),
         question=f"Which differences in {metric_name} are statistically significant?")
 
 
@@ -147,8 +172,7 @@ def average_rank(mat: pd.DataFrame, higher_better: bool = True,
         return None
     ranks = PS.average_ranks(mat, higher_better)
     models = list(ranks.index)
-    ours = [not str(m).split("__")[1].startswith("mil_") if "__" in str(m) else True for m in models]
-    colours = [S.C_OURS if o else S.C_BASELINE for o in ours]
+    colours = [S.C_OURS if _is_ours(m) else S.C_BASELINE for m in models]
 
     fig, ax = plt.subplots(figsize=(S.COL_WIDTH * 1.55, 0.24 * len(models) + 0.9))
     y = np.arange(len(models))
@@ -160,10 +184,8 @@ def average_rank(mat: pd.DataFrame, higher_better: bool = True,
     ax.grid(axis="x", alpha=0.35)
     ax.grid(axis="y", visible=False)
     S.annotate_bars(ax, bars, ranks.to_numpy(float), fmt="{:.2f}")
-    ax.set_title(f"Average rank ({metric_name})")
-    handles = [plt.Rectangle((0, 0), 1, 1, fc=S.C_OURS, ec="none"),
-               plt.Rectangle((0, 0), 1, 1, fc=S.C_BASELINE, ec="none")]
-    ax.legend(handles, ["Ours", "Reproduced baseline"], loc="lower right")
+    _provenance_legend(ax)                                   # above the plot, never over a bar
+    ax.set_title(f"Average rank ({metric_name})", pad=20)
     return S.save(
         fig, "stats", f"stats_average_rank_{metric_name}",
         title=f"Average rank ({metric_name})",
@@ -213,8 +235,9 @@ def win_tie_loss(mat: pd.DataFrame, baseline: pd.Series, metric_name: str = "acc
     ax.set_xlabel(f"datasets (out of {int(wtl['n_datasets'].max())})")
     ax.grid(axis="x", alpha=0.35)
     ax.grid(axis="y", visible=False)
-    ax.set_title(f"Win / tie / loss vs MILLET ({metric_name})")
-    ax.legend(loc="lower right", ncol=3, fontsize=7)
+    ax.legend(loc="lower center", bbox_to_anchor=(0.5, 1.0), ncol=3, frameon=False,
+              fontsize=7.5, borderaxespad=0.4)
+    ax.set_title(f"Win / tie / loss vs MILLET ({metric_name})", pad=20)
     return S.save(
         fig, section, f"fig5_win_tie_loss_{metric_name}",
         title=f"Win / tie / loss against MILLET ({metric_name})",

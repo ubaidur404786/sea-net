@@ -1,4 +1,4 @@
-dataset,MILLET,classwise,SEA-Net,conjunctive,gated_max,gated_max_topk
+dataset,MILLET,sea_mstc…cls_conj,sea_mstcn__mil_add,sea_mstc…mil_conj,sea_gate…cls_conj,sea_gate…opk_conj
 Adiac,0.8317135549872123,0.7596,0.7775,0.7749,0.7621,0.7903
 ArrowHead,0.8377142857142857,0.8457,0.8343,0.8571,0.8057,0.8571
 Beef,0.8466666666666669,0.9333,0.8333,0.8,0.8333,0.8333

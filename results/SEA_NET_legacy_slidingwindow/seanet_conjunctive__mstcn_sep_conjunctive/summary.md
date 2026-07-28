@@ -1,0 +1,22 @@
+# seanet_conjunctive__mstcn_sep_conjunctive - results summary
+
+| metric | value |
+|---|---|
+| model | seanet_conjunctive__mstcn_sep_conjunctive |
+| millet85_datasets | 85 |
+| mean_acc_ours | 0.8003 |
+| mean_acc_millet | 0.8445 |
+| acc_win_tie_loss | 19/15/51 |
+| mean_loss_ours | 0.5637 |
+| mean_loss_millet | 1.2241 |
+| loss_win_tie_loss | 55/2/28 |
+| mean_aopcr_ours | 0.2031 |
+| mean_aopcr_millet | 4.5532 |
+| aopcr_win_tie_loss | 3/0/82 |
+| overall_ucr_datasets | 128 |
+| overall_mean_acc | 0.7899 |
+| overall_mean_loss | 0.632 |
+| overall_mean_aopcr | 0.2535 |
+| webtraffic_acc | 0.714 |
+| params | 272667 |
+| model_size_mb | 3.552 |

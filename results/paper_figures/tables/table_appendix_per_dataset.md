@@ -1,6 +1,6 @@
 ### Per-dataset accuracy of the 5 best-ranked models against the published MILLET results, over 85 datasets. The complete matrix for all models is provided as CSV alongside this table.
 
-| dataset | MILLET | classwise | SEA-Net | conjunctive | gated max | gated max topk |
+| dataset | MILLET | sea mstc…cls conj | sea mstcn  mil add | sea mstc…mil conj | sea gate…cls conj | sea gate…opk conj |
 |---|---|---|---|---|---|---|
 | Adiac | 0.8317135549872123 | 0.7596 | 0.7775 | 0.7749 | 0.7621 | 0.7903 |
 | ArrowHead | 0.8377142857142857 | 0.8457 | 0.8343 | 0.8571 | 0.8057 | 0.8571 |

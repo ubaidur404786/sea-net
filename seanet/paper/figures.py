@@ -260,7 +260,11 @@ def benchmark_bands(lb: pd.DataFrame, column: str = "web_acc") -> List[Dict]:
             caption=(f"{METRICS[column]['label']} of the {rank_word} models on WebTraffic "
                      f"({n} models, {title.replace('$', '')}). Bars are sorted best-first; blue marks "
                      f"models proposed in this work and orange our reproduction of the published "
-                     f"backbones. The dashed line is the accuracy reported in the MILLET paper. "
+                     f"backbones. Labels read '<encoder>__<pooling>', abbreviated, where sea\\_ "
+                     f"marks a component introduced here and mil\\_ one reused unchanged from "
+                     f"MILLET. "
+                     f"The dashed line is the "
+                     f"accuracy reported in the MILLET paper. "
                      f"Bands are disjoint, so each model appears in exactly one of "
                      f"Figures 1--3."),
             question=f"Which models are the {rank_word} on {METRICS[column]['label']}?"))

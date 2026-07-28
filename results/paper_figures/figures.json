@@ -5,7 +5,7 @@
       "section": "main",
       "folder": "01_main_figures",
       "title": "Benchmark band 1: strongest models (Accuracy)",
-      "caption": "Accuracy of the strongest models on WebTraffic (13 models, Accuracy \\geq 0.94). Bars are sorted best-first; blue marks models proposed in this work and orange our reproduction of the published backbones. The dashed line is the accuracy reported in the MILLET paper. Bands are disjoint, so each model appears in exactly one of Figures 1--3.",
+      "caption": "Accuracy of the strongest models on WebTraffic (13 models, Accuracy \\geq 0.94). Bars are sorted best-first; blue marks models proposed in this work and orange our reproduction of the published backbones. Labels read '<encoder>__<pooling>', abbreviated, where sea\\_ marks a component introduced here and mil\\_ one reused unchanged from MILLET. The dashed line is the accuracy reported in the MILLET paper. Bands are disjoint, so each model appears in exactly one of Figures 1--3.",
       "question": "Which models are the strongest on Accuracy?",
       "label": "fig:fig1_benchmark_strongest_web_acc",
       "placement": "t",
@@ -20,7 +20,7 @@
       "section": "main",
       "folder": "01_main_figures",
       "title": "Benchmark band 2: competitive models (Accuracy)",
-      "caption": "Accuracy of the competitive models on WebTraffic (10 models, 0.93 \\leq Accuracy < 0.94). Bars are sorted best-first; blue marks models proposed in this work and orange our reproduction of the published backbones. The dashed line is the accuracy reported in the MILLET paper. Bands are disjoint, so each model appears in exactly one of Figures 1--3.",
+      "caption": "Accuracy of the competitive models on WebTraffic (10 models, 0.93 \\leq Accuracy < 0.94). Bars are sorted best-first; blue marks models proposed in this work and orange our reproduction of the published backbones. Labels read '<encoder>__<pooling>', abbreviated, where sea\\_ marks a component introduced here and mil\\_ one reused unchanged from MILLET. The dashed line is the accuracy reported in the MILLET paper. Bands are disjoint, so each model appears in exactly one of Figures 1--3.",
       "question": "Which models are the competitive on Accuracy?",
       "label": "fig:fig2_benchmark_competitive_web_acc",
       "placement": "t",
@@ -35,7 +35,7 @@
       "section": "appendix",
       "folder": "03_appendix",
       "title": "Benchmark band 3: remaining models (Accuracy)",
-      "caption": "Accuracy of the remaining models on WebTraffic (34 models, Accuracy < 0.93). Bars are sorted best-first; blue marks models proposed in this work and orange our reproduction of the published backbones. The dashed line is the accuracy reported in the MILLET paper. Bands are disjoint, so each model appears in exactly one of Figures 1--3.",
+      "caption": "Accuracy of the remaining models on WebTraffic (34 models, Accuracy < 0.93). Bars are sorted best-first; blue marks models proposed in this work and orange our reproduction of the published backbones. Labels read '<encoder>__<pooling>', abbreviated, where sea\\_ marks a component introduced here and mil\\_ one reused unchanged from MILLET. The dashed line is the accuracy reported in the MILLET paper. Bands are disjoint, so each model appears in exactly one of Figures 1--3.",
       "question": "Which models are the remaining on Accuracy?",
       "label": "fig:fig3_benchmark_remaining_web_acc",
       "placement": "t",
@@ -193,6 +193,51 @@
         "pdf": "results/paper_figures/03_appendix/pareto_web_acc_vs_size_mb.pdf",
         "svg": "results/paper_figures/03_appendix/pareto_web_acc_vs_size_mb.svg",
         "png": "results/paper_figures/03_appendix/pareto_web_acc_vs_size_mb.png"
+      }
+    },
+    {
+      "name": "pareto_web_acc_vs_flops_m",
+      "section": "appendix",
+      "folder": "03_appendix",
+      "title": "Accuracy vs FLOPs (Pareto)",
+      "caption": "WebTraffic accuracy against FLOPs per series (millions). Filled markers joined by the dashed line are Pareto-optimal: no other model is both cheaper and better. Hollow markers are dominated and therefore never the right choice. Only Pareto-optimal models are labelled.",
+      "question": "Does a smaller model stay competitive once flops is taken into account?",
+      "label": "fig:pareto_web_acc_vs_flops_m",
+      "placement": "t",
+      "files": {
+        "pdf": "results/paper_figures/03_appendix/pareto_web_acc_vs_flops_m.pdf",
+        "svg": "results/paper_figures/03_appendix/pareto_web_acc_vs_flops_m.svg",
+        "png": "results/paper_figures/03_appendix/pareto_web_acc_vs_flops_m.png"
+      }
+    },
+    {
+      "name": "pareto_web_acc_vs_infer_ms",
+      "section": "appendix",
+      "folder": "03_appendix",
+      "title": "Accuracy vs Inference time (Pareto)",
+      "caption": "WebTraffic accuracy against inference time per series (ms). Filled markers joined by the dashed line are Pareto-optimal: no other model is both cheaper and better. Hollow markers are dominated and therefore never the right choice. Only Pareto-optimal models are labelled.",
+      "question": "Does a smaller model stay competitive once inference time is taken into account?",
+      "label": "fig:pareto_web_acc_vs_infer_ms",
+      "placement": "t",
+      "files": {
+        "pdf": "results/paper_figures/03_appendix/pareto_web_acc_vs_infer_ms.pdf",
+        "svg": "results/paper_figures/03_appendix/pareto_web_acc_vs_infer_ms.svg",
+        "png": "results/paper_figures/03_appendix/pareto_web_acc_vs_infer_ms.png"
+      }
+    },
+    {
+      "name": "pareto_web_acc_vs_peak_mem_mb",
+      "section": "appendix",
+      "folder": "03_appendix",
+      "title": "Accuracy vs GPU memory (Pareto)",
+      "caption": "WebTraffic accuracy against peak GPU memory (MB). Filled markers joined by the dashed line are Pareto-optimal: no other model is both cheaper and better. Hollow markers are dominated and therefore never the right choice. Only Pareto-optimal models are labelled.",
+      "question": "Does a smaller model stay competitive once gpu memory is taken into account?",
+      "label": "fig:pareto_web_acc_vs_peak_mem_mb",
+      "placement": "t",
+      "files": {
+        "pdf": "results/paper_figures/03_appendix/pareto_web_acc_vs_peak_mem_mb.pdf",
+        "svg": "results/paper_figures/03_appendix/pareto_web_acc_vs_peak_mem_mb.svg",
+        "png": "results/paper_figures/03_appendix/pareto_web_acc_vs_peak_mem_mb.png"
       }
     },
     {
@@ -421,6 +466,51 @@
       }
     },
     {
+      "name": "topk5_flops_m",
+      "section": "appendix",
+      "folder": "03_appendix",
+      "title": "Top-5 models - FLOPs",
+      "caption": "FLOPs of the top-5 models (ranked by WebTraffic accuracy). Lower is better.",
+      "question": "How do the top-5 models compare on FLOPs alone?",
+      "label": "fig:topk5_flops_m",
+      "placement": "t",
+      "files": {
+        "pdf": "results/paper_figures/03_appendix/topk5_flops_m.pdf",
+        "svg": "results/paper_figures/03_appendix/topk5_flops_m.svg",
+        "png": "results/paper_figures/03_appendix/topk5_flops_m.png"
+      }
+    },
+    {
+      "name": "topk5_infer_ms",
+      "section": "appendix",
+      "folder": "03_appendix",
+      "title": "Top-5 models - Inference time",
+      "caption": "Inference time of the top-5 models (ranked by WebTraffic accuracy). Lower is better.",
+      "question": "How do the top-5 models compare on Inference time alone?",
+      "label": "fig:topk5_infer_ms",
+      "placement": "t",
+      "files": {
+        "pdf": "results/paper_figures/03_appendix/topk5_infer_ms.pdf",
+        "svg": "results/paper_figures/03_appendix/topk5_infer_ms.svg",
+        "png": "results/paper_figures/03_appendix/topk5_infer_ms.png"
+      }
+    },
+    {
+      "name": "topk5_peak_mem_mb",
+      "section": "appendix",
+      "folder": "03_appendix",
+      "title": "Top-5 models - GPU memory",
+      "caption": "GPU memory of the top-5 models (ranked by WebTraffic accuracy). Lower is better.",
+      "question": "How do the top-5 models compare on GPU memory alone?",
+      "label": "fig:topk5_peak_mem_mb",
+      "placement": "t",
+      "files": {
+        "pdf": "results/paper_figures/03_appendix/topk5_peak_mem_mb.pdf",
+        "svg": "results/paper_figures/03_appendix/topk5_peak_mem_mb.svg",
+        "png": "results/paper_figures/03_appendix/topk5_peak_mem_mb.png"
+      }
+    },
+    {
       "name": "topk10_multimetric",
       "section": "appendix",
       "folder": "03_appendix",
@@ -440,7 +530,7 @@
       "section": "main",
       "folder": "01_main_figures",
       "title": "Critical difference diagram (accuracy)",
-      "caption": "Critical difference diagram over 85 datasets for the 17 models with a complete sweep. Models are placed by average rank (accuracy), best on the left. A thick horizontal bar joins models whose pairwise differences are not statistically significant under a Wilcoxon signed-rank test with Holm correction at alpha=0.05; models sharing a bar cannot be separated by this evidence. Blue names are models proposed in this work.",
+      "caption": "Critical difference diagram over 85 datasets for the 17 models with a complete sweep. Models are placed by average rank (accuracy), best on the left. A thick horizontal bar joins models whose pairwise differences are not statistically significant under a Wilcoxon signed-rank test with Holm correction at alpha=0.05; models sharing a bar cannot be separated by this evidence. Labels read '<encoder>__<pooling>', abbreviated, where sea\\_ marks a component introduced in this work and mil\\_ one reused unchanged from MILLET.",
       "question": "Which differences in accuracy are statistically significant?",
       "label": "fig:fig4_critical_difference_accuracy",
       "placement": "t",
@@ -622,7 +712,7 @@
   },
   "counts": {
     "main": 6,
-    "appendix": 17,
+    "appendix": 23,
     "web": 4,
     "stats": 6,
     "ablation": 4

@@ -1,0 +1,17 @@
+[log] command 'results' started at 2026-07-20_23-47-18
+[log] a copy of everything below is being saved to: results/SEA_NET/logs/results_2026-07-20_23-47-18.log
+
+Cross-model comparison over 8 model(s), on the 85 datasets MILLET published (best accuracy first):
+  model                                acc    loss    aopcr   acc W/T/L
+  resnet_conjunctive                0.8056  0.5743    0.701    15/11/58
+  fcn_conjunctive                   0.8029  0.5854    0.686    12/17/55
+  mstcn_sep_classwise_conjunctive   0.8020  0.5598    0.245    22/12/51
+  mstcn_sep_conjunctive             0.8003  0.5637    0.203    19/15/51
+  mstcn_sep_additive                0.7988  0.5674    0.213    16/14/55
+  mstcn_sep_softmax_conjunctive     0.7978  0.5811    0.226     12/6/35
+  mstcn_sep_adaptive_classwise      0.7959  0.5739    0.322    16/14/55
+  inceptiontime_conjunctive         0.7783  0.6297    0.060     10/7/37
+  MILLET (the baseline)             0.8433  1.2321    4.558
+  wrote results/SEA_NET/model_comparison.csv
+
+[log] finished; full output saved to results/SEA_NET/logs/results_2026-07-20_23-47-18.log

@@ -78,6 +78,9 @@ Every figure is exported three times from the same drawing:
 | `appendix_web_all_web_ndcg` | How does the complete field of models compare on WebTraffic NDCG@n? |
 | `appendix_web_all_web_loss` | How does the complete field of models compare on WebTraffic Loss? |
 | `pareto_web_acc_vs_size_mb` | Does a smaller model stay competitive once model size is taken into account? |
+| `pareto_web_acc_vs_flops_m` | Does a smaller model stay competitive once flops is taken into account? |
+| `pareto_web_acc_vs_infer_ms` | Does a smaller model stay competitive once inference time is taken into account? |
+| `pareto_web_acc_vs_peak_mem_mb` | Does a smaller model stay competitive once gpu memory is taken into account? |
 | `topk3_multimetric` | Which of the top-3 models is preferable once every metric is considered? |
 | `topk5_web_acc` | How do the top-5 models compare on Accuracy alone? |
 | `topk5_web_aopcr` | How do the top-5 models compare on AOPCR alone? |
@@ -86,6 +89,9 @@ Every figure is exported three times from the same drawing:
 | `topk5_ucr85_acc` | How do the top-5 models compare on UCR-85 accuracy alone? |
 | `topk5_params` | How do the top-5 models compare on Parameters alone? |
 | `topk5_size_mb` | How do the top-5 models compare on Model size alone? |
+| `topk5_flops_m` | How do the top-5 models compare on FLOPs alone? |
+| `topk5_infer_ms` | How do the top-5 models compare on Inference time alone? |
+| `topk5_peak_mem_mb` | How do the top-5 models compare on GPU memory alone? |
 | `topk10_multimetric` | Which of the top-10 models is preferable once every metric is considered? |
 | `appendix_dataset_model_heatmap_accuracy` | Where do the gains and losses against the baseline actually come from? |
 | `appendix_accuracy_distribution` | How consistent is each model across datasets, not just on average? |
