@@ -3,8 +3,20 @@
 | metric | value |
 |---|---|
 | model | fcn__mil_fcn__mil_conjunctive |
-| millet85_datasets | 0 |
-| overall_ucr_datasets | 0 |
+| millet85_datasets | 85 |
+| mean_acc_ours | 0.8141 |
+| mean_acc_millet | 0.8445 |
+| acc_win_tie_loss | 21/12/52 |
+| mean_loss_ours | 0.5727 |
+| mean_loss_millet | 1.2241 |
+| loss_win_tie_loss | 55/1/29 |
+| mean_aopcr_ours | 1.3777 |
+| mean_aopcr_millet | 4.5532 |
+| aopcr_win_tie_loss | 5/3/77 |
+| overall_ucr_datasets | 128 |
+| overall_mean_acc | 0.7992 |
+| overall_mean_loss | 0.6353 |
+| overall_mean_aopcr | 1.4024 |
 | webtraffic_acc | 0.742 |
 | webtraffic_ndcg | 0.5327 |
 | params | 267035 |

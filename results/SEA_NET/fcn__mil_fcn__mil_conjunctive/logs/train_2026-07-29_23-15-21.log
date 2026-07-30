@@ -1,0 +1,154 @@
+[log] command 'train' started at 2026-07-29_23-15-21 for model 'fcn__mil_fcn__mil_conjunctive'
+[log] a copy of everything below is being saved to: results/SEA_NET/fcn__mil_fcn__mil_conjunctive/logs/train_2026-07-29_23-15-21.log
+
+=== train: model=fcn__mil_fcn__mil_conjunctive (config sv1/fcn) device=cuda mode=full datasets=129 ===
+[params] using DEFAULT recipe (no Optuna record yet - run 'python main.py optuna --model sv1/fcn').
+  results  -> results/SEA_NET/fcn__mil_fcn__mil_conjunctive/results.csv
+  resume   -> results/SEA_NET/fcn__mil_fcn__mil_conjunctive/done_train_dataset.txt  (delete it to retrain everything; delete one line to retrain that dataset)
+
+  [mlflow] logging runs to experiment 'SEA-Net_fcn__mil_fcn__mil_conjunctive_2026-07-29' at sqlite:///mlflow.db
+  [mlflow] browse later with:  mlflow ui --backend-store-uri sqlite:///mlflow.db
+[  1/129] WebTraffic                   already done -> skip
+[  2/129] Adiac                        already done -> skip
+[  3/129] ArrowHead                    already done -> skip
+[  4/129] Beef                         already done -> skip
+[  5/129] BeetleFly                    already done -> skip
+[  6/129] BirdChicken                  already done -> skip
+[  7/129] Car                          already done -> skip
+[  8/129] CBF                          already done -> skip
+[  9/129] ChlorineConcentration        already done -> skip
+[ 10/129] CinCECGTorso                 already done -> skip
+[ 11/129] Coffee                       already done -> skip
+[ 12/129] Computers                    already done -> skip
+[ 13/129] CricketX                     already done -> skip
+[ 14/129] CricketY                     already done -> skip
+[ 15/129] CricketZ                     already done -> skip
+[ 16/129] DiatomSizeReduction          already done -> skip
+[ 17/129] DistalPhalanxOutlineAgeGroup already done -> skip
+[ 18/129] DistalPhalanxOutlineCorrect  already done -> skip
+[ 19/129] DistalPhalanxTW              already done -> skip
+[ 20/129] Earthquakes                  already done -> skip
+[ 21/129] ECG200                       already done -> skip
+[ 22/129] ECG5000                      already done -> skip
+[ 23/129] ECGFiveDays                  already done -> skip
+[ 24/129] ElectricDevices              already done -> skip
+[ 25/129] FaceAll                      already done -> skip
+[ 26/129] FaceFour                     already done -> skip
+[ 27/129] FacesUCR                     already done -> skip
+[ 28/129] FiftyWords                   already done -> skip
+[ 29/129] Fish                         already done -> skip
+[ 30/129] FordA                        already done -> skip
+[ 31/129] FordB                        already done -> skip
+[ 32/129] GunPoint                     already done -> skip
+[ 33/129] Ham                          already done -> skip
+[ 34/129] HandOutlines                 already done -> skip
+[ 35/129] Haptics                      already done -> skip
+[ 36/129] Herring                      already done -> skip
+[ 37/129] InlineSkate                  already done -> skip
+[ 38/129] InsectWingbeatSound          already done -> skip
+[ 39/129] ItalyPowerDemand             already done -> skip
+[ 40/129] LargeKitchenAppliances       already done -> skip
+[ 41/129] Lightning2                   already done -> skip
+[ 42/129] Lightning7                   already done -> skip
+[ 43/129] Mallat                       already done -> skip
+[ 44/129] Meat                         already done -> skip
+[ 45/129] MedicalImages                already done -> skip
+[ 46/129] MiddlePhalanxOutlineAgeGroup already done -> skip
+[ 47/129] MiddlePhalanxOutlineCorrect  already done -> skip
+[ 48/129] MiddlePhalanxTW              already done -> skip
+[ 49/129] MoteStrain                   already done -> skip
+[ 50/129] NonInvasiveFetalECGThorax1   already done -> skip
+[ 51/129] NonInvasiveFetalECGThorax2   already done -> skip
+[ 52/129] OliveOil                     already done -> skip
+[ 53/129] OSULeaf                      already done -> skip
+[ 54/129] PhalangesOutlinesCorrect     already done -> skip
+[ 55/129] Phoneme                      already done -> skip
+[ 56/129] Plane                        already done -> skip
+[ 57/129] ProximalPhalanxOutlineAgeGroup already done -> skip
+[ 58/129] ProximalPhalanxOutlineCorrect already done -> skip
+[ 59/129] ProximalPhalanxTW            already done -> skip
+[ 60/129] RefrigerationDevices         already done -> skip
+[ 61/129] ScreenType                   already done -> skip
+[ 62/129] ShapeletSim                  already done -> skip
+[ 63/129] ShapesAll                    already done -> skip
+[ 64/129] SmallKitchenAppliances       already done -> skip
+[ 65/129] SonyAIBORobotSurface1        already done -> skip
+[ 66/129] SonyAIBORobotSurface2        already done -> skip
+[ 67/129] StarLightCurves              already done -> skip
+[ 68/129] Strawberry                   already done -> skip
+[ 69/129] SwedishLeaf                  already done -> skip
+[ 70/129] Symbols                      already done -> skip
+[ 71/129] SyntheticControl             already done -> skip
+[ 72/129] ToeSegmentation1             already done -> skip
+[ 73/129] ToeSegmentation2             already done -> skip
+[ 74/129] Trace                        already done -> skip
+[ 75/129] TwoLeadECG                   already done -> skip
+[ 76/129] TwoPatterns                  already done -> skip
+[ 77/129] UWaveGestureLibraryAll       already done -> skip
+[ 78/129] UWaveGestureLibraryX         already done -> skip
+[ 79/129] UWaveGestureLibraryY         already done -> skip
+[ 80/129] UWaveGestureLibraryZ         already done -> skip
+[ 81/129] Wafer                        already done -> skip
+[ 82/129] Wine                         already done -> skip
+[ 83/129] WordSynonyms                 already done -> skip
+[ 84/129] Worms                        already done -> skip
+[ 85/129] WormsTwoClass                already done -> skip
+[ 86/129] Yoga                         already done -> skip
+[ 87/129] ACSF1                        already done -> skip
+[ 88/129] AllGestureWiimoteX           already done -> skip
+[ 89/129] AllGestureWiimoteY           already done -> skip
+[ 90/129] AllGestureWiimoteZ           already done -> skip
+[ 91/129] BME                          already done -> skip
+[ 92/129] Chinatown                    already done -> skip
+[ 93/129] Crop                         already done -> skip
+[ 94/129] DodgerLoopDay                already done -> skip
+[ 95/129] DodgerLoopGame               already done -> skip
+[ 96/129] DodgerLoopWeekend            already done -> skip
+[ 97/129] EOGHorizontalSignal          already done -> skip
+[ 98/129] EOGVerticalSignal            already done -> skip
+[ 99/129] EthanolLevel                 already done -> skip
+[100/129] FreezerRegularTrain          already done -> skip
+[101/129] FreezerSmallTrain            already done -> skip
+[102/129] Fungi                        already done -> skip
+[103/129] GestureMidAirD1              already done -> skip
+[104/129] GestureMidAirD2              already done -> skip
+[105/129] GestureMidAirD3              already done -> skip
+[106/129] GesturePebbleZ1              already done -> skip
+[107/129] GesturePebbleZ2              already done -> skip
+[108/129] GunPointAgeSpan              already done -> skip
+[109/129] GunPointMaleVersusFemale     already done -> skip
+[110/129] GunPointOldVersusYoung       already done -> skip
+[111/129] HouseTwenty                  already done -> skip
+[112/129] InsectEPGRegularTrain        already done -> skip
+[113/129] InsectEPGSmallTrain          already done -> skip
+[114/129] MelbournePedestrian          already done -> skip
+[115/129] MixedShapesRegularTrain      already done -> skip
+[116/129] MixedShapesSmallTrain        already done -> skip
+[117/129] PLAID                        already done -> skip
+[118/129] PickupGestureWiimoteZ        already done -> skip
+[119/129] PigAirwayPressure            already done -> skip
+[120/129] PigArtPressure               already done -> skip
+[121/129] PigCVP                       already done -> skip
+[122/129] PowerCons                    already done -> skip
+[123/129] Rock                         already done -> skip
+[124/129] SemgHandGenderCh2            already done -> skip
+[125/129] SemgHandMovementCh2          already done -> skip
+[126/129] SemgHandSubjectCh2           already done -> skip
+[127/129] ShakeGestureWiimoteZ         already done -> skip
+[128/129] SmoothSubspace               already done -> skip
+[129/129] UMD                          already done -> skip
+
+Done: 0 trained, 129 skipped, 0 failed.
+Results -> results/SEA_NET/fcn__mil_fcn__mil_conjunctive/results.csv
+
+=== fcn__mil_fcn__mil_conjunctive vs MILLET ConjunctiveInceptionTime (mean of 5 reps) ===
+  UCR datasets evaluated: 128  (with MILLET baseline: 85, without: 43)
+  metric        ours    MILLET   win/tie/loss   (mean over the 85 datasets MILLET published)
+  acc         0.8141    0.8445       21/12/52   
+  loss        0.5727    1.2241        55/1/29   (lower is better)
+  aopcr       1.3777    4.5532         5/3/77   
+  wrote results/SEA_NET/fcn__mil_fcn__mil_conjunctive/comparison_vs_millet.csv
+
+Next: `python main.py report` to draw the figures for fcn__mil_fcn__mil_conjunctive.
+
+[log] finished; full output saved to results/SEA_NET/fcn__mil_fcn__mil_conjunctive/logs/train_2026-07-29_23-15-21.log

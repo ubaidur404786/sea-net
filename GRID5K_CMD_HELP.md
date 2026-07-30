@@ -759,3 +759,11 @@ onto one place, then run results/report/web-compare there.
   Open the file and look for the three conflict marker lines git inserted (a line of `<`, a
   line of `=`, and a line of `>`). Keep the text you want, delete all three marker lines,
   then `git add <file>` and `git commit`.
+
+
+ sv4/seanet_spiketrend_topk sv4/seanet_bottleneck_topk sv4/seanet_gated_last_adaptive
+ 
+  sv4/seanet_inputgate_adaptive sv4/seanet_spiketrend_adaptive                │
+│      │ sv4/seanet_slim_topk
+
+bash scripts/run_all.sh full
