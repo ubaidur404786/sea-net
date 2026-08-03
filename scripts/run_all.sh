@@ -18,7 +18,11 @@
 #   bash scripts/run_all.sh web             # same as above, said explicitly
 #   bash scripts/run_all.sh full            # PHASE = full: every model on ALL datasets (the real sweep)
 #   bash scripts/run_all.sh web sv4/seanet_gated_last sv4/seanet_recon   # only these models (WebTraffic)
-#   bash scripts/run_all.sh full "$SV4"     # only the sv4 models, full sweep
+#   bash scripts/run_all.sh web sv6         # only the sv6 models (multi-scale), WebTraffic screen
+#   bash scripts/run_all.sh full sv4        # only the sv4 models, full sweep
+#
+# ONE COMMAND PER LINE. If you paste two commands onto the same line they get joined into one, and every
+# extra word is read as a model name - which is why a stray paste shows up as "config file not found".
 #
 # The plan: FIRST run the "web" phase to screen every model on WebTraffic fast (one dataset), read the
 # accuracy + AOPCR, pick the winners, THEN run "full" on the winners for the whole benchmark.
@@ -32,9 +36,13 @@ source scripts/env.sh        # turn the environment on (prints python + torch/cu
 
 # ---- the models, grouped by VERSION (the folder each config lives in) ----
 # sv1 = paper baselines, sv2 = original SEA-Net, sv3 = pooling family, sv4 = new encoder+pooling work,
-# sv5 = MIL pooling heads ported from the cancer/pathology papers (gated_attention, dualstream_conjunctive).
-# We AUTO-DISCOVER every config in each folder, so new files (like the cross-product ones) are picked up
-# automatically - no need to hand-list them here.
+# sv5 = MIL pooling heads ported from the cancer/pathology papers (gated_attention, dualstream_conjunctive),
+# sv6 = multi-scale encoder wrappers (channels + pyramid).
+#
+# BOTH the folders AND the files inside them are found automatically. The version names used to be
+# hand-listed here, and that was a trap: adding configs/models/sv6/ was not enough, you also had to
+# remember to edit this script, and if you forgot, "run_all.sh web sv6" fell through to "treat sv6 as a
+# model name" and died with 'configs/models/sv6.yaml not found'. Now a new folder just works.
 list_models() {
   local v="$1"
   for f in configs/models/"$v"/*.yaml; do
@@ -42,12 +50,18 @@ list_models() {
     echo "$v/$(basename "$f" .yaml)"
   done
 }
-SV1=$(list_models sv1)
-SV2=$(list_models sv2)
-SV3=$(list_models sv3)
-SV4=$(list_models sv4)
-SV5=$(list_models sv5)                        # sv5 = MIL heads ported from the cancer/pathology papers
-ALL="$SV1 $SV2 $SV3 $SV4 $SV5"
+
+list_versions() {                                  # every folder under configs/models/, e.g. sv1 .. sv6
+  for d in configs/models/*/; do
+    [ -d "$d" ] || continue
+    basename "$d"
+  done
+}
+
+ALL=""
+for v in $(list_versions); do
+  ALL="$ALL $(list_models "$v")"
+done
 
 # ---- phase: "web" (WebTraffic only, fast screen) or "full" (all datasets, real sweep) ----
 PHASE="web"                                   # default
@@ -56,8 +70,8 @@ if [ "$1" = "web" ] || [ "$1" = "full" ]; then PHASE="$1"; shift; fi
 # ---- which models to run ----
 # You can pass:
 #   nothing          -> ALL models (every version)
-#   a version group  -> sv1 | sv2 | sv3 | sv4 | sv5 | all   (expands to that whole folder)
-#   explicit names   -> sv4/seanet_recon sv4/seanet_slim_topk ...
+#   a version group  -> sv1 | sv2 | ... | sv6 | all   (any folder under configs/models/)
+#   explicit names   -> sv6/seanet_bottleneck_mschan sv4/seanet_recon ...
 # IMPORTANT: do NOT type "$SV4" from your shell - that variable only exists INSIDE this script, so from
 # your terminal it is empty. Use the WORD  sv4  instead:   bash scripts/run_all.sh full sv4
 MODELS=""
@@ -66,15 +80,13 @@ if [ "$#" -eq 0 ]; then
 else
   for sel in "$@"; do
     [ -z "$sel" ] && continue                    # skip empty tokens (e.g. an unset "$SV4")
-    case "$sel" in
-      all) MODELS="$MODELS $ALL" ;;
-      sv1) MODELS="$MODELS $SV1" ;;
-      sv2) MODELS="$MODELS $SV2" ;;
-      sv3) MODELS="$MODELS $SV3" ;;
-      sv4) MODELS="$MODELS $SV4" ;;
-      sv5) MODELS="$MODELS $SV5" ;;
-      *)   MODELS="$MODELS $sel" ;;              # an explicit model name like sv4/seanet_recon
-    esac
+    if [ "$sel" = "all" ]; then
+      MODELS="$MODELS $ALL"
+    elif [ -d "configs/models/$sel" ]; then
+      MODELS="$MODELS $(list_models "$sel")"     # a version folder like sv4 or sv6
+    else
+      MODELS="$MODELS $sel"                      # an explicit model name like sv4/seanet_recon
+    fi
   done
 fi
 MODELS=$(echo $MODELS | xargs)                   # collapse whitespace / newlines, trim the ends
@@ -85,6 +97,22 @@ if [ -z "$MODELS" ]; then
   echo "  bash scripts/run_all.sh full sv4                 # all sv4 models, full sweep"
   echo "  bash scripts/run_all.sh web                      # all models, WebTraffic only"
   echo "  bash scripts/run_all.sh full sv4/seanet_recon sv4/seanet_slim_topk"
+  exit 1
+fi
+
+# guard: check EVERY selected model has a config file BEFORE training anything. Without this a typo
+# only shows up as a Python traceback once that model's turn comes - and with several typos you get
+# several tracebacks scrolling past, which is what a joined copy-paste ("web" + the next command on the
+# same line) looks like. Better to say exactly which names are wrong and stop.
+MISSING=""
+for m in $MODELS; do
+  [ -f "configs/models/$m.yaml" ] || MISSING="$MISSING $m"
+done
+if [ -n "$MISSING" ]; then
+  echo "ERROR: these are not model configs:$MISSING"
+  echo "A model name looks like  <version folder>/<config file>, e.g. sv6/seanet_bottleneck_mschan."
+  echo "Available version folders: $(list_versions | xargs)"
+  echo "Tip: if you see the words of your NEXT command in that list, two commands were pasted onto one line."
   exit 1
 fi
 
