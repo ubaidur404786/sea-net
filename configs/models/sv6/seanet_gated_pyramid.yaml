@@ -1,0 +1,50 @@
+# sv6/seanet_gated_pyramid.yaml - Technique 2a (multi-scale PYRAMID) on our BEST-accuracy encoder.
+#
+# Same idea as sv6/seanet_bottleneck_pyramid (see that file for the full explanation): run the same
+# encoder on the series downsampled by 1, 2, 4, 8 and let a small attention pick which scale to trust
+# at each timestep. The only difference here is the encoder we wrap - the self-gating one, rank 1 today.
+#
+# NOTE ON THE GATE: SummaryGate is applied INSIDE the encoder, so each scale gets its own gate computed
+# from its own summary. That is what we want - the whole-series summary of the coarse (averaged) copy is
+# genuinely a different thing from the summary of the raw copy, so each scale can gate itself.
+#
+# Baseline to beat: sv4/seanet_gated_mean_topk = 0.954 acc, 2.2926 AOPCR, 0.7721 NDCG, 61,740 params.
+#
+# Run it (WebTraffic by default):  python main.py run --model sv6/seanet_gated_pyramid
+
+name: seanet_gated_pyramid
+use_params: default
+
+encoder:
+  type: sea_multiscale_pyramid
+  scales: [1, 2, 4, 8]
+  fusion: attention
+  d_attn: 8
+  per_scale_bn: true
+  base:                     # unchanged from sv4/seanet_gated_mean_topk
+    type: sea_mstcn_sep_gated
+    d: 64
+    n_blocks: 4
+    dropout: 0.2
+    max_dilation: 16
+    kernels: [5, 11, 23]
+    summary: mean
+
+pooling:
+  type: sea_topk_conjunctive
+  d_attn: 8
+  dropout: 0.2
+  positional_encoding: true
+  top_frac: 0.1
+
+training:
+  n_epochs: 400
+  patience: 60
+  max_batch: 16
+  learning_rate: 0.00125
+  weight_decay: 0.00012
+  label_smoothing: 0.13
+  lambda_entropy: 0.01
+  min_train_for_val: 100
+  val_frac: 0.2
+  optimizer: adam

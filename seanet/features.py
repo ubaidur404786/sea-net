@@ -26,6 +26,12 @@ The encoders registered here today:
     - "sea_mstcn_sep_inputgate"  : a gate read straight off the raw input.
     - "sea_mstcn_sep_recon"      : adds features made from the reconstruction residual.
 
+    OURS - multi-scale WRAPPERS (sv6). These do not replace an encoder, they wrap one: the encoder
+    being wrapped is nested under "base" in the config, so they work on top of ANY encoder above.
+    - "sea_multiscale_channels"  : adds rolling max/min/std channels to the input (length T unchanged).
+    - "sea_multiscale_pyramid"   : runs the SAME encoder on the series downsampled by 1, 2, 4, 8 and
+                                   fuses the results back to length T (attention / mean / max / concat).
+
     MILLET - the paper's own backbones, reused unchanged from millet/:
     - "mil_inceptiontime" : InceptionTime (the paper's baseline encoder).
     - "mil_fcn"           : FCN.
@@ -41,6 +47,7 @@ from typing import Callable, Dict, Tuple
 
 import torch
 from torch import nn
+from torch.nn import functional as F
 
 from millet.model import backbone
 
@@ -432,6 +439,245 @@ class MSTCNSepReconEncoder(nn.Module):
 
 
 # --------------------------------------------------------------------------------------
+# Multi-scale INPUT CHANNELS (our "Technique 3").
+#
+# Idea: instead of feeding the encoder ONE channel (the raw series), feed it a few extra channels
+# that describe the same timestep at BIGGER windows: the rolling max, min and std over a window of
+# 3, 7, 15, 31 points around it. The length T never changes, so every timestep still lines up with
+# its original position - AOPCR and NDCG keep working exactly as before.
+#
+# Why max / min / std and NOT just the rolling mean: a rolling mean is a LINEAR operation, and the
+# stem conv is linear too, so a mean channel is something the encoder could mostly learn by itself.
+# A max, a min or a std is NON-linear - a convolution can never compute them, no matter how it is
+# trained. So those channels are real new information. (This is the same trick that made MultiRocket
+# work: add cheap non-linear summaries instead of more layers.)
+#
+# Cost: only the STEM gets wider (Conv1d(1, d, 7) -> Conv1d(C, d, 7)). With d=64 and C=13 that is
+# about +5k parameters and almost no extra compute. It is by far the cheapest thing we can try.
+# --------------------------------------------------------------------------------------
+class MultiScaleChannels(nn.Module):
+    """
+    Turn a series (B, n_in, T) into (B, n_in * n_out, T) by adding rolling-statistic channels.
+
+    For every window size k we can add the rolling max / min / std / mean / range at every timestep.
+    Windows must be ODD so the window is centred on its timestep (an even window would sit half a
+    step to one side and slowly shift all the features - a silent way to lose NDCG).
+
+    We pad with "replicate" (copy the edge value outwards) instead of zeros. Zero padding would make
+    the first and last few timesteps look artificially like the series mean, which invents evidence
+    at exactly the places MIL attention likes to look.
+    """
+
+    # the statistics we know how to compute (the config can pick any subset of these)
+    KNOWN_STATS = ("mean", "max", "min", "std", "range")
+
+    def __init__(self, windows: Tuple[int, ...] = (3, 7, 15, 31),
+                 stats: Tuple[str, ...] = ("max", "min", "std"),
+                 add_diff_sign: bool = True):
+        """
+        windows : the rolling window sizes, all ODD (3, 7, 15, 31 = radius 1, 3, 7, 15).
+        stats : which statistics to compute in each window (see KNOWN_STATS).
+        add_diff_sign : also add one channel of sign(x[t] - x[t-1]) -> -1 down / 0 flat / +1 up.
+                        The difference itself is skipped on purpose: a conv can already learn it with
+                        weights [-1, +1]. The SIGN is non-linear, so a conv cannot, which is what
+                        makes it worth a channel.
+        """
+        super().__init__()
+        for k in windows:
+            if k % 2 == 0:
+                raise ValueError(f"window {k} must be ODD so it stays centred on its timestep.")
+        for s in stats:
+            if s not in self.KNOWN_STATS:
+                raise ValueError(f"Unknown stat {s!r}. Options: {self.KNOWN_STATS}")
+        self.windows = tuple(windows)
+        self.stats = tuple(stats)
+        self.add_diff_sign = bool(add_diff_sign)
+        # how many channels we make PER input channel: the original + every (window, stat) pair + sign
+        self.n_out = 1 + len(self.windows) * len(self.stats) + (1 if self.add_diff_sign else 0)
+
+    @staticmethod
+    def _pad(x: torch.Tensor, k: int) -> torch.Tensor:
+        """Copy the edge values outwards by k//2 on both sides, so pooling keeps the length T."""
+        return F.pad(x, (k // 2, k // 2), mode="replicate")
+
+    def _roll_mean(self, x: torch.Tensor, k: int) -> torch.Tensor:
+        """Rolling average over a window of k, stride 1 -> same length T."""
+        return F.avg_pool1d(self._pad(x, k), kernel_size=k, stride=1)
+
+    def _roll_max(self, x: torch.Tensor, k: int) -> torch.Tensor:
+        """Rolling maximum over a window of k."""
+        return F.max_pool1d(self._pad(x, k), kernel_size=k, stride=1)
+
+    def _roll_min(self, x: torch.Tensor, k: int) -> torch.Tensor:
+        """Rolling minimum = minus the rolling max of the flipped signal."""
+        return -self._roll_max(-x, k)
+
+    def _roll_std(self, x: torch.Tensor, k: int) -> torch.Tensor:
+        """
+        Rolling standard deviation, using the usual shortcut  std = sqrt(mean(x^2) - mean(x)^2).
+        The clamp keeps the value inside the square root positive: without it, tiny floating-point
+        error on a flat stretch can make it a very small NEGATIVE number and sqrt gives NaN.
+        """
+        m = self._roll_mean(x, k)
+        m2 = self._roll_mean(x * x, k)
+        return torch.sqrt(torch.clamp(m2 - m * m, min=1e-8))
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """x : (B, n_in, T) -> (B, n_in * n_out, T). The length T is unchanged."""
+        channels = [x]                                       # channel 0 is always the raw series
+        for k in self.windows:
+            for stat in self.stats:
+                if stat == "mean":
+                    channels.append(self._roll_mean(x, k))
+                elif stat == "max":
+                    channels.append(self._roll_max(x, k))
+                elif stat == "min":
+                    channels.append(self._roll_min(x, k))
+                elif stat == "std":
+                    channels.append(self._roll_std(x, k))
+                else:                                        # "range" = how far the signal swings
+                    channels.append(self._roll_max(x, k) - self._roll_min(x, k))
+        if self.add_diff_sign:
+            d = torch.zeros_like(x)
+            d[:, :, 1:] = torch.sign(x[:, :, 1:] - x[:, :, :-1])   # first step has no "previous", stays 0
+            channels.append(d)
+        return torch.cat(channels, dim=1)
+
+
+class MultiScaleChannelEncoder(nn.Module):
+    """
+    A WRAPPER: build the extra channels, then run any existing encoder on top of them.
+
+    It does not replace an encoder - it wraps one. So `sea_mstcn_sep_bottleneck` (or gated, or
+    inputgate, ...) stays exactly as it is, and the only thing that changes is that its stem now
+    reads C channels instead of 1. Output is still (B, d, T) with .d_out = d, so every pooling head
+    works unchanged.
+    """
+
+    def __init__(self, base_cfg, n_in: int = 1, windows: Tuple[int, ...] = (3, 7, 15, 31),
+                 stats: Tuple[str, ...] = ("max", "min", "std"), add_diff_sign: bool = True):
+        """
+        base_cfg : the nested "base" block of the config - the encoder to wrap.
+        n_in : channels coming IN from the dataset (1 normally).
+        windows / stats / add_diff_sign : passed to MultiScaleChannels.
+        """
+        super().__init__()
+        self.channels = MultiScaleChannels(windows, stats, add_diff_sign)
+        # the wrapped encoder must be built with the WIDER input, so its stem matches
+        self.base = build_encoder(base_cfg, n_in=n_in * self.channels.n_out)
+        self.d_out = self.base.d_out
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """x : (B, n_in, T) -> (B, d, T)."""
+        return self.base(self.channels(x))
+
+
+# --------------------------------------------------------------------------------------
+# Multi-scale PYRAMID (our "Technique 2a" - the closest thing to the cancer paper, done properly).
+#
+# Idea: the pathology paper looks at the same tissue at 10x and 20x magnification. The 1-D version
+# of "lower magnification" is NOT a bigger window - it is DOWNSAMPLING. So we average the series down
+# by 2, 4, 8, run the SAME encoder on each shrunk copy, stretch the features back to length T, and
+# mix them together.
+#
+# Why downsampling and not just bigger windows: our encoder already sees ~667 timesteps around every
+# point (kernels 5/11/23 at dilations 1,2,4,8), so a bigger window shows it nothing new. But averaging
+# CHANGES THE SIGNAL: it cancels noise and leaves only the slow shape, so the very same filters now
+# respond to something different. That is genuinely new information.
+#
+# One encoder is SHARED by every scale, so the parameter count barely moves - which is the whole
+# point of this project. Compute is about 2x (1 + 1/2 + 1/4 + 1/8), not 5x.
+# --------------------------------------------------------------------------------------
+class MultiScalePyramid(nn.Module):
+    """
+    Run one shared encoder at several downsampling factors, then fuse the features back into (B, d, T).
+
+    fusion options:
+        "attention" : learn a weight per scale PER TIMESTEP (softmax over scales, so the weights add
+                      up to 1). Cheapest expressive option, and the weights can be PLOTTED - they say
+                      "at this timestep the model trusted scale 4", which is the 1-D version of
+                      Figure 6 in the cancer paper.
+        "mean"      : plain average over scales. No parameters, but it dilutes: if only one scale
+                      holds the evidence, its signal is divided by the number of scales.
+        "max"       : strongest scale wins per channel. No parameters, but it can never COMBINE two
+                      scales, and gradient only reaches one scale at a time.
+        "concat"    : stack all scales and mix with a 1x1 conv. Most expressive, but costs
+                      S * d * d parameters - about +20k at d=64 with 5 scales, which is half of the
+                      bottleneck model. Kept for the ablation, not as the default.
+
+    A softmax over the SCALE axis is safe for our metrics: it never normalises across TIME, so the
+    "this timestep matters more" signal that AOPCR and NDCG depend on survives untouched. (This is the
+    same lesson SummaryGate above records: normalising across time destroyed our interpretability.)
+    """
+
+    def __init__(self, base_cfg, n_in: int = 1, scales: Tuple[int, ...] = (1, 2, 4, 8),
+                 fusion: str = "attention", d_attn: int = 8, per_scale_bn: bool = True):
+        """
+        base_cfg : the nested "base" block of the config - the encoder to run at every scale.
+        n_in : input channels.
+        scales : the downsampling factors. 1 = the original series, 2 = averaged in pairs, etc.
+        fusion : "attention" | "mean" | "max" | "concat".
+        d_attn : hidden width of the little scale-attention network (only used by "attention").
+        per_scale_bn : give each scale its own BatchNorm. A shrunk series has different statistics
+                       from the raw one, and one shared BatchNorm would be dragged to a bad middle.
+                       Costs only 2*d numbers per scale, so it is nearly free.
+        """
+        super().__init__()
+        if fusion not in ("attention", "mean", "max", "concat"):
+            raise ValueError(f"Unknown fusion {fusion!r} (options: attention, mean, max, concat).")
+        self.scales = tuple(scales)
+        self.fusion = fusion
+        self.base = build_encoder(base_cfg, n_in=n_in)        # ONE encoder, reused at every scale
+        d = self.base.d_out
+        self.d_out = d
+        # one BatchNorm per scale (or none)
+        self.norms = nn.ModuleList([nn.BatchNorm1d(d) for _ in self.scales]) if per_scale_bn else None
+        if fusion == "attention":
+            # gives one score per timestep per scale; softmax over scales turns them into weights
+            self.score = nn.Sequential(
+                nn.Conv1d(d, d_attn, kernel_size=1),
+                nn.Tanh(),
+                nn.Conv1d(d_attn, 1, kernel_size=1),
+            )
+        elif fusion == "concat":
+            self.mix = nn.Conv1d(d * len(self.scales), d, kernel_size=1)
+        # the last batch's scale weights, saved so a figure can show which scale was used where
+        self.last_scale_weights = None
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        """x : (B, n_in, T) -> (B, d, T). T is the SAME as the input length."""
+        length = x.shape[-1]
+        feats = []
+        for i, scale in enumerate(self.scales):
+            # min(scale, length) protects very short UCR series: a window bigger than the whole
+            # series would crash the pooling. ceil_mode keeps the last partial window instead of
+            # throwing those timesteps away.
+            step = min(scale, length)
+            xs = x if step == 1 else F.avg_pool1d(x, kernel_size=step, stride=step, ceil_mode=True)
+            h = self.base(xs)                                # (B, d, T/scale) - SHARED weights
+            if self.norms is not None:
+                h = self.norms[i](h)
+            if h.shape[-1] != length:                        # stretch back so every scale lines up
+                h = F.interpolate(h, size=length, mode="linear", align_corners=False)
+            feats.append(h)
+
+        if self.fusion == "concat":
+            return self.mix(torch.cat(feats, dim=1))         # (B, d, T)
+
+        stacked = torch.stack(feats, dim=1)                  # (B, S, d, T)
+        if self.fusion == "mean":
+            return stacked.mean(dim=1)
+        if self.fusion == "max":
+            return stacked.max(dim=1).values
+
+        # "attention": one weight per (scale, timestep), summing to 1 over the scales
+        scores = torch.stack([self.score(h) for h in feats], dim=1)   # (B, S, 1, T)
+        weights = torch.softmax(scores, dim=1)                        # (B, S, 1, T)
+        self.last_scale_weights = weights.detach()                    # keep a copy for plotting
+        return (stacked * weights).sum(dim=1)                         # (B, d, T)
+
+
+# --------------------------------------------------------------------------------------
 # The encoder registry (name -> builder). This is what makes encoders swappable by config.
 # --------------------------------------------------------------------------------------
 # A "builder" is a function that takes (encoder_cfg, n_in) and returns an encoder module with .d_out.
@@ -540,6 +786,50 @@ def _build_mstcn_sep_recon(cfg, n_in: int) -> nn.Module:
         max_dilation=cfg.max_dilation,
         kernels=tuple(cfg.kernels),
         d_res=getattr(cfg, "d_res", 16),   # how many feature channels to make from the residual
+    )
+
+
+@register_encoder("sea_multiscale_channels")
+def _build_multiscale_channels(cfg, n_in: int) -> nn.Module:
+    """
+    Build the multi-scale CHANNEL wrapper (Technique 3).
+
+    The config nests the encoder being wrapped under "base", e.g.
+
+        encoder:
+          type: sea_multiscale_channels
+          windows: [3, 7, 15, 31]
+          stats: [max, min, std]
+          add_diff_sign: true
+          base:
+            type: sea_mstcn_sep_bottleneck
+            d: 64
+            ...
+    """
+    return MultiScaleChannelEncoder(
+        base_cfg=cfg.base,
+        n_in=n_in,
+        windows=tuple(getattr(cfg, "windows", (3, 7, 15, 31))),
+        stats=tuple(getattr(cfg, "stats", ("max", "min", "std"))),
+        add_diff_sign=getattr(cfg, "add_diff_sign", True),
+    )
+
+
+@register_encoder("sea_multiscale_pyramid")
+def _build_multiscale_pyramid(cfg, n_in: int) -> nn.Module:
+    """
+    Build the multi-scale PYRAMID wrapper (Technique 2a).
+
+    Like the channel wrapper, the encoder being wrapped is nested under "base". `base` can itself be
+    another wrapper, so "pyramid on top of channels" is just one config nested inside another.
+    """
+    return MultiScalePyramid(
+        base_cfg=cfg.base,
+        n_in=n_in,
+        scales=tuple(getattr(cfg, "scales", (1, 2, 4, 8))),
+        fusion=getattr(cfg, "fusion", "attention"),
+        d_attn=getattr(cfg, "d_attn", 8),
+        per_scale_bn=getattr(cfg, "per_scale_bn", True),
     )
 
 

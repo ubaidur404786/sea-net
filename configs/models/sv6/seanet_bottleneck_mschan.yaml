@@ -1,0 +1,56 @@
+# sv6/seanet_bottleneck_mschan.yaml - Technique 3 (multi-scale INPUT CHANNELS) on the smallest encoder.
+#
+# WHAT IS NEW: instead of feeding the encoder one channel (the raw series), we feed it extra channels
+# that describe every timestep at bigger windows - the rolling max, min and std over 3, 7, 15 and 31
+# points around it, plus one channel that says "is the series going up, down or flat here".
+#
+# WHY max/min/std AND NOT the rolling mean: a rolling mean is a LINEAR operation, and the stem conv is
+# linear too, so a mean channel is mostly something the encoder could already learn on its own. A max,
+# a min or a std is NON-linear - a convolution can never compute them however long you train it. So
+# those channels carry real new information. (Same trick that made MultiRocket work.)
+#
+# WHY IT IS SAFE: the length T never changes, so every timestep still lines up with its original
+# position. AOPCR and NDCG keep working exactly as they do today, and results stay comparable to sv4.
+#
+# COST: only the STEM gets wider, Conv1d(1, 64, 7) -> Conv1d(13, 64, 7). That is about +5k parameters
+# and almost no extra compute - the cheapest thing in sv6.
+#
+# Baseline to beat: sv4/seanet_bottleneck_topk = 0.938 acc, 2.7784 AOPCR, 0.7768 NDCG, 41,324 params.
+#
+# Run it (WebTraffic by default):  python main.py run --model sv6/seanet_bottleneck_mschan
+
+name: seanet_bottleneck_mschan
+use_params: default
+
+encoder:
+  type: sea_multiscale_channels
+  windows: [3, 7, 15, 31]   # rolling window sizes, all ODD so they stay centred on their timestep
+  stats: [max, min, std]    # the NON-linear ones (a conv cannot compute these itself)
+  add_diff_sign: true       # one more channel: sign(x[t] - x[t-1]) -> -1 down / 0 flat / +1 up
+  base:                     # the encoder being wrapped - unchanged from sv4/seanet_bottleneck_topk
+    type: sea_mstcn_sep_bottleneck
+    d: 64
+    n_blocks: 4
+    dropout: 0.2
+    max_dilation: 16
+    kernels: [5, 11, 23]
+    bottleneck_ratio: 4
+
+pooling:
+  type: sea_topk_conjunctive
+  d_attn: 8
+  dropout: 0.2
+  positional_encoding: true
+  top_frac: 0.1
+
+training:
+  n_epochs: 400
+  patience: 60
+  max_batch: 16
+  learning_rate: 0.00125
+  weight_decay: 0.00012
+  label_smoothing: 0.13
+  lambda_entropy: 0.01
+  min_train_for_val: 100
+  val_frac: 0.2
+  optimizer: adam

@@ -1,0 +1,65 @@
+# sv6/seanet_bottleneck_pyramid.yaml - Technique 2a (multi-scale PYRAMID) on the smallest encoder.
+#
+# WHAT IS NEW: this is the closest honest 1-D version of the cancer paper (Hashimoto et al., CVPR 2020).
+# That paper looks at the same tissue at 10x and 20x magnification. The 1-D version of "lower
+# magnification" is NOT a bigger window - it is DOWNSAMPLING. So we:
+#     1. average the series down by 2, 4 and 8,
+#     2. run the SAME encoder on each shrunk copy (weights are SHARED, so params barely move),
+#     3. stretch every scale's features back to length T,
+#     4. mix them with a small attention that picks, PER TIMESTEP, which scale to trust.
+#
+# WHY DOWNSAMPLING AND NOT BIGGER WINDOWS: our encoder already sees about 667 timesteps around every
+# point (kernels 5/11/23 at dilations 1,2,4,8), so a bigger window shows it nothing new. But averaging
+# CHANGES THE SIGNAL - it cancels noise and leaves only the slow shape - so the very same filters now
+# respond to something different. That is where the new information comes from.
+#
+# WHY THE SOFTMAX IS SAFE: it normalises over the SCALE axis, never over TIME. The "this timestep
+# matters more" signal that AOPCR and NDCG depend on is left completely untouched. (Compare the note in
+# SummaryGate in seanet/features.py: normalising across time is what destroyed our interpretability.)
+#
+# FREE BONUS: the attention weights can be plotted. They say "at this timestep the model trusted
+# scale 4" - the 1-D version of Figure 6 in the cancer paper, and a new interpretability result.
+#
+# COST: about 2x compute (1 + 1/2 + 1/4 + 1/8), but only ~1k extra parameters, because one encoder is
+# shared by all four scales.
+#
+# Baseline to beat: sv4/seanet_bottleneck_topk = 0.938 acc, 2.7784 AOPCR, 0.7768 NDCG, 41,324 params.
+#
+# Run it (WebTraffic by default):  python main.py run --model sv6/seanet_bottleneck_pyramid
+
+name: seanet_bottleneck_pyramid
+use_params: default
+
+encoder:
+  type: sea_multiscale_pyramid
+  scales: [1, 2, 4, 8]      # 1 = original series, 2 = averaged in pairs, 4, 8 = coarser still
+  fusion: attention         # attention | mean | max | concat  (see the ablation configs)
+  d_attn: 8                 # hidden width of the tiny scale-attention network
+  per_scale_bn: true        # each scale gets its own BatchNorm (a shrunk series has different stats)
+  base:                     # the encoder run at EVERY scale - unchanged from sv4/seanet_bottleneck_topk
+    type: sea_mstcn_sep_bottleneck
+    d: 64
+    n_blocks: 4
+    dropout: 0.2
+    max_dilation: 16
+    kernels: [5, 11, 23]
+    bottleneck_ratio: 4
+
+pooling:
+  type: sea_topk_conjunctive
+  d_attn: 8
+  dropout: 0.2
+  positional_encoding: true
+  top_frac: 0.1
+
+training:
+  n_epochs: 400
+  patience: 60
+  max_batch: 16
+  learning_rate: 0.00125
+  weight_decay: 0.00012
+  label_smoothing: 0.13
+  lambda_entropy: 0.01
+  min_train_for_val: 100
+  val_frac: 0.2
+  optimizer: adam
