@@ -1,0 +1,77 @@
+[log] command 'run' started at 2026-08-03_17-13-37 for model 'seanet_slim_gatedattn__sea_mstcn_sep__sea_gated_attention'
+[log] a copy of everything below is being saved to: results/SEA_NET/seanet_slim_gatedattn__sea_mstcn_sep__sea_gated_attention/logs/run_2026-08-03_17-13-37.log
+
+=== run: model=seanet_slim_gatedattn__sea_mstcn_sep__sea_gated_attention (config sv5/seanet_slim_gatedattn) dataset=WebTraffic device=cuda mode=full ===
+resolved config:
+  model = sv5/seanet_slim_gatedattn
+  run.mode = single
+  run.dataset = WebTraffic
+  run.smoke = False
+  run.re_train = False
+  preprocessing.instance_type = single_point
+  preprocessing.window_size = 5
+  preprocessing.window_stride = 5
+  seed = 0
+  device = auto
+  output.results_dir = results/SEA_NET
+  interpretability.dataset = WebTraffic
+  interpretability.n_classes = 3
+  interpretability.per_class = 1
+  mlflow.enabled = True
+  mlflow.experiment_name = SEA-Net
+  mlflow.tracking_uri = sqlite:///mlflow.db
+  mlflow.log_model_weights = True
+  model_config.name = seanet_slim_gatedattn
+  model_config.use_params = default
+  model_config.encoder.type = sea_mstcn_sep
+  model_config.encoder.d = 64
+  model_config.encoder.n_blocks = 4
+  model_config.encoder.dropout = 0.2
+  model_config.encoder.max_dilation = 16
+  model_config.encoder.kernels = [5, 11, 23]
+  model_config.pooling.type = sea_gated_attention
+  model_config.pooling.d_attn = 8
+  model_config.pooling.dropout = 0.2
+  model_config.pooling.positional_encoding = True
+  model_config.training.n_epochs = 400
+  model_config.training.patience = 60
+  model_config.training.max_batch = 16
+  model_config.training.learning_rate = 0.00125
+  model_config.training.weight_decay = 0.00012
+  model_config.training.label_smoothing = 0.13
+  model_config.training.lambda_entropy = 0.01
+  model_config.training.min_train_for_val = 100
+  model_config.training.val_frac = 0.2
+  model_config.training.optimizer = adam
+  model_config.records.default.metrics.test_acc = 0.888
+  model_config.records.default.metrics.test_loss = 0.4263
+  model_config.records.default.metrics.test_auroc = 0.9893
+  model_config.records.default.metrics.dataset = WebTraffic
+  model_config.records.default.metrics.recorded = 2026-07-25 02:13:22
+[params] using DEFAULT recipe (no Optuna record yet - run 'python main.py optuna --model sv5/seanet_slim_gatedattn').
+  [mlflow] logging runs to experiment 'SEA-Net_seanet_slim_gatedattn__sea_mstcn_sep__sea_gated_attention_2026-08-03' at sqlite:///mlflow.db
+  [mlflow] browse later with:  mlflow ui --backend-store-uri sqlite:///mlflow.db
+    stage 1/3: loading data ...
+    stage 2/3: training on 400 series (val=100, C=10, T=1008, batch=16) ...
+    stage 3/3: scoring on 500 test series (accuracy + AOPCR + NDCG) ...
+    [mlflow] versioned model 'seanet_slim_gatedattn__sea_mstcn_sep__sea_gated_attention' (id=m-e20749ce12664c20b33793e5b40b675f) params={'model_size_mb': '1.4868', 'n_model_params': '58100', 'name': 'seanet_slim_gatedattn'}
+    [mlflow] logged run 'seanet_slim_gatedattn_WebTraffic'  (train_acc=1.0000 val_acc=0.8500 test_acc=0.8940 test_loss=0.4027)
+
+=== seanet_slim_gatedattn__sea_mstcn_sep__sea_gated_attention on WebTraffic ===
+  params          : 58100
+  model_size_mb   : 1.4868
+  n_train         : 400
+  n_val           : 100
+  n_test          : 500
+  series_length   : 1008
+  n_classes       : 10
+  test_acc        : 0.894
+  test_loss       : 0.4027
+  test_aopcr      : 2.2958
+  test_ndcg       : 0.7141
+  train_time_s    : 24.94
+
+  saved -> results/SEA_NET/seanet_slim_gatedattn__sea_mstcn_sep__sea_gated_attention/results.csv
+  recorded default metrics -> configs/models/sv5/seanet_slim_gatedattn.yaml (records.default)
+
+[log] finished; full output saved to results/SEA_NET/seanet_slim_gatedattn__sea_mstcn_sep__sea_gated_attention/logs/run_2026-08-03_17-13-37.log

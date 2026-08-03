@@ -1,0 +1,2 @@
+dataset,model,encoder,pooling,seed,device,params,model_size_mb,n_train,n_val,n_test,series_length,n_classes,lambda_entropy,test_acc,test_bal_acc,test_auroc,test_loss,test_aopcr,test_ndcg,train_time_s,run_datetime
+WebTraffic,seanet_inputgate_mschan,sea_multiscale_channels,sea_topk_conjunctive,0,cuda,69740,1.534,400,100,500,1008,10,0.01,0.874,0.874,0.9892,0.4935,2.5276,0.6703,30.41,2026-08-03 17:31:59

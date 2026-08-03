@@ -1,0 +1,118 @@
+[log] command 'run' started at 2026-08-03_17-11-55 for model 'seanet_acp__sea_mstcn_sep__sea_adaptive_classwise'
+[log] a copy of everything below is being saved to: results/SEA_NET/seanet_acp__sea_mstcn_sep__sea_adaptive_classwise/logs/run_2026-08-03_17-11-55.log
+
+=== run: model=seanet_acp__sea_mstcn_sep__sea_adaptive_classwise (config sv3/seanet_acp) dataset=WebTraffic device=cuda mode=full ===
+resolved config:
+  model = sv3/seanet_acp
+  run.mode = single
+  run.dataset = WebTraffic
+  run.smoke = False
+  run.re_train = False
+  preprocessing.instance_type = single_point
+  preprocessing.window_size = 5
+  preprocessing.window_stride = 5
+  seed = 0
+  device = auto
+  output.results_dir = results/SEA_NET
+  interpretability.dataset = WebTraffic
+  interpretability.n_classes = 3
+  interpretability.per_class = 1
+  mlflow.enabled = True
+  mlflow.experiment_name = SEA-Net
+  mlflow.tracking_uri = sqlite:///mlflow.db
+  mlflow.log_model_weights = True
+  model_config.name = seanet_acp
+  model_config.use_params = auto
+  model_config.encoder.type = sea_mstcn_sep
+  model_config.encoder.d = 128
+  model_config.encoder.n_blocks = 4
+  model_config.encoder.dropout = 0.15495740860213505
+  model_config.encoder.max_dilation = 32
+  model_config.encoder.kernels = [5, 11, 23]
+  model_config.pooling.type = sea_adaptive_classwise
+  model_config.pooling.d_attn = 32
+  model_config.pooling.dropout = 0.3886565635352315
+  model_config.pooling.positional_encoding = True
+  model_config.pooling.init_beta = 0.13844928509004092
+  model_config.training.n_epochs = 400
+  model_config.training.patience = 60
+  model_config.training.max_batch = 16
+  model_config.training.learning_rate = 0.0014771429739046443
+  model_config.training.weight_decay = 2.824156663833462e-05
+  model_config.training.label_smoothing = 0.10464961069333995
+  model_config.training.lambda_entropy = 0.004697025537922084
+  model_config.training.min_train_for_val = 100
+  model_config.training.val_frac = 0.2
+  model_config.training.optimizer = adam
+  model_config.optuna.enabled = True
+  model_config.optuna.n_trials = 30
+  model_config.optuna.timeout = None
+  model_config.optuna.sampler = tpe
+  model_config.optuna.pruner = median
+  model_config.optuna.save_best_parameters = True
+  model_config.optuna.search_space.training.learning_rate.type = float
+  model_config.optuna.search_space.training.learning_rate.low = 0.0003
+  model_config.optuna.search_space.training.learning_rate.high = 0.005
+  model_config.optuna.search_space.training.learning_rate.log = True
+  model_config.optuna.search_space.training.weight_decay.type = float
+  model_config.optuna.search_space.training.weight_decay.low = 1e-05
+  model_config.optuna.search_space.training.weight_decay.high = 0.0005
+  model_config.optuna.search_space.training.weight_decay.log = True
+  model_config.optuna.search_space.training.label_smoothing.type = float
+  model_config.optuna.search_space.training.label_smoothing.low = 0.0
+  model_config.optuna.search_space.training.label_smoothing.high = 0.2
+  model_config.optuna.search_space.training.lambda_entropy.type = float
+  model_config.optuna.search_space.training.lambda_entropy.low = 0.0
+  model_config.optuna.search_space.training.lambda_entropy.high = 0.05
+  model_config.optuna.search_space.training.max_batch.type = categorical
+  model_config.optuna.search_space.training.max_batch.choices = [8, 16, 32]
+  model_config.optuna.search_space.encoder.d.type = categorical
+  model_config.optuna.search_space.encoder.d.choices = [64, 96, 128]
+  model_config.optuna.search_space.encoder.n_blocks.type = int
+  model_config.optuna.search_space.encoder.n_blocks.low = 3
+  model_config.optuna.search_space.encoder.n_blocks.high = 8
+  model_config.optuna.search_space.encoder.dropout.type = float
+  model_config.optuna.search_space.encoder.dropout.low = 0.1
+  model_config.optuna.search_space.encoder.dropout.high = 0.4
+  model_config.optuna.search_space.encoder.max_dilation.type = categorical
+  model_config.optuna.search_space.encoder.max_dilation.choices = [8, 16, 32]
+  model_config.optuna.search_space.pooling.d_attn.type = categorical
+  model_config.optuna.search_space.pooling.d_attn.choices = [4, 8, 16, 32]
+  model_config.optuna.search_space.pooling.dropout.type = float
+  model_config.optuna.search_space.pooling.dropout.low = 0.1
+  model_config.optuna.search_space.pooling.dropout.high = 0.4
+  model_config.optuna.search_space.pooling.init_beta.type = float
+  model_config.optuna.search_space.pooling.init_beta.low = 0.05
+  model_config.optuna.search_space.pooling.init_beta.high = 3.0
+  model_config.optuna.search_space.pooling.init_beta.log = True
+  model_config.records.optuna_best.params.training.learning_rate = 0.0014771429739046443
+  model_config.records.optuna_best.params.training.weight_decay = 2.824156663833462e-05
+  model_config.records.optuna_best.params.training.label_smoothing = 0.10464961069333995
+  model_config.records.optuna_best.params.training.lambda_entropy = 0.004697025537922084
+  model_config.records.optuna_best.params.training.max_batch = 16
+  model_config.records.optuna_best.params.encoder.d = 128
+  model_config.records.optuna_best.params.encoder.n_blocks = 4
+  model_config.records.optuna_best.params.encoder.dropout = 0.15495740860213505
+  model_config.records.optuna_best.params.encoder.max_dilation = 32
+  model_config.records.optuna_best.params.pooling.d_attn = 32
+  model_config.records.optuna_best.params.pooling.dropout = 0.3886565635352315
+  model_config.records.optuna_best.params.pooling.init_beta = 0.13844928509004092
+  model_config.records.optuna_best.metrics.test_acc = 0.938
+  model_config.records.optuna_best.metrics.test_loss = 0.2963
+  model_config.records.optuna_best.metrics.test_auroc = 0.9976
+  model_config.records.optuna_best.metrics.val_loss = 0.7557
+  model_config.records.optuna_best.metrics.dataset = WebTraffic
+  model_config.records.optuna_best.metrics.n_trials = 30
+  model_config.records.optuna_best.metrics.recorded = 2026-07-14 15:01:02
+  model_config.records.default.metrics.test_acc = 0.918
+  model_config.records.default.metrics.test_loss = 0.3601
+  model_config.records.default.metrics.test_auroc = 0.9957
+  model_config.records.default.metrics.dataset = WebTraffic
+  model_config.records.default.metrics.recorded = 2026-07-23 13:31:17
+[params] using OPTUNA-BEST recipe (test_acc: default 0.9180 vs optuna-best 0.9380; better = optuna-best).
+
+WebTraffic already done for seanet_acp__sea_mstcn_sep__sea_adaptive_classwise -> skip
+  (set 're_train: true' in configs/main.yaml to train it again, or delete the line
+   'WebTraffic' from results/SEA_NET/seanet_acp__sea_mstcn_sep__sea_adaptive_classwise/done_train_dataset.txt.)
+
+[log] finished; full output saved to results/SEA_NET/seanet_acp__sea_mstcn_sep__sea_adaptive_classwise/logs/run_2026-08-03_17-11-55.log

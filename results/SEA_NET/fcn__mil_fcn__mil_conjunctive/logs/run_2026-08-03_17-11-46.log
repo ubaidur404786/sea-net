@@ -1,0 +1,51 @@
+[log] command 'run' started at 2026-08-03_17-11-46 for model 'fcn__mil_fcn__mil_conjunctive'
+[log] a copy of everything below is being saved to: results/SEA_NET/fcn__mil_fcn__mil_conjunctive/logs/run_2026-08-03_17-11-46.log
+
+=== run: model=fcn__mil_fcn__mil_conjunctive (config sv1/fcn) dataset=WebTraffic device=cuda mode=full ===
+resolved config:
+  model = sv1/fcn
+  run.mode = single
+  run.dataset = WebTraffic
+  run.smoke = False
+  run.re_train = False
+  preprocessing.instance_type = single_point
+  preprocessing.window_size = 5
+  preprocessing.window_stride = 5
+  seed = 0
+  device = auto
+  output.results_dir = results/SEA_NET
+  interpretability.dataset = WebTraffic
+  interpretability.n_classes = 3
+  interpretability.per_class = 1
+  mlflow.enabled = True
+  mlflow.experiment_name = SEA-Net
+  mlflow.tracking_uri = sqlite:///mlflow.db
+  mlflow.log_model_weights = True
+  model_config.name = fcn
+  model_config.encoder.type = mil_fcn
+  model_config.pooling.type = mil_conjunctive
+  model_config.pooling.d_attn = 8
+  model_config.pooling.dropout = 0.1
+  model_config.pooling.positional_encoding = True
+  model_config.training.n_epochs = 400
+  model_config.training.patience = 60
+  model_config.training.max_batch = 16
+  model_config.training.learning_rate = 0.00125
+  model_config.training.weight_decay = 0.00012
+  model_config.training.label_smoothing = 0.13
+  model_config.training.lambda_entropy = 0.0
+  model_config.training.min_train_for_val = 100
+  model_config.training.val_frac = 0.2
+  model_config.training.optimizer = adam
+  model_config.records.default.metrics.test_acc = 0.742
+  model_config.records.default.metrics.test_loss = 0.9105
+  model_config.records.default.metrics.test_auroc = 0.9545
+  model_config.records.default.metrics.dataset = WebTraffic
+  model_config.records.default.metrics.recorded = 2026-07-23 13:27:42
+[params] using DEFAULT recipe (no Optuna record yet - run 'python main.py optuna --model sv1/fcn').
+
+WebTraffic already done for fcn__mil_fcn__mil_conjunctive -> skip
+  (set 're_train: true' in configs/main.yaml to train it again, or delete the line
+   'WebTraffic' from results/SEA_NET/fcn__mil_fcn__mil_conjunctive/done_train_dataset.txt.)
+
+[log] finished; full output saved to results/SEA_NET/fcn__mil_fcn__mil_conjunctive/logs/run_2026-08-03_17-11-46.log
