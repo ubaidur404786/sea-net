@@ -12,7 +12,7 @@
 # WHY IT IS SAFE: the length T never changes, so every timestep still lines up with its original
 # position. AOPCR and NDCG keep working exactly as they do today, and results stay comparable to sv4.
 #
-# COST: only the STEM gets wider, Conv1d(1, 64, 7) -> Conv1d(13, 64, 7). That is about +5k parameters
+# COST: only the STEM gets wider, Conv1d(1, 64, 7) -> Conv1d(14, 64, 7). That is about +5k parameters
 # and almost no extra compute - the cheapest thing in sv6.
 #
 # Baseline to beat: sv4/seanet_bottleneck_topk = 0.938 acc, 2.7784 AOPCR, 0.7768 NDCG, 41,324 params.
@@ -27,6 +27,11 @@ encoder:
   windows: [3, 7, 15, 31]   # rolling window sizes, all ODD so they stay centred on their timestep
   stats: [max, min, std]    # the NON-linear ones (a conv cannot compute these itself)
   add_diff_sign: true       # one more channel: sign(x[t] - x[t-1]) -> -1 down / 0 flat / +1 up
+  norm_channels: true       # FIX after run 1: BatchNorm the channels before the encoder sees them.
+                            # The raw series is z-normalised but the built ones are not - a rolling max
+                            # sits high, a min sits low, a std is small and always positive, and the sign
+                            # channel is only -1/0/+1. Mixing those raw made the big channels hog the
+                            # gradient. Run 1 (without this) scored 0.920 acc / 2.288 AOPCR.
   base:                     # the encoder being wrapped - unchanged from sv4/seanet_bottleneck_topk
     type: sea_mstcn_sep_bottleneck
     d: 64

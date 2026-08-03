@@ -33,6 +33,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from seanet import features as FT
 from seanet.config import load_config
+from seanet.features import build_encoder
 from seanet.model import build_model_from_config, num_params
 
 PASS = "  [ok]  "
@@ -174,11 +175,11 @@ def check_short_series() -> bool:
     return ok
 
 
-# How many classes to build the models with when counting parameters. This only changes the tiny
-# classifier head, so scripts/profile_models.py fixes it too (DEFAULT_CLASSES there) instead of using
-# a real dataset's class count. We use the SAME number here, otherwise the "baseline" column below
-# would not match the params column in results/SEA_NET/leaderboard.csv and comparing them would mislead.
-PARAM_COUNT_CLASSES = 5
+# How many classes to build the models with when counting parameters. WebTraffic has 10 classes, and
+# the params column in results/SEA_NET/leaderboard.csv comes from real WebTraffic runs, so we use 10
+# here too - otherwise the "baseline" column below would not match the leaderboard and comparing the
+# two would mislead. (The class count only changes the tiny classifier head: 520 + 74*n_clz params.)
+PARAM_COUNT_CLASSES = 10
 
 
 def check_real_configs() -> bool:
@@ -222,6 +223,100 @@ def check_real_configs() -> bool:
     return ok
 
 
+def measure_receptive_field(encoder: nn.Module, length: int = 3001) -> int:
+    """
+    Measure how many input timesteps one output timestep can actually see.
+
+    HOW: put a random series in, take the output at the MIDDLE position, and ask PyTorch which input
+    positions that output depends on (autograd tells us - any input with a non-zero gradient was used).
+    The distance from the first to the last such position IS the receptive field. Measuring it this way
+    means we never have to work it out by hand from kernels and dilations, and it stays correct if the
+    encoder changes.
+
+    We use a random input, not zeros: ReLU has zero gradient at exactly 0, so an all-zero input would
+    report a receptive field of nothing.
+    """
+    encoder = encoder.eval()                              # no dropout, no BatchNorm updates
+    x = torch.randn(1, 1, length, requires_grad=True)
+    out = encoder(x)
+    out[0, :, out.shape[-1] // 2].sum().backward()
+    used = (x.grad[0, 0].abs() > 0).nonzero().flatten()
+    if len(used) == 0:
+        return 0
+    return int(used[-1] - used[0]) + 1
+
+
+def conv_receptive_field(encoder: nn.Module, length: int = 3001):
+    """
+    Measure the receptive field of the CONVOLUTION path only, ignoring any whole-series "summary" gate.
+
+    WHY THIS IS NEEDED: some of our encoders bolt a global gate on top of a conv backbone. SummaryGate
+    (used by sea_mstcn_sep_gated) averages over ALL timesteps to build a per-channel gate, so strictly
+    speaking every output depends on every input and the plain measurement above returns "the whole
+    series". But that global path is a per-channel SCALAR - measured on the shallow gated encoder it is
+    about 7000x weaker than the local conv path, and it does not blur the per-timestep structure at all
+    (that is exactly what the residual form h * (1 + gate) was designed to protect).
+
+    Treating that as "degenerate" would be wrong: it is a very different thing from a conv stack whose
+    kernels genuinely span the whole series and flatten the features. So when an encoder exposes a
+    conv backbone, we measure THAT, and report the global gate separately as information.
+
+    returns : (conv_receptive_field, has_global_path)
+    """
+    core = getattr(encoder, "backbone", encoder)          # gated / inputgate encoders expose .backbone
+    has_global_path = core is not encoder
+    return measure_receptive_field(core, length), has_global_path
+
+
+def check_receptive_fields() -> bool:
+    """
+    The most important check in this file: is each scale of the pyramid actually usable?
+
+    A scale is only meaningful while the receptive field still FITS inside the shrunk series. Once the
+    receptive field is bigger than the sequence, every position sees everything, the features stop
+    varying along time, and that scale contributes smeared mush to the fusion. This is exactly what
+    sank the first sv6 pyramid runs, so we now measure it instead of assuming.
+    """
+    print("\n5) receptive field vs scale length (WebTraffic is 1008 long)")
+    series_length = 1008
+    ok = True
+    for config_name in ("sv6/seanet_bottleneck_pyramid", "sv6/seanet_gated_pyramid",
+                        "sv6/seanet_bottleneck_mschan_pyramid"):
+        try:
+            cfg = load_config(overrides={"model": config_name})
+            enc_cfg = cfg.model_config.encoder
+            scales = tuple(getattr(enc_cfg, "scales", (1, 2, 4, 8)))
+            # build ONLY the base encoder, on its own, to measure what one scale really sees
+            base = build_encoder(enc_cfg.base, n_in=1)
+            rf, has_global_path = conv_receptive_field(base)
+
+            bad = [s for s in scales if rf > series_length / s]
+            covers = rf * max(scales)                      # reach at the coarsest scale, in ORIGINAL steps
+            mark = PASS if not bad else FAIL
+            print(f"{mark} {config_name}")
+            print(f"          conv receptive field {rf}, scales {list(scales)}, "
+                  f"coarsest reach {covers} original timesteps")
+            if has_global_path:
+                print(f"          note: this encoder also has a whole-series summary gate. That is a "
+                      f"per-channel scalar (~7000x")
+                print(f"                weaker than the conv path), so it does NOT flatten the "
+                      f"per-timestep structure - but it does mean")
+                print(f"                every scale still sees globally, which is worth remembering "
+                      f"when reading the result.")
+            for s in scales:
+                ratio = rf / (series_length / s)
+                note = "ok" if ratio <= 1 else "DEGENERATE - sees the whole shrunk series"
+                print(f"          scale {s}: length {series_length // s:5d}  rf/length {ratio:5.2f}  {note}")
+            if bad:
+                print(f"          -> scales {bad} are degenerate. Use a SHALLOWER base "
+                      f"(fewer n_blocks, smaller max_dilation).")
+                ok = False
+        except Exception as exc:                          # noqa: BLE001
+            print(f"{FAIL} {config_name} raised {type(exc).__name__}: {exc}")
+            ok = False
+    return ok
+
+
 def main() -> int:
     print("=" * 78)
     print("sv6 multi-scale check - shapes, alignment, short series, size")
@@ -231,6 +326,7 @@ def main() -> int:
         check_pyramid_alignment(),
         check_short_series(),
         check_real_configs(),
+        check_receptive_fields(),
     ]
     print("\n" + "=" * 78)
     if all(results):

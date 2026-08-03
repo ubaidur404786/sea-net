@@ -8,6 +8,11 @@
 # from its own summary. That is what we want - the whole-series summary of the coarse (averaged) copy is
 # genuinely a different thing from the summary of the raw copy, so each scale can gate itself.
 #
+# FIXED AFTER RUN 1: this config scored 0.832 acc / 0.9797 AOPCR, well below its 0.954 / 2.2926 baseline,
+# for exactly the reason explained at the top of sv6/seanet_bottleneck_pyramid.yaml - the 4-block base
+# had a receptive field of ~667, so three of the four scales were degenerate. Same fix here: n_blocks
+# 4 -> 2 and max_dilation 16 -> 1, giving a receptive field of about 95 so every scale is usable.
+#
 # Baseline to beat: sv4/seanet_gated_mean_topk = 0.954 acc, 2.2926 AOPCR, 0.7721 NDCG, 61,740 params.
 #
 # Run it (WebTraffic by default):  python main.py run --model sv6/seanet_gated_pyramid
@@ -21,12 +26,12 @@ encoder:
   fusion: attention
   d_attn: 8
   per_scale_bn: true
-  base:                     # unchanged from sv4/seanet_gated_mean_topk
+  base:                     # SHALLOW on purpose - see sv6/seanet_bottleneck_pyramid.yaml
     type: sea_mstcn_sep_gated
     d: 64
-    n_blocks: 4
+    n_blocks: 2             # was 4
     dropout: 0.2
-    max_dilation: 16
+    max_dilation: 1         # was 16
     kernels: [5, 11, 23]
     summary: mean
 

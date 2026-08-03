@@ -20,6 +20,42 @@
 # FREE BONUS: the attention weights can be plotted. They say "at this timestep the model trusted
 # scale 4" - the 1-D version of Figure 6 in the cancer paper, and a new interpretability result.
 #
+# ============================ FIXED AFTER RUN 1 - READ THIS ============================
+# Run 1 of this config scored 0.786 acc / 1.0346 AOPCR, far BELOW the 0.938 / 2.7784 baseline. The
+# cause was the base encoder, not the pyramid idea.
+#
+# Run 1 wrapped the normal 4-block encoder, whose receptive field is about 667 timesteps. WebTraffic is
+# 1008 long, so after downsampling:
+#
+#     scale 1 -> length 1008, receptive field / length = 0.66   healthy
+#     scale 2 -> length  504, ratio 1.3                          DEGENERATE
+#     scale 4 -> length  252, ratio 2.6                          DEGENERATE
+#     scale 8 -> length  126, ratio 5.3                          DEGENERATE
+#
+# Once the receptive field is bigger than the sequence, every position sees the whole shrunk series, so
+# the features stop changing along time. Worse, at scale 8 the dilation-8 block pads by 88 on EACH side
+# of a 126-long input - more zero padding than signal. Three of the four scales were feeding the fusion
+# smeared mush, which is why AOPCR collapsed from 2.78 to 1.03.
+#
+# THE FIX: make the base SHALLOW and let the SCALES provide the range, instead of the depth doing it.
+# n_blocks 4 -> 2 and max_dilation 16 -> 1 gives a receptive field of about 95, so now:
+#
+#     scale 1 -> length 1008, ratio 0.09     scale 4 -> length 252, ratio 0.38
+#     scale 2 -> length  504, ratio 0.19     scale 8 -> length 126, ratio 0.75    all healthy
+#
+# And the reach at scale 8 is 95 * 8 = 760 ORIGINAL timesteps - about the same as the deep encoder's
+# 667, but built from four cheap local views instead of one deep stack. That is how an image pyramid
+# works, and it is the whole point of the technique.
+#
+# The rule to remember:   receptive_field <= series_length / max(scales)
+# scripts/check_multiscale.py measures this and fails loudly if a scale is degenerate.
+#
+# BONUS: halving the blocks also HALVES the encoder, so this should land near ~22k params - about half
+# the 41,324 baseline. If it matches the baseline's accuracy at half the size, that is a real result.
+# Compare against sv6/seanet_bottleneck_shallow, which is this same shallow base with NO pyramid - that
+# control tells us whether any gain came from the pyramid or just from the smaller encoder.
+# =======================================================================================
+#
 # COST: about 2x compute (1 + 1/2 + 1/4 + 1/8), but only ~1k extra parameters, because one encoder is
 # shared by all four scales.
 #
@@ -36,12 +72,12 @@ encoder:
   fusion: attention         # attention | mean | max | concat  (see the ablation configs)
   d_attn: 8                 # hidden width of the tiny scale-attention network
   per_scale_bn: true        # each scale gets its own BatchNorm (a shrunk series has different stats)
-  base:                     # the encoder run at EVERY scale - unchanged from sv4/seanet_bottleneck_topk
+  base:                     # SHALLOW on purpose - the scales give the range, not the depth
     type: sea_mstcn_sep_bottleneck
     d: 64
-    n_blocks: 4
+    n_blocks: 2             # was 4 - keeps the receptive field small enough for every scale
     dropout: 0.2
-    max_dilation: 16
+    max_dilation: 1         # was 16 - each scale stays LOCAL; downsampling provides the reach
     kernels: [5, 11, 23]
     bottleneck_ratio: 4
 

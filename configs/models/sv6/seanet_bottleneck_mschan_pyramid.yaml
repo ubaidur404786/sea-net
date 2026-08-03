@@ -14,6 +14,10 @@
 # DIFFERENT jobs and stack. If it lands in between them, they overlap and we should ship the cheaper
 # one alone. Either answer is a useful table row for the paper - it is a real experiment, not a guess.
 #
+# FIXED AFTER RUN 1: this was the worst of the batch (0.584 acc), because it carried BOTH problems at
+# once - unnormalised channels AND a base whose receptive field swallowed three of the four scales.
+# Both are fixed below. See sv6/seanet_bottleneck_pyramid.yaml for the receptive-field explanation.
+#
 # HOW THE NESTING WORKS: the wrappers nest, outermost first. The pyramid downsamples the series and
 # runs its "base" at every scale; that base is the channel wrapper, which builds the rolling max/min/std
 # channels; and ITS base is the bottleneck encoder. So the rolling statistics are computed separately at
@@ -36,12 +40,13 @@ encoder:
     windows: [3, 7, 15, 31]
     stats: [max, min, std]
     add_diff_sign: true
+    norm_channels: true                 # FIX 1 after run 1 - the built channels need normalising
     base:
-      type: sea_mstcn_sep_bottleneck    # the real encoder
+      type: sea_mstcn_sep_bottleneck    # the real encoder - SHALLOW, FIX 2 after run 1
       d: 64
-      n_blocks: 4
+      n_blocks: 2                       # was 4 - the scales give the range, not the depth
       dropout: 0.2
-      max_dilation: 16
+      max_dilation: 1                   # was 16 - keeps every scale usable
       kernels: [5, 11, 23]
       bottleneck_ratio: 4
 

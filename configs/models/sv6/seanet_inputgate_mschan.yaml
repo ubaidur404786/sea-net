@@ -21,6 +21,10 @@ encoder:
   windows: [3, 7, 15, 31]
   stats: [max, min, std]
   add_diff_sign: true
+  norm_channels: true       # FIX after run 1 - see sv6/seanet_bottleneck_mschan.yaml for why. This model
+                            # needed it MOST: the input-gate encoder reads the input TWICE (its stem and
+                            # its gate conv), so it paid the scale-mismatch cost twice. Run 1 (without
+                            # this) scored 0.874 acc - the biggest drop of the three channel models.
   base:                     # unchanged from sv4/seanet_inputgate_topk
     type: sea_mstcn_sep_inputgate
     d: 64

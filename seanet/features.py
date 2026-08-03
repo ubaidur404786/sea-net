@@ -555,21 +555,38 @@ class MultiScaleChannelEncoder(nn.Module):
     """
 
     def __init__(self, base_cfg, n_in: int = 1, windows: Tuple[int, ...] = (3, 7, 15, 31),
-                 stats: Tuple[str, ...] = ("max", "min", "std"), add_diff_sign: bool = True):
+                 stats: Tuple[str, ...] = ("max", "min", "std"), add_diff_sign: bool = True,
+                 norm_channels: bool = True):
         """
         base_cfg : the nested "base" block of the config - the encoder to wrap.
         n_in : channels coming IN from the dataset (1 normally).
         windows / stats / add_diff_sign : passed to MultiScaleChannels.
+        norm_channels : normalise the channels before the encoder sees them. Keep this ON.
+
+        WHY norm_channels MATTERS (this is what made the first sv6 runs lose accuracy):
+            the raw series is z-normalised, so it sits around 0 with spread 1. The channels we build
+            from it do NOT. A rolling max is pushed up, a rolling min is pushed down, a std is always
+            positive and small, and the sign channel only ever takes -1, 0 or +1. Feeding 13 channels
+            with completely different centres and spreads into one conv makes training unfair: the
+            big channels dominate the gradient and the small ones are effectively ignored.
+            One BatchNorm puts every channel on the same footing first. It costs 2 numbers per
+            channel (28 params at the default 14 channels), which is nothing.
         """
         super().__init__()
         self.channels = MultiScaleChannels(windows, stats, add_diff_sign)
+        n_channels = n_in * self.channels.n_out
+        # put every derived channel on the same scale before the encoder sees them
+        self.norm = nn.BatchNorm1d(n_channels) if norm_channels else None
         # the wrapped encoder must be built with the WIDER input, so its stem matches
-        self.base = build_encoder(base_cfg, n_in=n_in * self.channels.n_out)
+        self.base = build_encoder(base_cfg, n_in=n_channels)
         self.d_out = self.base.d_out
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """x : (B, n_in, T) -> (B, d, T)."""
-        return self.base(self.channels(x))
+        h = self.channels(x)                                 # (B, n_in * n_out, T)
+        if self.norm is not None:
+            h = self.norm(h)
+        return self.base(h)
 
 
 # --------------------------------------------------------------------------------------
@@ -608,6 +625,30 @@ class MultiScalePyramid(nn.Module):
     A softmax over the SCALE axis is safe for our metrics: it never normalises across TIME, so the
     "this timestep matters more" signal that AOPCR and NDCG depend on survives untouched. (This is the
     same lesson SummaryGate above records: normalising across time destroyed our interpretability.)
+
+    ================== READ THIS BEFORE PICKING A `base` ENCODER ==================
+    THE BASE MUST BE SHALLOW. Use a SMALL receptive field and let the SCALES provide the range.
+
+    Our first attempt ignored this and lost 15 accuracy points. It wrapped the normal 4-block encoder,
+    whose receptive field is about 667 timesteps. On WebTraffic (T = 1008) that gives:
+
+        scale 1 -> length 1008, receptive field / length = 0.66   healthy
+        scale 2 -> length  504, ratio 1.3                          degenerate
+        scale 4 -> length  252, ratio 2.6                          degenerate
+        scale 8 -> length  126, ratio 5.3                          degenerate
+
+    Once the receptive field is BIGGER than the sequence, every output position sees the whole shrunk
+    series, so the features go almost constant along time - and at scale 8 the dilation-8 block pads by
+    88 on each side of a 126-long input, so there is more zero padding than signal. Three of the four
+    scales were feeding the fusion smeared mush, which is why AOPCR fell from 2.78 to 1.03.
+
+    The rule: pick the base so that  receptive_field <= length / max(scales).  A 2-block base with
+    max_dilation 1 has a receptive field of about 95, so at scale 8 it still covers 95 * 8 = 760
+    ORIGINAL timesteps - the same reach as the deep encoder, but built from four cheap local views
+    instead of one deep stack. That is how an image pyramid works, and it is the whole point.
+
+    scripts/check_multiscale.py measures the receptive field for you and flags degenerate scales.
+    ==============================================================================
     """
 
     def __init__(self, base_cfg, n_in: int = 1, scales: Tuple[int, ...] = (1, 2, 4, 8),
@@ -812,6 +853,7 @@ def _build_multiscale_channels(cfg, n_in: int) -> nn.Module:
         windows=tuple(getattr(cfg, "windows", (3, 7, 15, 31))),
         stats=tuple(getattr(cfg, "stats", ("max", "min", "std"))),
         add_diff_sign=getattr(cfg, "add_diff_sign", True),
+        norm_channels=getattr(cfg, "norm_channels", True),   # keep ON: the channels have different scales
     )
 
 

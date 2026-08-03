@@ -20,6 +20,8 @@ encoder:
   windows: [3, 7, 15, 31]
   stats: [max, min, std]
   add_diff_sign: true
+  norm_channels: true       # FIX after run 1 - see sv6/seanet_bottleneck_mschan.yaml for why.
+                            # Run 1 (without this) scored 0.908 acc / 2.191 AOPCR.
   base:                     # unchanged from sv4/seanet_gated_mean_topk
     type: sea_mstcn_sep_gated
     d: 64

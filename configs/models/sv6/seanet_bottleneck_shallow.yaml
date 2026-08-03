@@ -1,0 +1,52 @@
+# sv6/seanet_bottleneck_shallow.yaml - the CONTROL for the fixed pyramid. No wrapper at all.
+#
+# WHY THIS FILE EXISTS: the fixed pyramid configs now use a SHALLOW base (n_blocks 2, max_dilation 1)
+# instead of the usual deep one. That changes TWO things at once - the encoder got smaller AND the
+# pyramid was added. If the pyramid then scores well, we would not know which change did it.
+#
+# This config is the shallow encoder ON ITS OWN, so the comparison becomes clean:
+#
+#     sv4/seanet_bottleneck_topk       deep base,    no pyramid   <- the original baseline
+#     sv6/seanet_bottleneck_shallow    shallow base, no pyramid   <- this file
+#     sv6/seanet_bottleneck_pyramid    shallow base, PYRAMID      <- the technique
+#
+# HOW TO READ IT: whatever the pyramid scores, subtract THIS. If the pyramid beats this file, the
+# multi-scale fusion is genuinely earning its keep. If it only beats it by a hair, the honest story is
+# "a shallower encoder was enough" and the pyramid should be dropped.
+#
+# A shallow encoder alone is expected to do WORSE than the deep baseline - its receptive field is only
+# about 95 timesteps, so it simply cannot see a long pattern. That is the point: the pyramid is supposed
+# to be what gives it the reach back (95 * 8 = 760 original timesteps at the coarsest scale).
+#
+# Run it (WebTraffic by default):  python main.py run --model sv6/seanet_bottleneck_shallow
+
+name: seanet_bottleneck_shallow
+use_params: default
+
+encoder:
+  type: sea_mstcn_sep_bottleneck   # no wrapper - this is a plain sv4-style encoder, only shallower
+  d: 64
+  n_blocks: 2             # the shallow setting the fixed pyramid configs use
+  dropout: 0.2
+  max_dilation: 1         # receptive field ends up around 95 timesteps
+  kernels: [5, 11, 23]
+  bottleneck_ratio: 4
+
+pooling:
+  type: sea_topk_conjunctive
+  d_attn: 8
+  dropout: 0.2
+  positional_encoding: true
+  top_frac: 0.1
+
+training:
+  n_epochs: 400
+  patience: 60
+  max_batch: 16
+  learning_rate: 0.00125
+  weight_decay: 0.00012
+  label_smoothing: 0.13
+  lambda_entropy: 0.01
+  min_train_for_val: 100
+  val_frac: 0.2
+  optimizer: adam
