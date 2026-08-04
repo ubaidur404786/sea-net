@@ -1,0 +1,11 @@
+# seanet_bottleneck_mschan_pyramid__sea_multiscale_pyramid__sea_topk_conjunctive - results summary
+
+| metric | value |
+|---|---|
+| model | seanet_bottleneck_mschan_pyramid__sea_multiscale_pyramid__sea_topk_conjunctive |
+| millet85_datasets | 0 |
+| overall_ucr_datasets | 0 |
+| webtraffic_acc | 0.696 |
+| webtraffic_ndcg | 0.6531 |
+| params | 28441 |
+| model_size_mb | 1.367 |

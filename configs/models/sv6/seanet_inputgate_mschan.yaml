@@ -62,8 +62,8 @@ training:
 records:
   default:
     metrics:
-      test_acc: 0.874
-      test_loss: 0.4935
-      test_auroc: 0.9892
+      test_acc: 0.948
+      test_loss: 0.3184
+      test_auroc: 0.9963
       dataset: WebTraffic
-      recorded: '2026-08-03 17:31:59'
+      recorded: '2026-08-03 22:35:16'

@@ -1,0 +1,11 @@
+# seanet_bottleneck_mschan__sea_multiscale_channels__sea_topk_conjunctive - results summary
+
+| metric | value |
+|---|---|
+| model | seanet_bottleneck_mschan__sea_multiscale_channels__sea_topk_conjunctive |
+| millet85_datasets | 0 |
+| overall_ucr_datasets | 0 |
+| webtraffic_acc | 0.926 |
+| webtraffic_ndcg | 0.7774 |
+| params | 47176 |
+| model_size_mb | 1.453 |

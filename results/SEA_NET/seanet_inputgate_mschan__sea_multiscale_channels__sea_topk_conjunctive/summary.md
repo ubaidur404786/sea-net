@@ -1,0 +1,11 @@
+# seanet_inputgate_mschan__sea_multiscale_channels__sea_topk_conjunctive - results summary
+
+| metric | value |
+|---|---|
+| model | seanet_inputgate_mschan__sea_multiscale_channels__sea_topk_conjunctive |
+| millet85_datasets | 0 |
+| overall_ucr_datasets | 0 |
+| webtraffic_acc | 0.948 |
+| webtraffic_ndcg | 0.7571 |
+| params | 69768 |
+| model_size_mb | 1.536 |
