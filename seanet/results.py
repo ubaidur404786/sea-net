@@ -119,6 +119,16 @@ def figures_dir(model_id: str) -> str:
     return os.path.join(model_dir(model_id), "figures")
 
 
+def predictions_dir(model_id: str) -> str:
+    """
+    Where that model's per-series test predictions are saved (one .npz per dataset per seed).
+
+    These are what scripts/ensemble_vote.py reads to build a majority vote between two models -
+    results.csv only has summary numbers, and you cannot vote with an accuracy.
+    """
+    return os.path.join(model_dir(model_id), "predictions")
+
+
 def logs_dir(model_id: str) -> str:
     """Where that model's run logs are saved (one dated file per run)."""
     return os.path.join(model_dir(model_id), "logs")
@@ -223,39 +233,58 @@ def load_done(model_id: str) -> set:
         return {line.strip() for line in f if line.strip()}   # one name per line, ignore blanks
 
 
-def mark_done(model_id: str, name: str) -> None:
+def done_key(name: str, seed: int = 0) -> str:
     """
-    Add a dataset name to a model's done_train_dataset.txt (only if it is not already there).
+    One line of done_train_dataset.txt: which (dataset, seed) is finished.
 
-    model_id : the model id.  name : the finished dataset name.
+    Seed 0 keeps the plain dataset name, exactly as the file was written before seeds existed, so
+    every done-file already on disk keeps working. Other seeds get "Name#1", "Name#2", ... - so
+    running seed 1 does NOT skip the datasets seed 0 already finished.
+
+    name : dataset name.  seed : the training seed.
+    returns : the line to store / look for.
+    """
+    seed = int(seed)
+    return name if seed == 0 else f"{name}#{seed}"
+
+
+def mark_done(model_id: str, name: str, seed: int = 0) -> None:
+    """
+    Add a (dataset, seed) to a model's done_train_dataset.txt (only if it is not already there).
+
+    model_id : the model id.  name : the finished dataset name.  seed : the training seed.
     returns : nothing.
     """
     path = done_txt(model_id)
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    if name not in load_done(model_id):                       # avoid writing the same name twice
+    key = done_key(name, seed)
+    if key not in load_done(model_id):                        # avoid writing the same line twice
         with open(path, "a") as f:
-            f.write(name + "\n")
+            f.write(key + "\n")
 
 
-def result_exists(model_id: str, name: str) -> bool:
+def result_exists(model_id: str, name: str, seed: int = 0) -> bool:
     """
-    Say whether a dataset is already finished FOR THIS MODEL.
+    Say whether a dataset is already finished FOR THIS MODEL AT THIS SEED.
 
     We check done_train_dataset.txt (a plain-text file the CSV aligner cannot corrupt), not
-    results.csv. Delete the file to retrain everything; delete one line to retrain one dataset.
+    results.csv. Delete the file to retrain everything; delete one line to retrain that one run.
 
-    model_id : the model id.  name : dataset name.
-    returns : True if the dataset is in that model's done list.
+    model_id : the model id.  name : dataset name.  seed : the training seed.
+    returns : True if that (dataset, seed) is in the model's done list.
     """
-    return name in load_done(model_id)
+    return done_key(name, seed) in load_done(model_id)
 
 
 def load_results(model_id: str, path: Optional[str] = None) -> pd.DataFrame:
     """
     Read a model's results.csv into a DataFrame.
 
-    save_result_row keeps one row per dataset, but we still de-duplicate on read (keeping the last
-    row) so an older or hand-edited file can never produce double-counted means.
+    save_result_row keeps one row per (dataset, seed), and we de-duplicate on the same pair when
+    reading (keeping the last row) so an older or hand-edited file can never double-count.
+
+    Older files were written before seeds were tracked and have no "seed" column (or a blank one).
+    Those rows are read as seed 0, so nothing that already exists on disk is lost.
 
     model_id : which model's results to read.
     path : read this exact file instead (overrides model_id); handy for tests.
@@ -265,24 +294,62 @@ def load_results(model_id: str, path: Optional[str] = None) -> pd.DataFrame:
     if not os.path.exists(path):
         return pd.DataFrame(columns=RESULT_COLUMNS)
     df = read_our_csv(path)                                   # tolerant read (handles aligned csv)
-    if "dataset" in df.columns:
-        df = df.drop_duplicates("dataset", keep="last").reset_index(drop=True)   # last row wins
-    return df
+    if "dataset" not in df.columns:
+        return df
+    if "seed" not in df.columns:
+        df["seed"] = 0                                        # file predates seed tracking
+    df["seed"] = pd.to_numeric(df["seed"], errors="coerce").fillna(0).astype(int)
+    return df.drop_duplicates(["dataset", "seed"], keep="last").reset_index(drop=True)
+
+
+def mean_over_seeds(res: pd.DataFrame) -> pd.DataFrame:
+    """
+    Collapse a results table that has several seeds per dataset down to ONE row per dataset, by
+    averaging the numbers.
+
+    Why this exists: a paper reports the AVERAGE over repeats, not the best repeat. Every place that
+    computes a mean over datasets (build_comparison, the leaderboard) calls this first, so running a
+    model with 3 seeds gives the mean of the 3 - never 3 copies of the same dataset, and never just
+    the luckiest one.
+
+    Non-numeric columns (model, encoder, pooling, device...) are the same for every seed, so we keep
+    the first. "n_seeds" is added so a table can say how many repeats a number is averaged over.
+
+    res : a results frame from load_results().
+    returns : one row per dataset (the same columns, plus n_seeds).
+    """
+    if res.empty or "dataset" not in res.columns:
+        return res
+    numeric = [c for c in res.columns
+               if c not in ("dataset", "model", "encoder", "pooling", "device", "run_datetime")]
+    res = res.copy()
+    for c in numeric:
+        res[c] = pd.to_numeric(res[c], errors="coerce")
+    # "seed" itself must NOT be averaged - the mean of seeds 0,1,2 is 1, which means nothing. We keep
+    # the first seed only so the column still exists, and report how many there were in n_seeds.
+    agg = {c: "mean" if (c in numeric and c != "seed") else "first"
+           for c in res.columns if c != "dataset"}
+    out = res.groupby("dataset", as_index=False).agg(agg)
+    counts = res.groupby("dataset")["seed"].nunique()
+    out["n_seeds"] = out["dataset"].map(counts).astype(int)
+    return out
 
 
 def save_result_row(model_id: str, row: Dict, path: Optional[str] = None) -> bool:
     """
-    Save one dataset's result into a model's results.csv, but only if it BEATS the old accuracy.
+    Save one run's result into a model's results.csv, keyed by (dataset, seed).
 
-    Rule (keep the better result): if this dataset already has a row, we overwrite it only when the
-    new run's test_acc is HIGHER. A worse-or-equal re-run leaves the old, better numbers in place.
-    So results.csv always holds the best accuracy we have ever seen for this dataset. The run is
-    still marked done, and MLflow still logged it, so nothing is thrown away - the .csv just never
-    goes backwards. (The first time a dataset is trained there is no old row, so it is always saved.)
+    Rule: one row per dataset PER SEED, and a re-run of the same (dataset, seed) always replaces the
+    old row. Different seeds live side by side, so `--seed 0/1/2` builds up three rows per dataset
+    and the means become "average over 3 repeats".
 
-    When we do save, it is an "upsert": read the table, drop this dataset's old row, add the new one,
-    sort it back into MILLET's order, and write the whole file out again - so the dataset ends up
-    with exactly one row.
+    This used to keep only the HIGHEST-accuracy run per dataset. That was wrong for a paper: it
+    turns every reported mean into a max-over-restarts number, so a model that happened to be re-run
+    more often looks better than one that was run once, and repeats can never be measured because a
+    worse seed is thrown away. Keeping every (dataset, seed) fixes both.
+
+    The save is an "upsert": read the table, drop this (dataset, seed)'s old row, add the new one,
+    sort it back into MILLET's order, and write the whole file out again.
 
     The write is atomic: we write a temporary file first and then rename it over the real one. A
     rename either happens completely or not at all, so an interrupted (or externally re-aligned)
@@ -291,39 +358,35 @@ def save_result_row(model_id: str, row: Dict, path: Optional[str] = None) -> boo
     model_id : which model's folder to write into.
     row : a results-row dict from score_model (a "run_datetime" is added if missing).
     path : write this exact file instead (overrides model_id).
-    returns : True if the new row was saved, False if the old (better-or-equal) row was kept.
+    returns : True (the row is always saved now).
     """
     path = path or results_csv(model_id)
     os.makedirs(os.path.dirname(path), exist_ok=True)
 
     row = dict(row)                                           # do not modify the caller's dict
     row.setdefault("run_datetime", datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+    row["seed"] = int(row.get("seed", 0) or 0)
+    name, seed = row["dataset"], row["seed"]
 
     df = load_results(model_id, path=path)                    # what is already there
-
-    # keep-the-better check: is there already a row for this dataset with an accuracy we did not beat?
-    old = df[df["dataset"] == row["dataset"]] if len(df) else df
-    if len(old):
-        old_acc = pd.to_numeric(old["test_acc"].iloc[0], errors="coerce")
-        new_acc = pd.to_numeric(row.get("test_acc"), errors="coerce")
-        if pd.notna(old_acc) and pd.notna(new_acc) and new_acc <= old_acc:
-            mark_done(model_id, row["dataset"])               # it IS finished, we just did not improve
-            return False                                      # leave the old, better row untouched
-
-    df = df[df["dataset"] != row["dataset"]] if len(df) else df          # drop this dataset's old row
-    df = pd.concat([df, pd.DataFrame([row])], ignore_index=True)         # add the new one
+    new = pd.DataFrame([row])
+    if len(df):                                               # drop only THIS (dataset, seed) row
+        df = df[~((df["dataset"] == name) & (df["seed"] == seed))]
+        df = pd.concat([df, new], ignore_index=True)
+    else:
+        df = new                                              # first row - concat would warn on empty
     df = df.reindex(columns=RESULT_COLUMNS)                   # fixed column order
 
     # keep the file in the same order the sweep runs in, so results.csv reads like the paper's table
-    order = {name: i for i, name in enumerate(sweep_order())}
+    order = {n: i for i, n in enumerate(sweep_order())}
     df["_k"] = df["dataset"].map(lambda n: order.get(n, len(order)))
-    df = df.sort_values(["_k", "dataset"]).drop(columns="_k").reset_index(drop=True)
+    df = df.sort_values(["_k", "dataset", "seed"]).drop(columns="_k").reset_index(drop=True)
 
     tmp = path + ".tmp"                                       # write, then rename (atomic)
     df.to_csv(tmp, index=False)
     os.replace(tmp, path)
 
-    mark_done(model_id, row["dataset"])                       # remember it is done
+    mark_done(model_id, name, seed)                           # remember this seed is done
     return True
 
 
@@ -363,7 +426,7 @@ def build_comparison(model_id: str, out: Optional[str] = None, verbose: bool = T
     returns : the comparison DataFrame (also saved to `out`).
     """
     out = out or comparison_csv(model_id)
-    res = load_results(model_id)
+    res = mean_over_seeds(load_results(model_id))             # several seeds -> their average
     ucr_set = set(UCR_128_DATASETS)
     res = res[res["dataset"].isin(ucr_set)].copy() if len(res) else res   # UCR only (drop WebTraffic)
     if res.empty:
@@ -432,7 +495,7 @@ def summarise_model(model_id: str, cmp: Optional[pd.DataFrame] = None) -> Dict:
     cmp : its comparison frame (built if not given).
     returns : an ordered dict of metric name -> value.
     """
-    res = load_results(model_id)
+    res = mean_over_seeds(load_results(model_id))             # several seeds -> their average
     cmp = build_comparison(model_id, verbose=False) if cmp is None else cmp
     out: Dict = {"model": model_id}
 
@@ -656,7 +719,7 @@ def webtraffic_table(models: Optional[List[str]] = None) -> pd.DataFrame:
     models = discover_models() if models is None else models
     rows = []
     for model_id in models:
-        res = load_results(model_id)
+        res = mean_over_seeds(load_results(model_id))         # several seeds -> their average
         if res.empty:
             continue
         web = res[res["dataset"] == WEB_TRAFFIC]

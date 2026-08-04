@@ -74,7 +74,7 @@ from seanet.train import train_one_from_config, fit_model_from_config, score_mod
 from seanet.results import (result_exists, save_result_row, build_comparison, compare_models,
                             millet_baseline, sweep_order, summarise_model, write_summary,
                             results_csv, done_txt, interpretation_dir, model_dir,
-                            MILLET_WEBTRAFFIC_DIR)
+                            predictions_dir, MILLET_WEBTRAFFIC_DIR)
 
 # The commands that train (or tune) a model. They all resolve a config + a model id up front, so
 # their log file can be saved inside that model's own folder. Everything else logs to the shared folder.
@@ -139,8 +139,12 @@ def _resolve_model(args):
     returns : (cfg, model_id).
     """
     config_path = getattr(args, "config", None) or os.path.join("configs", "main.yaml")
-    overrides = {"model": args.model} if getattr(args, "model", None) else None
-    cfg = load_config(config_path, overrides=overrides)
+    overrides = {}
+    if getattr(args, "model", None):
+        overrides["model"] = args.model
+    if getattr(args, "seed", None) is not None:
+        overrides["seed"] = int(args.seed)                   # --seed beats main.yaml's seed
+    cfg = load_config(config_path, overrides=overrides or None)
     return cfg, model_folder_name(cfg)
 
 
@@ -173,7 +177,7 @@ def _skip_if_done(cfg, model_id, name, smoke):
     smoke : True = a throwaway check (never skips).
     returns : True if the caller should skip this dataset (and has already printed the reason).
     """
-    if smoke or not result_exists(model_id, name):              # nothing done yet -> just train
+    if smoke or not result_exists(model_id, name, cfg.seed):    # nothing done yet -> just train
         return False
     re_train = bool(getattr(cfg.run, "re_train", False))        # the main.yaml switch
     if re_train:                                                 # train again, and say so
@@ -222,15 +226,15 @@ def _train_and_save(name, cfg, model_id, device, smoke, command, mlf, log_weight
         mlf=mlf, mlf_params=to_flat_dict(cfg),
         mlf_tags={"command": command, "model_id": model_id},
         logged_model_name=model_id, log_model_weights=log_weights,
+        # keep the per-series test predictions (smoke runs are throwaway, so not those). They are
+        # tiny and they are the only way to build an ensemble vote later without retraining.
+        pred_dir=None if smoke else predictions_dir(model_id),
     )
     # the two things that define this model, written into every row so results.csv is self-describing
     row["encoder"] = cfg.model_config.encoder.type
     row["pooling"] = cfg.model_config.pooling.type
     if not smoke:                                            # smoke runs are throwaway, never saved
-        saved = save_result_row(model_id, row)
-        if not saved:                                       # keep-the-better rule: old row was higher
-            print(f"  kept the previous result for {name}: this run's test_acc "
-                  f"{row['test_acc']:.4f} did not beat it, so results.csv was left unchanged.")
+        save_result_row(model_id, row)                       # one row per (dataset, seed)
     return row
 
 
@@ -329,7 +333,7 @@ def cmd_train(args):
     done = skipped = failed = 0                              # running tally for the summary line
     for i, name in enumerate(names, 1):
         tag = f"[{i:>3}/{total}]"                             # e.g. "[ 22/129]"
-        if result_exists(model_id, name) and not smoke:      # already finished -> skip
+        if result_exists(model_id, name, cfg.seed) and not smoke:   # already finished -> skip
             print(f"{tag} {name:28s} already done -> skip", flush=True)
             skipped += 1
             continue
@@ -685,6 +689,9 @@ def _add_model_flags(p, with_dataset=False):
                                    "(e.g. seanet, seanet_acp, millet)")
     if with_dataset:
         p.add_argument("--dataset", help="override the dataset (e.g. Coffee)")
+    p.add_argument("--seed", type=int, help="training seed (default: the seed in main.yaml, 0). "
+                                            "Results are stored per seed, so --seed 1 adds a repeat "
+                                            "instead of overwriting seed 0.")
     p.add_argument("--smoke", action="store_true", help="quick check (3 epochs), not saved")
 
 

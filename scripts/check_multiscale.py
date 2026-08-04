@@ -246,28 +246,6 @@ def measure_receptive_field(encoder: nn.Module, length: int = 3001) -> int:
     return int(used[-1] - used[0]) + 1
 
 
-def conv_receptive_field(encoder: nn.Module, length: int = 3001):
-    """
-    Measure the receptive field of the CONVOLUTION path only, ignoring any whole-series "summary" gate.
-
-    WHY THIS IS NEEDED: some of our encoders bolt a global gate on top of a conv backbone. SummaryGate
-    (used by sea_mstcn_sep_gated) averages over ALL timesteps to build a per-channel gate, so strictly
-    speaking every output depends on every input and the plain measurement above returns "the whole
-    series". But that global path is a per-channel SCALAR - measured on the shallow gated encoder it is
-    about 7000x weaker than the local conv path, and it does not blur the per-timestep structure at all
-    (that is exactly what the residual form h * (1 + gate) was designed to protect).
-
-    Treating that as "degenerate" would be wrong: it is a very different thing from a conv stack whose
-    kernels genuinely span the whole series and flatten the features. So when an encoder exposes a
-    conv backbone, we measure THAT, and report the global gate separately as information.
-
-    returns : (conv_receptive_field, has_global_path)
-    """
-    core = getattr(encoder, "backbone", encoder)          # gated / inputgate encoders expose .backbone
-    has_global_path = core is not encoder
-    return measure_receptive_field(core, length), has_global_path
-
-
 def check_receptive_fields() -> bool:
     """
     The most important check in this file: is each scale of the pyramid actually usable?
@@ -288,21 +266,14 @@ def check_receptive_fields() -> bool:
             scales = tuple(getattr(enc_cfg, "scales", (1, 2, 4, 8)))
             # build ONLY the base encoder, on its own, to measure what one scale really sees
             base = build_encoder(enc_cfg.base, n_in=1)
-            rf, has_global_path = conv_receptive_field(base)
+            rf = measure_receptive_field(base)
 
             bad = [s for s in scales if rf > series_length / s]
             covers = rf * max(scales)                      # reach at the coarsest scale, in ORIGINAL steps
             mark = PASS if not bad else FAIL
             print(f"{mark} {config_name}")
-            print(f"          conv receptive field {rf}, scales {list(scales)}, "
+            print(f"          base receptive field {rf}, scales {list(scales)}, "
                   f"coarsest reach {covers} original timesteps")
-            if has_global_path:
-                print(f"          note: this encoder also has a whole-series summary gate. That is a "
-                      f"per-channel scalar (~7000x")
-                print(f"                weaker than the conv path), so it does NOT flatten the "
-                      f"per-timestep structure - but it does mean")
-                print(f"                every scale still sees globally, which is worth remembering "
-                      f"when reading the result.")
             for s in scales:
                 ratio = rf / (series_length / s)
                 note = "ok" if ratio <= 1 else "DEGENERATE - sees the whole shrunk series"

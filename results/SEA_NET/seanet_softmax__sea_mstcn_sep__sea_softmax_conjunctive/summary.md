@@ -19,5 +19,5 @@
 | overall_mean_aopcr | 1.4117 |
 | webtraffic_acc | 0.88 |
 | webtraffic_ndcg | 0.6045 |
-| params | 269165 |
-| model_size_mb | 3.539 |
+| params | 43629 |
+| model_size_mb | 1.421 |

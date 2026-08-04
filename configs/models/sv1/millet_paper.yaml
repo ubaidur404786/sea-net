@@ -1,0 +1,65 @@
+# millet_paper.yaml - MILLET run the way the MILLET PAPER runs it.
+#
+# WHY THIS FILE EXISTS
+# We already have sv1/millet.yaml, which is the same architecture trained with SEA-Net's shared
+# recipe. That is the right file for a CONTROLLED comparison (same recipe on both sides, so any
+# difference must come from the architecture). But it is NOT a faithful reproduction, and our rerun
+# scored 0.8203 mean accuracy against the paper's published 0.8433 - a gap big enough that a reviewer
+# will ask whether we simply under-trained their model.
+#
+# This file answers that question. It copies MILLET's own training loop settings exactly, read
+# straight out of millet/model/millet_model.py -> MILLETModel.fit():
+#
+#     n_epochs      = 1500        (their default)
+#     learning_rate = 1e-3        (their default)
+#     weight_decay  = 0.0         (their default)
+#     batch_size    = max(min(n_train // 10, 16), 2)
+#     criterion     = plain CrossEntropyLoss  -> NO label smoothing
+#     early stop    = keep the net with the best TRAIN loss; no validation split at all
+#
+# HOW WE GET THEIR EARLY STOPPING
+# Our loop holds out a validation set only when the training set is at least `min_train_for_val`
+# series. Setting that to a number no dataset can reach means we NEVER hold out a validation set, so
+# the loop falls back to "keep the best train-loss model" - which is exactly what MILLET does.
+# `patience` is set to the full 1500 so it can never stop early either; MILLET runs every epoch.
+#
+# SO WE END UP WITH THREE ROWS IN THE PAPER, AND EACH ANSWERS A DIFFERENT QUESTION:
+#   MILLET (published)   -> results/UCR/InceptionTime/, their numbers, 0.8433
+#   millet_paper         -> THIS FILE. "did we reproduce them?"  (should land near 0.8433)
+#   millet               -> sv1/millet.yaml. "same recipe as ours?" (the controlled baseline)
+# Our models are then compared against `millet`, and `millet_paper` is what lets us say the
+# reproduction is faithful.
+#
+# WARNING - THIS IS SLOW. 1500 epochs with no early stopping is roughly 4x the work of our usual
+# 400-epoch recipe, on all 85 datasets. Run it on the server, not locally, and expect it to take a
+# long time. Start with a few datasets (--limit) to measure the cost before committing.
+#
+# Run it:
+#   python main.py train --model sv1/millet_paper --limit 5        # measure the cost first
+#   python main.py train --model sv1/millet_paper                  # the full sweep
+
+name: millet_paper
+
+# ---- the encoder + pooling: untouched MILLET code, same as sv1/millet.yaml ----
+encoder:
+  type: mil_inceptiontime
+
+pooling:
+  type: mil_conjunctive
+  d_attn: 8
+  dropout: 0.1
+  positional_encoding: true
+
+# ---- the training recipe: MILLET's own defaults, NOT ours ----
+training:
+  n_epochs: 1500            # their default (ours is 400)
+  learning_rate: 0.001      # their default (ours is 0.00125)
+  weight_decay: 0.0         # they use none (ours is 0.00012)
+  label_smoothing: 0.0      # plain CrossEntropyLoss (ours is 0.13)
+  lambda_entropy: 0.0       # the attention-focus penalty is a SEA-Net idea, not theirs
+  max_batch: 16             # same cap they use: max(min(n_train // 10, 16), 2)
+  patience: 1500            # = n_epochs, so it never stops early. MILLET runs all epochs.
+  min_train_for_val: 999999 # no dataset is this big -> never split off a val set -> train-loss
+                            # early stopping, which is what MILLET does
+  val_frac: 0.2             # unused (min_train_for_val above means we never split)
+  optimizer: adam           # torch.optim.Adam, same as theirs

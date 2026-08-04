@@ -91,7 +91,7 @@ def matrix(metric: str = "test_acc", models: Optional[List[str]] = None) -> pd.D
     models = swept_models() if models is None else models
     rows = {}
     for model_id in models:
-        res = R.load_results(model_id)
+        res = R.mean_over_seeds(R.load_results(model_id))     # several seeds -> their average
         if res.empty or metric not in res.columns:
             continue
         s = pd.to_numeric(res.set_index("dataset")[metric], errors="coerce")
@@ -116,7 +116,9 @@ def swept_models(min_datasets: int = MIN_DATASETS_FOR_STATS) -> List[str]:
         res = R.load_results(model_id)
         if res.empty:
             continue
-        n_ucr = res["dataset"].isin(set(UCR_128_DATASETS)).sum()
+        # count DISTINCT datasets - with several seeds the same dataset appears more than once, and
+        # 85 datasets x 3 seeds must not be mistaken for 255 datasets
+        n_ucr = res.loc[res["dataset"].isin(set(UCR_128_DATASETS)), "dataset"].nunique()
         if n_ucr >= min_datasets:
             out.append(model_id)
     return sorted(out)

@@ -28,6 +28,7 @@ The training recipe (same for every dataset):
     training loss (a 5-series validation set would just be noise).
 """
 import copy
+import os
 import time
 from typing import Callable, Dict, List, Optional, Tuple
 
@@ -444,6 +445,7 @@ def train_one(
     mlf_tags: Optional[Dict] = None,
     logged_model_name: Optional[str] = None,
     log_model_weights: bool = True,
+    pred_dir: Optional[str] = None,
 ) -> Dict:
     """
     Train a model on one dataset and score it on the test set. This is the single path used for
@@ -505,17 +507,64 @@ def train_one(
     row = score_model(model, name, train_ds, val_ds, test_ds, device, seed, lambda_entropy,
                       train_time_s, verbose=verbose, mlf=mlf, mlf_params=mlf_params,
                       mlf_tags=mlf_tags, logged_model_name=logged_model_name,
-                      log_model_weights=log_model_weights)
+                      log_model_weights=log_model_weights, pred_dir=pred_dir)
     del model                                                   # free the model
     if device.type == "cuda":                                  # free GPU memory before the next dataset
         torch.cuda.empty_cache()
     return row
 
 
+def predict_proba(model, dataset):
+    """
+    Get the model's class PROBABILITIES for every series in a dataset.
+
+    The model outputs "bag_logits" - raw scores, one per class. softmax turns a row of scores into
+    probabilities that add up to 1. We need probabilities (not just the predicted class) so that two
+    models can be ensembled by AVERAGING their confidence, which is usually better than only counting
+    votes: a model that is 95% sure should outweigh one that is barely 40% sure.
+
+    model : a trained model.  dataset : the set to predict (normally the test set).
+    returns : (probs, y) - probs is (n_series, n_classes), y is the true label of each series.
+    """
+    logits, targets = [], []
+    with torch.no_grad():                                        # no gradients needed, just predicting
+        for batch in dataset.create_dataloader(batch_size=16):
+            logits.append(model(batch["bags"])["bag_logits"].cpu())
+            targets.append(batch["targets"])
+    logits = torch.cat(logits)
+    y = torch.cat(targets).long()
+    return torch.softmax(logits, dim=1).numpy(), y.numpy()
+
+
+def save_predictions(model, name: str, test_ds, seed: int, pred_dir: str) -> str:
+    """
+    Save this run's test-set probabilities to a small .npz file, so models can be ensembled LATER
+    without retraining them.
+
+    Why we need this: results.csv only stores summary numbers (accuracy, AOPCR...). You cannot build
+    a majority vote out of two accuracies - voting needs to know what each model predicted for each
+    individual series. One file per (dataset, seed) keeps that, and it is tiny: a 500-series,
+    10-class test set is about 20 KB.
+
+    "npz" is numpy's own zip format: several named arrays in one compressed file.
+
+    model : the trained model.  name : dataset name.  test_ds : the test set.
+    seed : the training seed (part of the filename, so seeds do not overwrite each other).
+    pred_dir : the folder to write into (created if missing).
+    returns : the path written.
+    """
+    os.makedirs(pred_dir, exist_ok=True)
+    probs, y = predict_proba(model, test_ds)
+    path = os.path.join(pred_dir, f"{name}__seed{int(seed)}.npz")
+    np.savez_compressed(path, probs=probs.astype(np.float32), y=y.astype(np.int16))
+    return path
+
+
 def score_model(model, name: str, train_ds, val_ds, test_ds, device: torch.device, seed: int,
                 lambda_entropy: float, train_time_s: float, verbose: bool = False,
                 mlf=None, mlf_params: Optional[Dict] = None, mlf_tags: Optional[Dict] = None,
-                logged_model_name: Optional[str] = None, log_model_weights: bool = True) -> Dict:
+                logged_model_name: Optional[str] = None, log_model_weights: bool = True,
+                pred_dir: Optional[str] = None) -> Dict:
     """
     Score a trained model on the test set, pack the results into one flat row, and (optionally) record
     the whole run in MLflow so every model can be compared later.
@@ -542,6 +591,11 @@ def score_model(model, name: str, train_ds, val_ds, test_ds, device: torch.devic
               f"{' + NDCG' if name == D.WEB_TRAFFIC else ''}) ...", flush=True)
     cls = safe_evaluate(model, test_ds)
     aopcr, ndcg = model.evaluate_interpretability(test_ds)
+    if pred_dir:                                                 # keep the per-series predictions so
+        try:                                                     # models can be ensembled later
+            save_predictions(model, name, test_ds, seed, pred_dir)
+        except Exception as e:                                   # never fail a run over a side file
+            print(f"    (could not save predictions for {name}: {type(e).__name__}: {e})", flush=True)
     row = {
         "dataset": name,
         "model": model.name,

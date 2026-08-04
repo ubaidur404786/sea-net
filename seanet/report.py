@@ -90,6 +90,38 @@ def is_paper_baseline(model_id: str) -> bool:
     return is_millet(encoder)
 
 
+def is_fully_ours(model_id: str) -> bool:
+    """
+    True when BOTH halves are ours - our encoder AND our pooling head.
+
+    This is the strictest test, and it is the one that matters for the paper's headline model. A
+    model like seanet_conjunctive uses our encoder but MILLET's Conjunctive head, so it cannot be
+    presented as "our architecture"; it belongs in the ablation table instead.
+    """
+    _config, encoder, pooling = split_model_id(model_id)
+    return (not is_millet(encoder)) and (not is_millet(pooling))
+
+
+# Our own rerun of MILLET: the SAME architecture, trained by us, under our recipe. This - not the
+# published table - is the fair reference for our numbers, because it was measured with our code,
+# our splits and our metric implementations. (Their published AOPCR in particular is ~5.7x larger
+# than what our AOPCR code produces for the very same model, so the two cannot share an axis.)
+MILLET_RERUN_ID = "millet__mil_inceptiontime__mil_conjunctive"
+
+
+def millet_rerun_row(cross: pd.DataFrame) -> Optional[pd.Series]:
+    """
+    Find our MILLET rerun in the cross-model table, so figures can draw it as the reference line.
+
+    cross : the frame from seanet.results.compare_models() (indexed by position, with a "model" col).
+    returns : that row, or None if MILLET has not been swept yet.
+    """
+    if cross.empty or "model" not in cross.columns:
+        return None
+    hit = cross[cross["model"] == MILLET_RERUN_ID]
+    return hit.iloc[0] if len(hit) else None
+
+
 def short_labels(models: List[str]) -> Dict[str, str]:
     """
     Give every model a short code m1, m2, ... in the order given.
@@ -264,7 +296,7 @@ def plot_model_figures(model_id: str, verbose: bool = True) -> List[str]:
     returns : the list of saved figure paths.
     """
     figdir = R.figures_dir(model_id)
-    results = _to_num(R.load_results(model_id),
+    results = _to_num(R.mean_over_seeds(R.load_results(model_id)),   # several seeds -> their average
                       ["test_acc", "test_loss", "test_aopcr", "test_ndcg", "series_length",
                        "n_classes", "params", "model_size_mb", "train_time_s"])
     paths: List[str] = []
@@ -294,45 +326,95 @@ def plot_model_figures(model_id: str, verbose: bool = True) -> List[str]:
 # --------------------------------------------------------------------------------------
 # 3. The cross-model figure: which encoder+pooling wins?
 # --------------------------------------------------------------------------------------
-def plot_model_comparison(cross: pd.DataFrame, figdir: str = SHARED_FIGURES_DIR) -> List[str]:
+def plot_model_comparison(cross: pd.DataFrame, figdir: str = SHARED_FIGURES_DIR,
+                          top_n: int = 15) -> List[str]:
     """
-    Draw every model's mean accuracy / loss / AOPCR next to MILLET's, over the 85 published datasets.
+    Draw the best models' mean accuracy / loss / AOPCR over the 85 datasets MILLET published.
 
-    MILLET gets its own red bar in each panel, so "did we beat the baseline?" is answered by looking
-    at whether a bar clears it. Our new pooling heads are orange; the baseline-style models are blue.
+    HOW THIS FIGURE IS BUILT (and why the old one was unreadable):
+      - The old version put ALL ~66 swept models on a vertical x-axis, renamed them m1..m66, and
+        printed the m1 = name mapping as a paragraph under the plots. The paragraph overlapped the
+        bars and no reader could match a bar to a model. Nothing about that is fixable by tweaking
+        font sizes: 66 bars is simply too many for one figure.
+      - Now we show the TOP N only (default 15), as HORIZONTAL bars, with the real config names on
+        the axis. Long names read fine sideways, so no codes and no legend paragraph are needed.
+      - All three panels SHARE one order (ranked by accuracy) and the names are printed ONCE, on the
+        left. So you read one model straight across the row and see all three of its numbers - the
+        way a results table reads. Sorting each panel separately would force the names to be
+        repeated three times and would stop you tracking a model across panels.
+
+    THE TWO REFERENCE LINES
+      solid black  = our MILLET RERUN (same architecture, our code, our recipe) - the fair bar to beat.
+      dashed grey  = MILLET's PUBLISHED number, shown for accuracy and loss only.
+    AOPCR deliberately gets NO published line: their published AOPCR is about 5.7x larger than what
+    our AOPCR code computes for the very same model, so drawing it would squash every bar to nothing
+    and invite a false conclusion. That is exactly what the old figure did.
 
     cross : the cross-model frame from seanet.results.compare_models().
-    figdir : where to save the PNG.
+    figdir : where to save the PNG.  top_n : how many models to draw.
     returns : the saved figure path in a list (empty if there is nothing to plot).
     """
     if cross.empty or "mean_acc_ours" not in cross.columns:
         return []
-    # Model ids are long ("<config>__<encoder>__<pooling>"), so with many models the x-axis becomes an
-    # unreadable wall of text. Instead we give every model a SHORT code (m1, m2, ...) - fixed once here
-    # so the same code means the same model in all three panels - and print a legend under the figure.
-    code = short_labels(list(cross["model"]))                # {full model id -> "m1"/"m2"/...}
-    fig, ax = plt.subplots(1, 3, figsize=(13, 5))
-    for a, (metric, (_csv, _band, lower)) in zip(ax, R.COMPARED_METRICS.items()):
-        col = f"mean_{metric}_ours"
-        s = cross.dropna(subset=[col]).sort_values(col, ascending=bool(lower))   # best first
-        names = [code[m] for m in s["model"]] + ["MILLET"]   # short codes on the axis
-        values = list(s[col]) + [float(s[f"mean_{metric}_millet"].iloc[0])]
-        colours = [OURS_COLOUR if is_baseline(m) else "darkorange" for m in s["model"]]
-        colours.append(MILLET_COLOUR)
-        bars = a.bar(range(len(names)), values, color=colours)
-        a.set_xticks(range(len(names)))
-        a.set_xticklabels(names, rotation=0, ha="center", fontsize=8)
-        a.set_title(f"mean {metric}" + ("  (lower is better)" if lower else ""))
-        for b, v in zip(bars, values):
-            if pd.notna(v):
-                a.text(b.get_x() + b.get_width() / 2, v, f"{v:.3f}", ha="center", va="bottom", fontsize=7)
-    n = int(cross["millet85_datasets"].max())
-    fig.suptitle(f"Model comparison over the {n} datasets MILLET published   "
-                 f"[orange = our new pooling heads, red = MILLET]")
-    # the legend: "m1 = <config name>" per model, laid out in columns under the plots
-    legend = "   ".join(f"{code[m]} = {m.split('__')[0]}" for m in cross['model'])
-    fig.tight_layout(rect=(0, 0.10, 1, 1))                   # leave a strip at the bottom for the legend
-    fig.text(0.01, 0.01, "legend:  " + legend, fontsize=7, va="bottom", family="monospace", wrap=True)
+    ranked = cross.dropna(subset=["mean_acc_ours"]).sort_values("mean_acc_ours", ascending=False)
+    if ranked.empty:
+        return []
+    n_total = len(ranked)
+    rerun = millet_rerun_row(cross)
+    # Always keep two models on the figure even if accuracy alone would cut them: the MILLET rerun
+    # (it is the reference line) and the headline model (it is chosen on four criteria, not accuracy
+    # alone, so it can easily sit outside the accuracy top 15 - and a figure that leaves out the
+    # model the paper is about is not much use).
+    keep = {MILLET_RERUN_ID}
+    winner = pick_winner(R.webtraffic_table(), _load_ucr_means())
+    if winner:
+        keep.add(winner)
+    shown = ranked.head(top_n)
+    extra = ranked[ranked["model"].isin(keep - set(shown["model"]))]
+    if len(extra):
+        shown = pd.concat([shown, extra])
+    shown = shown.sort_values("mean_acc_ours", ascending=False)
+
+    models = list(shown["model"])
+    # mark the headline model in its label, so a reader can find it without counting rows
+    names = [_short_name(m) + ("  *" if m == winner else "") for m in models]
+    # colour says WHAT KIND of model it is, never its rank: blue = ours end to end, orange = has at
+    # least one MILLET part, black = the MILLET rerun itself.
+    colours = [OK_BLACK if m == MILLET_RERUN_ID else (OK_BLUE if is_fully_ours(m) else OK_ORANGE)
+               for m in models]
+
+    panels = [("acc", "mean accuracy (higher better)", "{:.3f}", False),
+              ("loss", "mean loss (lower better)", "{:.3f}", True),
+              # the "no published line" warning lives in the title, not floating in the panel, where
+              # it would sit on top of a bar
+              ("aopcr", "mean AOPCR (higher better)\nno published line - different scale",
+               "{:.3f}", False)]
+    # NOT sharey: every panel draws the same models in the same order, so the rows line up anyway,
+    # and sharing the axis would make the three panels fight over one set of tick labels.
+    fig, axes = plt.subplots(1, 3, figsize=(13.5, max(4.0, 0.34 * len(models) + 2.0)))
+    for i, (a, (metric, title, fmt, _lower)) in enumerate(zip(axes, panels)):
+        values = [float(v) if pd.notna(v) else float("nan")
+                  for v in shown[f"mean_{metric}_ours"]]
+        ref = float(rerun[f"mean_{metric}_ours"]) if (rerun is not None
+              and pd.notna(rerun.get(f"mean_{metric}_ours"))) else None
+        # the published line is only meaningful where their metric matches our implementation
+        pub = None
+        if metric != "aopcr" and pd.notna(shown[f"mean_{metric}_millet"]).any():
+            pub = float(shown[f"mean_{metric}_millet"].dropna().iloc[0])
+        # the reference lines are explained once in the subtitle, so no legend box is needed inside
+        # a panel whose bars already run its full width
+        _hbar_panel(a, names, values, colours, title, ref=ref, ref_label=None,
+                    target=pub, target_label=None, fmt=fmt, legend=False)
+        if i > 0:                                            # names once, on the left panel only
+            a.tick_params(labelleft=False)
+
+    fig.suptitle(
+        f"Top {top_n} of {n_total} swept models, mean over the 85 datasets MILLET published\n"
+        f"bars: blue = ours end to end,  orange = uses a MILLET part,  black = our MILLET rerun"
+        + ("   ( * = headline model )" if winner in models else "") + "\n"
+        f"lines: black dashed = our MILLET rerun,  green dotted = MILLET published",
+        fontsize=11)
+    fig.tight_layout(rect=(0, 0, 1, 0.91))
     return [_save(fig, os.path.join(figdir, "model_comparison.png"))]
 
 
@@ -454,7 +536,7 @@ def _load_ucr_means() -> pd.DataFrame:
 
 
 def _hbar_panel(ax, names, values, colours, title, ref=None, ref_label=None,
-                target=None, target_label=None, fmt="{:.3f}"):
+                target=None, target_label=None, fmt="{:.3f}", legend=True):
     """
     Draw ONE metric as a horizontal bar chart (one bar per model), best model on top.
 
@@ -481,21 +563,54 @@ def _hbar_panel(ax, names, values, colours, title, ref=None, ref_label=None,
         ax.axvline(ref, ls="--", color=OK_BLACK, lw=1.4, zorder=2, label=ref_label)
     if target is not None:
         ax.axvline(target, ls=":", color=OK_GREEN, lw=1.4, zorder=2, label=target_label)
-    if (ref is not None and ref_label) or (target is not None and target_label):
+    if legend and ((ref is not None and ref_label) or (target is not None and target_label)):
         ax.legend(fontsize=7, loc="lower right")
 
+    # Leave room on the right for the value printed at each bar end, and for a reference line that
+    # sits past the longest bar. Without this the numbers run off the panel or land on top of the
+    # dashed line - which is what the old figure did.
+    finite = [v for v in list(values) + [ref, target] if v is not None and pd.notna(v)]
+    if finite:
+        top = max(max(finite), 0.0)
+        ax.set_xlim(min(0.0, min(finite)), top * 1.18 if top > 0 else 1.0)
 
-def _plot_one_tier(sub: pd.DataFrame, threshold: float, paper: Dict[str, float],
+
+def _millet_rerun_web(df: pd.DataFrame) -> Dict[str, float]:
+    """
+    Pull our MILLET rerun's WebTraffic numbers out of the WebTraffic table, to use as the reference
+    line in the band figures.
+
+    We use the RERUN and not the published table on purpose. The published WebTraffic AOPCR is about
+    12.8 while our AOPCR code scores the very same architecture near 1.5, so a published line would
+    sit far off the right of every panel and make our models look hopeless for no real reason. The
+    rerun was measured with our code, so it shares a scale with every bar next to it.
+
+    df : the WebTraffic table from R.webtraffic_table().
+    returns : {"acc": .., "aopcr": .., "ndcg": ..} - only the keys we actually have.
+    """
+    hit = df[df["model"] == MILLET_RERUN_ID]
+    if hit.empty:
+        return {}
+    r = hit.iloc[0]
+    return {k: float(r[k]) for k in ("acc", "aopcr", "ndcg") if k in df.columns and pd.notna(r[k])}
+
+
+def _plot_one_tier(sub: pd.DataFrame, low: float, high: Optional[float], paper: Dict[str, float],
                    ucr: pd.DataFrame, figdir: str) -> str:
     """
-    Draw one accuracy tier: the models with WebTraffic acc >= threshold, side by side, on 4-6 metrics.
+    Draw one accuracy BAND: the models whose WebTraffic accuracy is in [low, high).
 
-    Panels (each a horizontal bar chart, models sorted by accuracy): accuracy, AOPCR, NDCG, params (K),
-    size (MB), and - if we have full-sweep numbers - the UCR-85 mean accuracy. Higher-is-better metrics
-    (acc, aopcr, ndcg, ucr) show the MILLET paper number as a black dashed line; lower-is-better metrics
-    (params, size) have no line (smaller bar = smaller model = better).
+    TWO THINGS WERE FIXED HERE.
+      1. Every panel used to repeat the model names down its own y-axis. With 6 panels and 25 models
+         that is 150 labels for 25 models, and it left almost no room for the bars. The names are now
+         printed ONCE, on the leftmost panel; the other panels line up with it row for row.
+      2. The AOPCR panel used to draw MILLET's PUBLISHED AOPCR (about 12.8 on WebTraffic) as its
+         reference line. Our AOPCR code puts the same model near 1.5, so every real bar was squashed
+         into the left edge under a line nothing could reach. That line is gone - the panel now shows
+         only our own numbers, which are all on one scale and can honestly be compared to each other.
 
-    sub : the models in this tier (already sorted best-accuracy-first).   threshold : e.g. 0.95.
+    sub : the models in this band (sorted best-accuracy-first).
+    low / high : the band edges; high is None for the top band.
     paper : MILLET's published WebTraffic numbers.   ucr : the cross-model UCR means (may be empty).
     returns : the saved figure path.
     """
@@ -503,96 +618,143 @@ def _plot_one_tier(sub: pd.DataFrame, threshold: float, paper: Dict[str, float],
     names = [_short_name(m) for m in models]
     colours = [OK_ORANGE if is_paper_baseline(m) else OK_BLUE for m in models]
 
-    # decide which panels to draw. UCR mean only if at least one model in this tier has it.
+    # decide which panels to draw. UCR mean only if at least one model in this band has it.
     ucr_acc = [float(ucr.loc[m, "mean_acc_ours"]) if (len(ucr) and m in ucr.index
                and pd.notna(ucr.loc[m, "mean_acc_ours"])) else float("nan") for m in models]
     have_ucr = any(pd.notna(v) for v in ucr_acc)
-    ucr_ref = float(ucr["mean_acc_millet"].dropna().iloc[0]) if (len(ucr)
-              and "mean_acc_millet" in ucr.columns and ucr["mean_acc_millet"].notna().any()) else None
+    ucr_ref = float(ucr.loc[MILLET_RERUN_ID, "mean_acc_ours"]) if (len(ucr)
+              and MILLET_RERUN_ID in ucr.index
+              and pd.notna(ucr.loc[MILLET_RERUN_ID, "mean_acc_ours"])) else None
 
-    # (column, title, values, reference line, target line, number format)
+    # (title, values, reference line, ref label, number format). Reference lines are our MILLET
+    # RERUN wherever we have it - the same code and recipe, so the numbers share a scale.
+    # Short titles on purpose. The full wording ("WebTraffic accuracy (higher better)") was long
+    # enough that neighbouring titles printed over each other; the direction now lives in the arrow.
     panels = [
-        ("acc",   "WebTraffic accuracy (higher better)", list(sub["acc"]),
-         paper.get("acc"), 0.96, "{:.3f}"),
-        ("aopcr", "AOPCR - interpretability (higher better)", list(sub["aopcr"]),
-         paper.get("aopcr"), None, "{:.2f}"),
-        ("ndcg",  "NDCG (higher better)", list(sub["ndcg"]),
-         paper.get("ndcg"), None, "{:.3f}"),
-        ("params", "params in thousands (lower better)", [v / 1e3 for v in sub["params"]],
-         None, None, "{:.0f}K"),
-        ("size",  "model size MB (lower better)", list(sub["size_mb"]),
-         None, None, "{:.2f}"),
+        ("accuracy ↑", list(sub["acc"]), paper.get("acc"), "{:.3f}"),
+        ("AOPCR ↑", list(sub["aopcr"]), paper.get("aopcr"), "{:.2f}"),
+        ("NDCG ↑", list(sub["ndcg"]), paper.get("ndcg"), "{:.3f}"),
+        ("params K ↓", [v / 1e3 for v in sub["params"]], None, "{:.0f}K"),
+        ("size MB ↓", list(sub["size_mb"]), None, "{:.2f}"),
     ]
     if have_ucr:
-        panels.append(("ucr", "UCR-85 mean accuracy (higher better)", ucr_acc, ucr_ref, None, "{:.3f}"))
+        panels.append(("UCR-85 acc ↑", ucr_acc, ucr_ref, "{:.3f}"))
 
     n_panels = len(panels)
-    # height grows with the number of models so the bars never get squashed
-    fig, axes = plt.subplots(1, n_panels, figsize=(3.1 * n_panels, max(3.0, 0.5 * len(models) + 1.4)))
+    # the leftmost panel is wider because it is the only one carrying the model names
+    widths = [3.0] + [1.9] * (n_panels - 1)
+    fig, axes = plt.subplots(1, n_panels, figsize=(sum(widths) + 1.2,
+                                                   max(3.2, 0.42 * len(models) + 2.0)),
+                             gridspec_kw={"width_ratios": widths})
     if n_panels == 1:
         axes = [axes]
-    for ax, (col, title, values, ref, target, fmt) in zip(axes, panels):
-        ref_label = "MILLET paper" if (ref is not None and pd.notna(ref)) else None
-        target_label = "target 0.96" if target is not None else None
-        _hbar_panel(ax, names, values, colours, title, ref=ref, ref_label=ref_label,
-                    target=target, target_label=target_label, fmt=fmt)
+    for i, (ax, (title, values, ref, fmt)) in enumerate(zip(axes, panels)):
+        # the reference line means the same thing in every panel, so it is named once (panel 0) and
+        # explained in the subtitle - six copies of the same legend box just ate the plot area
+        _hbar_panel(ax, names, values, colours, title, ref=ref,
+                    ref_label="MILLET rerun" if i == 0 else None, fmt=fmt)
+        if i > 0:                                            # names once, on the left panel only
+            ax.tick_params(labelleft=False)
+
     n = len(models)
-    fig.suptitle(f"WebTraffic tier: accuracy >= {threshold:.2f}   ({n} model{'s' if n != 1 else ''})   "
-                 f"[blue = our models, orange = reran baselines, black dashed = MILLET paper]",
-                 fontsize=12)
-    fig.tight_layout(rect=(0, 0, 1, 0.96))
-    return _save(fig, os.path.join(figdir, f"webtraffic_tier_ge{int(round(threshold * 100))}.png"))
+    band = f"{low:.2f} - {high:.2f}" if high is not None else f"{low:.2f} and above"
+    fig.suptitle(f"WebTraffic accuracy {band}   ({n} model{'s' if n != 1 else ''})\n"
+                 f"blue = our encoder, orange = a MILLET encoder, dashed line = our MILLET rerun"
+                 f"    ({chr(8593)} higher is better, {chr(8595)} lower is better)",
+                 fontsize=10)
+    fig.tight_layout(rect=(0, 0, 1, 0.93))
+    fig.subplots_adjust(wspace=0.28)
+    tag = f"ge{int(round(low * 100))}" if high is None else \
+          f"{int(round(low * 100))}to{int(round(high * 100))}"
+    return _save(fig, os.path.join(figdir, f"webtraffic_band_{tag}.png"))
 
 
 def plot_webtraffic_tiers(figdir: str = SHARED_FIGURES_DIR) -> List[str]:
     """
-    Draw the WebTraffic accuracy-tier figures (>=95%, >=94%, ... >=90%), one clean figure per tier.
+    Draw the WebTraffic accuracy figures as NON-OVERLAPPING bands, so every model appears once.
 
-    We skip a tier if it has no models, and we skip a tier whose model list is IDENTICAL to the tier
-    just above it (drawing the same picture twice adds nothing) - so you get one figure per DISTINCT
-    group of models, which is exactly what makes them paper-ready.
+    WHAT CHANGED AND WHY: the tiers used to be cumulative - ">= 0.95", then ">= 0.94", then ">= 0.93"
+    and so on. Each figure therefore contained everything in the figure above it, so the best models
+    were redrawn in every single file (the >=0.90 figure repeated all 25 of them). You could not put
+    two of those figures in a paper without printing the same bars twice.
 
-    returns : the list of saved figure paths (one per distinct tier).
+    Now the bands are [0.95, ...], [0.94, 0.95), [0.93, 0.94), ... - each model lands in exactly ONE
+    figure, chosen by its own accuracy. Anything below the lowest edge goes into a final "below"
+    figure so nothing is silently dropped.
+
+    returns : the list of saved figure paths (one per non-empty band).
     """
     df = R.webtraffic_table()                                # already sorted best-accuracy-first
     if df.empty:
         return []
-    paper = R.webtraffic_paper_baseline()
+    paper = _millet_rerun_web(df)                            # our rerun, NOT the published table
     ucr = _load_ucr_means()
     paths: List[str] = []
-    last_members = None
-    for t in ACC_TIERS:
-        sub = df[df["acc"] >= t]
-        if sub.empty:
-            continue
-        members = tuple(sub["model"])                        # who is in this tier
-        if members == last_members:                          # same models as the tier above -> skip
-            continue
-        paths.append(_plot_one_tier(sub, t, paper, ucr, figdir))
-        last_members = members
+    edges = sorted(ACC_TIERS, reverse=True)                  # e.g. [0.95, 0.94, ..., 0.90]
+    high: Optional[float] = None                             # the top band has no upper edge
+    for low in edges:
+        sub = df[(df["acc"] >= low) & (df["acc"] < high)] if high is not None else df[df["acc"] >= low]
+        if not sub.empty:
+            paths.append(_plot_one_tier(sub, low, high, paper, ucr, figdir))
+        high = low
+    rest = df[df["acc"] < edges[-1]]                          # everything under the lowest edge
+    if not rest.empty:
+        paths.append(_plot_one_tier(rest, 0.0, edges[-1], paper, ucr, figdir))
     return paths
 
 
 def pick_winner(df: pd.DataFrame, ucr: pd.DataFrame) -> Optional[str]:
     """
-    Choose the single best model: good on WebTraffic AND good on the UCR benchmark.
+    Choose the model to put on the front page of the paper.
 
-    Simple rule (easy to explain in the paper): among models that have BOTH a WebTraffic accuracy and
-    a UCR-85 mean accuracy, pick the highest average of the two. If no model has UCR numbers yet
-    (only the fast WebTraffic screen has run), fall back to the best WebTraffic accuracy.
+    WHY THE OLD RULE WAS WRONG. It scored 0.5 * WebTraffic accuracy + 0.5 * UCR accuracy - accuracy
+    only. That picked seanet_conjunctive, which uses OUR encoder but MILLET's OWN Conjunctive pooling
+    head. We cannot headline a model whose pooling head is the baseline's; a reviewer would say we
+    only changed half the architecture. It also ignored AOPCR, which is the metric our whole
+    interpretability claim rests on, and ignored model size, which is our other selling point.
+
+    THE NEW RULE, in four steps:
+      1. Only models with a full UCR sweep can win - one WebTraffic screen is not enough evidence.
+      2. Prefer models that are OURS END TO END (our encoder AND our pooling). If any exist, models
+         reusing a MILLET part are dropped from the contest. They still appear in the tables as
+         ablations, they just cannot be the headline.
+      3. Rank the survivors on four things that matter equally: UCR-85 accuracy, UCR-85 AOPCR,
+         WebTraffic NDCG, and smallness (fewest parameters).
+      4. Average the four ranks and take the best. This is a Borda count: it needs no invented
+         weights, it cannot be dominated by one metric with a big numeric range (AOPCR moves in
+         units, accuracy in hundredths), and it is one sentence to justify in the paper.
 
     df : the WebTraffic table.   ucr : the cross-model UCR means (may be empty).
     returns : the winning model id, or None if there is nothing to pick from.
     """
     if df.empty:
         return None
-    both = [m for m in df["model"] if len(ucr) and m in ucr.index
-            and pd.notna(ucr.loc[m, "mean_acc_ours"])]
-    if both:
-        web = df.set_index("model")["acc"]
-        score = {m: 0.5 * float(web[m]) + 0.5 * float(ucr.loc[m, "mean_acc_ours"]) for m in both}
-        return max(score, key=score.get)
-    return str(df.iloc[0]["model"])                          # WebTraffic-only fallback: best accuracy
+    web = df.set_index("model")
+    eligible = [m for m in df["model"]
+                if len(ucr) and m in ucr.index and pd.notna(ucr.loc[m, "mean_acc_ours"])
+                and m != MILLET_RERUN_ID and not is_baseline(m)]
+    if not eligible:                                          # no full sweep yet -> WebTraffic only
+        return str(df.iloc[0]["model"])
+
+    ours_only = [m for m in eligible if is_fully_ours(m)]
+    contest = ours_only or eligible                           # step 2
+
+    # step 3: one column per criterion, all written so that BIGGER = BETTER
+    crit = pd.DataFrame(index=contest)
+    crit["ucr_acc"] = [float(ucr.loc[m, "mean_acc_ours"]) for m in contest]
+    crit["ucr_aopcr"] = [float(ucr.loc[m, "mean_aopcr_ours"])
+                         if "mean_aopcr_ours" in ucr.columns
+                         and pd.notna(ucr.loc[m, "mean_aopcr_ours"]) else float("nan")
+                         for m in contest]
+    crit["ndcg"] = [float(web.loc[m, "ndcg"]) if pd.notna(web.loc[m, "ndcg"]) else float("nan")
+                    for m in contest]
+    crit["small"] = [-float(web.loc[m, "params"]) if pd.notna(web.loc[m, "params"]) else float("nan")
+                     for m in contest]                        # negative, so bigger = fewer params
+
+    # step 4: average rank. rank(pct=True) puts every criterion on the same 0-1 scale, so a metric
+    # that happens to use bigger numbers cannot shout down the others.
+    ranks = crit.rank(pct=True, na_option="bottom")
+    return str(ranks.mean(axis=1).idxmax())
 
 
 def plot_winner_dashboard(figdir: str = SHARED_FIGURES_DIR) -> List[str]:
@@ -606,77 +768,99 @@ def plot_winner_dashboard(figdir: str = SHARED_FIGURES_DIR) -> List[str]:
     df = R.webtraffic_table()
     if df.empty:
         return []
-    paper = R.webtraffic_paper_baseline()
+    rerun_web = _millet_rerun_web(df)                        # our rerun's WebTraffic numbers
+    published = R.webtraffic_paper_baseline()                # their published numbers
     ucr = _load_ucr_means()
     winner = pick_winner(df, ucr)
     if winner is None:
         return []
     row = df[df["model"] == winner].iloc[0]
     has_ucr = len(ucr) and winner in ucr.index and pd.notna(ucr.loc[winner, "mean_acc_ours"])
+    rerun_ucr = ucr.loc[MILLET_RERUN_ID] if (len(ucr) and MILLET_RERUN_ID in ucr.index) else None
+
+    def _pair(a, ours, theirs, title, fmt, note=None):
+        """One small 'ours vs MILLET rerun' panel. Kept local: it is only used here."""
+        if note:
+            title = f"{title}\n({note})"
+        bars = a.bar([0, 1], [ours, theirs], color=[OK_BLUE, OK_BLACK], zorder=3)
+        a.set_xticks([0, 1])
+        a.set_xticklabels(["ours", "MILLET\nrerun"], fontsize=9)
+        a.set_title(title, fontsize=11)
+        a.grid(axis="y", alpha=0.25, zorder=0)
+        for b, v in zip(bars, [ours, theirs]):
+            if pd.notna(v):
+                a.text(b.get_x() + b.get_width() / 2, v, fmt.format(v),
+                       ha="center", va="bottom", fontsize=9)
+        # a note goes in the TITLE, never inside the axes - the bars fill the panel, so floating
+        # text lands on top of them and becomes unreadable
 
     fig, ax = plt.subplots(2, 3, figsize=(13, 8))
 
-    # Row 1: WebTraffic, ours (blue) vs MILLET paper (grey), one metric per panel (different scales).
-    web_panels = [("acc", "WebTraffic accuracy", "{:.3f}"),
-                  ("aopcr", "WebTraffic AOPCR", "{:.2f}"),
-                  ("ndcg", "WebTraffic NDCG", "{:.3f}")]
-    for a, (col, title, fmt) in zip(ax[0], web_panels):
+    # Row 1: the three WebTraffic metrics, ours vs our MILLET RERUN.
+    # We compare against the rerun, not the published table, because the published AOPCR (about 12.8)
+    # was produced by different code from ours (which scores their own model near 1.5). Putting the
+    # two on one axis - as this figure used to - makes our model look 8x worse than a baseline it
+    # actually beats.
+    for a, (col, title, fmt) in zip(ax[0], [("acc", "WebTraffic accuracy", "{:.3f}"),
+                                            ("aopcr", "WebTraffic AOPCR", "{:.2f}"),
+                                            ("ndcg", "WebTraffic NDCG", "{:.3f}")]):
         ours = float(row[col]) if pd.notna(row[col]) else float("nan")
-        theirs = paper.get(col, float("nan"))
-        bars = a.bar([0, 1], [ours, theirs], color=[OK_BLUE, "#999999"], zorder=3)
-        a.set_xticks([0, 1]); a.set_xticklabels(["winner", "MILLET\npaper"], fontsize=9)
-        a.set_title(title, fontsize=11); a.grid(axis="y", alpha=0.25, zorder=0)
-        for b, v in zip(bars, [ours, theirs]):
-            if pd.notna(v):
-                a.text(b.get_x() + b.get_width() / 2, v, fmt.format(v), ha="center", va="bottom", fontsize=9)
+        note = "published AOPCR uses a different scale" if col == "aopcr" else None
+        _pair(a, ours, rerun_web.get(col, float("nan")), title, fmt, note=note)
 
-    # Row 2, panel 1: UCR-85 mean accuracy, ours vs MILLET (only if the full sweep has run).
+    # Row 2, panel 1: UCR-85 mean accuracy, ours vs the rerun.
     a = ax[1, 0]
-    if has_ucr:
-        ours = float(ucr.loc[winner, "mean_acc_ours"])
-        theirs = float(ucr.loc[winner, "mean_acc_millet"]) if pd.notna(ucr.loc[winner, "mean_acc_millet"]) else float("nan")
-        bars = a.bar([0, 1], [ours, theirs], color=[OK_BLUE, "#999999"], zorder=3)
-        a.set_xticks([0, 1]); a.set_xticklabels(["winner", "MILLET"], fontsize=9)
-        a.set_title("UCR-85 mean accuracy", fontsize=11); a.grid(axis="y", alpha=0.25, zorder=0)
-        for b, v in zip(bars, [ours, theirs]):
-            if pd.notna(v):
-                a.text(b.get_x() + b.get_width() / 2, v, f"{v:.3f}", ha="center", va="bottom", fontsize=9)
+    if has_ucr and rerun_ucr is not None:
+        _pair(a, float(ucr.loc[winner, "mean_acc_ours"]),
+              float(rerun_ucr["mean_acc_ours"]), "UCR-85 mean accuracy", "{:.3f}")
+    elif has_ucr:
+        _pair(a, float(ucr.loc[winner, "mean_acc_ours"]), float("nan"),
+              "UCR-85 mean accuracy", "{:.3f}", note="MILLET not swept yet")
     else:
         a.axis("off")
-        a.text(0.5, 0.5, "UCR-85 mean:\nrun the full sweep\nto fill this in", ha="center", va="center",
-               fontsize=10, color="gray")
+        a.text(0.5, 0.5, "UCR-85 mean:\nrun the full sweep\nto fill this in", ha="center",
+               va="center", fontsize=10, color="gray")
 
-    # Row 2, panel 2: model footprint (params + size), our "small model" goal.
+    # Row 2, panel 2: parameter count, ours vs the rerun. Params and megabytes used to share this
+    # axis - 269 next to 3.54 - so the size bar was invisible. Size now lives in the text box.
     a = ax[1, 1]
     params_k = float(row["params"]) / 1e3 if pd.notna(row["params"]) else float("nan")
-    size_mb = float(row["size_mb"]) if pd.notna(row["size_mb"]) else float("nan")
-    bars = a.bar([0, 1], [params_k, size_mb], color=[OK_BLUE, OK_ORANGE], zorder=3)
-    a.set_xticks([0, 1]); a.set_xticklabels(["params (K)", "size (MB)"], fontsize=9)
-    a.set_title("Model footprint (smaller = better)", fontsize=11); a.grid(axis="y", alpha=0.25, zorder=0)
-    for b, v, fmt in zip(bars, [params_k, size_mb], ["{:.0f}K", "{:.2f}MB"]):
-        if pd.notna(v):
-            a.text(b.get_x() + b.get_width() / 2, v, fmt.format(v), ha="center", va="bottom", fontsize=9)
+    their_k = float(rerun_web.get("params", float("nan"))) / 1e3 if "params" in rerun_web else \
+        (float(df[df["model"] == MILLET_RERUN_ID]["params"].iloc[0]) / 1e3
+         if (df["model"] == MILLET_RERUN_ID).any() else float("nan"))
+    _pair(a, params_k, their_k, "parameters, thousands (lower better)", "{:.0f}K")
 
     # Row 2, panel 3: a plain-words summary box (the headline numbers, spelled out).
     a = ax[1, 2]; a.axis("off")
-    # the id splits cleanly into its three parts, so we can name the two halves separately and say
-    # which of them is ours ("sea_") and which is MILLET's ("mil_") - that is the whole story of the model
+    size_mb = float(row["size_mb"]) if pd.notna(row["size_mb"]) else float("nan")
     _cfg, w_encoder, w_pooling = split_model_id(winner)
+    both_ours = "yes" if is_fully_ours(winner) else "NO - reuses a MILLET part"
     lines = [f"WINNER: {_short_name(winner)}",
              f"encoder: {w_encoder}  ({'MILLET' if is_millet(w_encoder) else 'ours'})",
              f"pooling: {w_pooling}  ({'MILLET' if is_millet(w_pooling) else 'ours'})",
+             f"ours end to end: {both_ours}",
              "",
-             f"WebTraffic acc : {row['acc']:.3f}" + (f"   (MILLET {paper['acc']:.3f})" if 'acc' in paper else ""),
-             f"WebTraffic AOPCR: {row['aopcr']:.2f}" + (f"   (MILLET {paper['aopcr']:.2f})" if 'aopcr' in paper else ""),
-             f"WebTraffic NDCG : {row['ndcg']:.3f}" if pd.notna(row['ndcg']) else "WebTraffic NDCG : n/a"]
+             "                    ours     MILLET rerun"]
+    for col, label, fmt in [("acc", "WebTraffic acc  ", "{:>7.3f}"),
+                            ("aopcr", "WebTraffic AOPCR", "{:>7.2f}"),
+                            ("ndcg", "WebTraffic NDCG ", "{:>7.3f}")]:
+        mine = fmt.format(float(row[col])) if pd.notna(row[col]) else "    n/a"
+        theirs = fmt.format(rerun_web[col]) if col in rerun_web else "    n/a"
+        lines.append(f"{label} {mine}   {theirs}")
     if has_ucr:
-        lines.append(f"UCR-85 mean acc : {float(ucr.loc[winner, 'mean_acc_ours']):.3f}")
-    lines += ["", f"params: {int(row['params']):,}" if pd.notna(row['params']) else "params: n/a",
+        theirs = f"{float(rerun_ucr['mean_acc_ours']):>7.3f}" if rerun_ucr is not None else "    n/a"
+        lines.append(f"UCR-85 mean acc  {float(ucr.loc[winner, 'mean_acc_ours']):>7.3f}   {theirs}")
+    lines += ["",
+              f"params: {int(row['params']):,}" if pd.notna(row["params"]) else "params: n/a",
               f"size  : {size_mb:.2f} MB" if pd.notna(size_mb) else "size  : n/a"]
-    a.text(0.02, 0.98, "\n".join(lines), va="top", ha="left", fontsize=10, family="monospace")
+    if "acc" in published:
+        lines += ["", f"(MILLET published WebTraffic acc {published['acc']:.3f};",
+                  " their AOPCR is on a different scale, so it is",
+                  " not compared here)"]
+    a.text(0.0, 0.98, "\n".join(lines), va="top", ha="left", fontsize=9, family="monospace")
 
-    fig.suptitle(f"Winner model: {_short_name(winner)}   "
-                 f"(best on WebTraffic + UCR)", fontsize=13)
+    fig.suptitle(f"Headline model: {_short_name(winner)}   "
+                 f"(best average rank over UCR accuracy, UCR AOPCR, NDCG and size)", fontsize=13)
     fig.tight_layout(rect=(0, 0, 1, 0.96))
     return [_save(fig, os.path.join(figdir, "winner_dashboard.png"))]
 
