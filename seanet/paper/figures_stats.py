@@ -149,8 +149,8 @@ def critical_difference(mat: pd.DataFrame, higher_better: bool = True,
                  f"with a complete sweep. Models are placed by average rank ({metric_name}), best on "
                  f"the left. A thick horizontal bar joins models whose pairwise differences are not "
                  f"statistically significant under a Wilcoxon signed-rank test with Holm correction "
-                 f"at alpha={alpha}; models sharing a bar cannot be separated by this evidence. "
-                 f"Labels read '<encoder>__<pooling>', abbreviated, where sea\\_ marks a component "
+                 f"at $\\alpha$={alpha}; models sharing a bar cannot be separated by this evidence. "
+                 f"Labels read \\texttt{{encoder\\_\\_pooling}}, abbreviated, where sea\\_ marks a component "
                  f"introduced in this work and mil\\_ one reused unchanged from MILLET."),
         question=f"Which differences in {metric_name} are statistically significant?")
 

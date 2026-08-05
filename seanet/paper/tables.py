@@ -84,6 +84,28 @@ def _bold_best(df: pd.DataFrame, column: str, higher_better: bool = True) -> pd.
     return out
 
 
+def _tex_cell(value) -> str:
+    """
+    Make one table cell safe to compile.
+
+    Two things in our data are ordinary text to Python but commands to LaTeX:
+
+        _   model names are full of them (sea_mstcn_sep) and LaTeX reads "_" as
+            "start a subscript", which stops the build with "Missing $ inserted"
+        ...  shorten() cuts long names in the middle with a real "…" character,
+            which the report's font does not have
+
+    So we spell both the LaTeX way. Cells we built ourselves already hold a real
+    command (the bolded best value), so those are left untouched.
+    """
+    text = str(value)
+    if "\\textbf{" in text:                  # already LaTeX, do not touch it
+        return text
+    for ch in ("&", "%", "$", "#", "_", "{", "}"):
+        text = text.replace(ch, "\\" + ch)
+    return text.replace("…", "\\dots{}")
+
+
 def write_table(df: pd.DataFrame, name: str, caption: str, label: Optional[str] = None,
                 columns: Optional[List[str]] = None, bold: Optional[Dict[str, bool]] = None,
                 directory: str = TABLES_DIR) -> Dict:
@@ -109,7 +131,10 @@ def write_table(df: pd.DataFrame, name: str, caption: str, label: Optional[str] 
     pretty = _format(raw)
     for column, higher in (bold or {}).items():
         pretty = _bold_best(pretty, column, higher)
-    headers = [COLUMN_TITLES.get(c, c.replace("_", " ")) for c in keep]
+    # Known columns have a hand-written title (already LaTeX-safe). Anything else is a raw
+    # column name - in the per-dataset table those are model names, so drop the underscores
+    # and spell the "…" that shorten() may have put in the middle.
+    headers = [COLUMN_TITLES.get(c, c.replace("_", " ")).replace("…", "\\dots{}") for c in keep]
 
     # --- LaTeX (booktabs, no vertical rules) ---
     align = "l" + "r" * (len(keep) - 1)                      # names left, numbers right
@@ -118,8 +143,7 @@ def write_table(df: pd.DataFrame, name: str, caption: str, label: Optional[str] 
              f"\\begin{{tabular}}{{{align}}}", "\\toprule",
              " & ".join(headers) + " \\\\", "\\midrule"]
     for _, row in pretty.iterrows():
-        cells = [str(v).replace("_", "\\_") if i == 0 else str(v)
-                 for i, v in enumerate(row[keep])]
+        cells = [_tex_cell(v) for v in row[keep]]
         lines.append(" & ".join(cells) + " \\\\")
     lines += ["\\bottomrule", "\\end{tabular}", "\\end{table}"]
     tex_path = os.path.join(directory, f"{name}.tex")

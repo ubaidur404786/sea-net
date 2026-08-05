@@ -59,3 +59,17 @@ MILLET_Overview.png
 
 CLUSTERS_CMD.md
 text papers/
+ICLR_2025_Report/
+
+# --- The report ------------------------------------------------------------
+# The line "*.tex" above was there to keep stray LaTeX scratch files out of the
+# code repo. But the report lives in report/ and we DO want its sources in git,
+# so we switch the rule back off for that folder only. (Order matters in
+# .gitignore: a later "!" rule cancels an earlier ignore rule.)
+!/report/**/*.tex
+!/results/paper_figures/**/*.tex
+
+# Everything latexmk generates. It is rebuilt from the .tex files in seconds,
+# so committing it would only create noise and merge conflicts.
+/report/build/
+/report/

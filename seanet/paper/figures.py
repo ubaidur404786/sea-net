@@ -257,10 +257,12 @@ def benchmark_bands(lb: pd.DataFrame, column: str = "web_acc") -> List[Dict]:
         entries.append(S.save(
             fig, section, f"fig{band_no}_benchmark_{rank_word}_{column}",
             title=f"Benchmark band {band_no}: {rank_word} models ({METRICS[column]['label']})",
+            # NOTE: keep the $...$ around \geq / \leq / <. Stripping them leaves a bare \geq
+            # in normal text, and LaTeX then stops with "Missing $ inserted".
             caption=(f"{METRICS[column]['label']} of the {rank_word} models on WebTraffic "
-                     f"({n} models, {title.replace('$', '')}). Bars are sorted best-first; blue marks "
+                     f"({n} models, {title}). Bars are sorted best-first; blue marks "
                      f"models proposed in this work and orange our reproduction of the published "
-                     f"backbones. Labels read '<encoder>__<pooling>', abbreviated, where sea\\_ "
+                     f"backbones. Labels read \\texttt{{encoder\\_\\_pooling}}, abbreviated, where sea\\_ "
                      f"marks a component introduced here and mil\\_ one reused unchanged from "
                      f"MILLET. "
                      f"The dashed line is the "
@@ -644,8 +646,8 @@ def ablation_figures(lb: pd.DataFrame) -> List[Dict]:
         title="Accuracy by pooling head (encoder varies within each group)",
         name="ablation_pooling",
         question="Which pooling head gives the best accuracy, independently of the encoder?",
-        caption=("WebTraffic accuracy grouped by MIL pooling head. Heads prefixed mil_ are reused "
-                 "unchanged from MILLET; heads prefixed sea_ are proposed in this work. Dots are "
+        caption=("WebTraffic accuracy grouped by MIL pooling head. Heads prefixed mil\\_ are reused "
+                 "unchanged from MILLET; heads prefixed sea\\_ are proposed in this work. Dots are "
                  "individual models; n is the group size."))
     if entry:
         entries.append(entry)
@@ -714,6 +716,6 @@ def _encoder_pooling_heatmap(lb: pd.DataFrame, metric: str = "web_acc") -> Optio
         caption=("Best WebTraffic accuracy achieved by each encoder and pooling-head combination. "
                  "Blank cells were never trained. Rows and columns are sorted by their best value, "
                  "so strong components appear top-left. Prefixes are dropped from the labels for "
-                 "space: all encoders and heads named here are sea_ (ours) except those marked "
+                 "space: all encoders and heads named here are sea\\_ (ours) except those marked "
                  "otherwise in the text."),
         question="Which encoder and pooling-head COMBINATION works best, rather than which part?")
