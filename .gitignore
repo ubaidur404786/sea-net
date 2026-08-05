@@ -59,7 +59,7 @@ MILLET_Overview.png
 
 CLUSTERS_CMD.md
 text papers/
-ICLR_2025_Report/
+# ICLR_2025_Report/
 
 # --- The report ------------------------------------------------------------
 # The line "*.tex" above was there to keep stray LaTeX scratch files out of the

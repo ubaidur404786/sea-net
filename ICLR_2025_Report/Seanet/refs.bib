@@ -1,0 +1,270 @@
+% =====================================================================
+% refs.bib - every paper cited in the internship report.
+%
+% How it works: I write \citep{early2024millet} in a section file, bibtex
+% looks the key up here, prints the reference and adds it to the list at
+% the end. A "[?]" in the PDF means the key is missing here, or that I
+% only ran pdflatex without bibtex.
+%
+% Tip: Google Scholar -> the " icon -> BibTeX. Always check the year and
+% the venue after pasting; Scholar gets them wrong often enough to matter.
+%
+% TODO before submitting: remove any entry I never cite. An uncited entry
+% does not appear in the PDF, but it clutters this file.
+% =====================================================================
+
+% ---------------------------------------------------------------------
+% The paper this work builds on
+% ---------------------------------------------------------------------
+@inproceedings{early2024millet,
+  title     = {Inherently Interpretable Time Series Classification via Multiple Instance Learning},
+  author    = {Early, Joseph and Cheung, Gavin K. C. and Cutajar, Kurt and Xie, Hanting
+               and Kandola, Jasmina and Twomey, Niall},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2024}
+}
+
+% ---------------------------------------------------------------------
+% Deep learning for time series classification
+% ---------------------------------------------------------------------
+@inproceedings{wang2017fcn,
+  title     = {Time Series Classification from Scratch with Deep Neural Networks:
+               A Strong Baseline},
+  author    = {Wang, Zhiguang and Yan, Weizhong and Oates, Tim},
+  booktitle = {International Joint Conference on Neural Networks (IJCNN)},
+  pages     = {1578--1585},
+  year      = {2017}
+}
+
+@article{fawaz2020inceptiontime,
+  title   = {InceptionTime: Finding {AlexNet} for Time Series Classification},
+  author  = {Ismail Fawaz, Hassan and Lucas, Benjamin and Forestier, Germain and
+             Pelletier, Charlotte and Schmidt, Daniel F. and Weber, Jonathan and
+             Webb, Geoffrey I. and Idoumghar, Lhassane and Muller, Pierre-Alain and
+             Petitjean, Fran{\c{c}}ois},
+  journal = {Data Mining and Knowledge Discovery},
+  volume  = {34},
+  number  = {6},
+  pages   = {1936--1962},
+  year    = {2020}
+}
+
+@article{fawaz2019review,
+  title   = {Deep Learning for Time Series Classification: A Review},
+  author  = {Ismail Fawaz, Hassan and Forestier, Germain and Weber, Jonathan and
+             Idoumghar, Lhassane and Muller, Pierre-Alain},
+  journal = {Data Mining and Knowledge Discovery},
+  volume  = {33},
+  number  = {4},
+  pages   = {917--963},
+  year    = {2019}
+}
+
+@article{dau2019ucr,
+  title   = {The {UCR} Time Series Archive},
+  author  = {Dau, Hoang Anh and Bagnall, Anthony and Kamgar, Kaveh and
+             Yeh, Chin-Chia Michael and Zhu, Yan and Gharghabi, Shaghayegh and
+             Ratanamahatana, Chotirat Ann and Keogh, Eamonn},
+  journal = {IEEE/CAA Journal of Automatica Sinica},
+  volume  = {6},
+  number  = {6},
+  pages   = {1293--1305},
+  year    = {2019}
+}
+
+% ---------------------------------------------------------------------
+% Building blocks of my encoder
+% ---------------------------------------------------------------------
+@article{bai2018tcn,
+  title   = {An Empirical Evaluation of Generic Convolutional and Recurrent Networks
+             for Sequence Modeling},
+  author  = {Bai, Shaojie and Kolter, J. Zico and Koltun, Vladlen},
+  journal = {arXiv preprint arXiv:1803.01271},
+  year    = {2018}
+}
+
+@inproceedings{chollet2017xception,
+  title     = {Xception: Deep Learning with Depthwise Separable Convolutions},
+  author    = {Chollet, Fran{\c{c}}ois},
+  booktitle = {IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {1251--1258},
+  year      = {2017}
+}
+
+@article{howard2017mobilenets,
+  title   = {MobileNets: Efficient Convolutional Neural Networks for Mobile Vision
+             Applications},
+  author  = {Howard, Andrew G. and Zhu, Menglong and Chen, Bo and Kalenichenko, Dmitry
+             and Wang, Weijun and Weyand, Tobias and Andreetto, Marco and Adam, Hartwig},
+  journal = {arXiv preprint arXiv:1704.04861},
+  year    = {2017}
+}
+
+@inproceedings{ioffe2015batchnorm,
+  title     = {Batch Normalization: Accelerating Deep Network Training by Reducing
+               Internal Covariate Shift},
+  author    = {Ioffe, Sergey and Szegedy, Christian},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  pages     = {448--456},
+  year      = {2015}
+}
+
+% ---------------------------------------------------------------------
+% Multiple instance learning (including the two pathology papers I adapt)
+% ---------------------------------------------------------------------
+@article{dietterich1997mil,
+  title   = {Solving the Multiple Instance Problem with Axis-Parallel Rectangles},
+  author  = {Dietterich, Thomas G. and Lathrop, Richard H. and Lozano-P{\'e}rez, Tom{\'a}s},
+  journal = {Artificial Intelligence},
+  volume  = {89},
+  number  = {1-2},
+  pages   = {31--71},
+  year    = {1997}
+}
+
+@inproceedings{ilse2018attention,
+  title     = {Attention-based Deep Multiple Instance Learning},
+  author    = {Ilse, Maximilian and Tomczak, Jakub M. and Welling, Max},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  pages     = {2127--2136},
+  year      = {2018}
+}
+
+@inproceedings{hashimoto2020msdamil,
+  title     = {Multi-scale Domain-adversarial Multiple-instance {CNN} for Cancer Subtype
+               Classification with Unannotated Histopathological Images},
+  author    = {Hashimoto, Noriaki and Fukushima, Daisuke and Koga, Ryoichi and
+               Takagi, Yusuke and Ko, Kaho and Kohno, Kei and Nakaguro, Masato and
+               Nakamura, Shigeo and Hontani, Hidekata and Takeuchi, Ichiro},
+  booktitle = {IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {3852--3861},
+  year      = {2020}
+}
+
+@inproceedings{li2021dsmil,
+  title     = {Dual-stream Multiple Instance Learning Network for Whole Slide Image
+               Classification with Self-supervised Contrastive Learning},
+  author    = {Li, Bin and Li, Yin and Eliceiri, Kevin W.},
+  booktitle = {IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {14318--14328},
+  year      = {2021}
+}
+
+% ---------------------------------------------------------------------
+% Interpretability: post-hoc methods and the case for built-in ones
+% ---------------------------------------------------------------------
+@inproceedings{ribeiro2016lime,
+  title     = {``Why Should {I} Trust You?'': Explaining the Predictions of Any Classifier},
+  author    = {Ribeiro, Marco Tulio and Singh, Sameer and Guestrin, Carlos},
+  booktitle = {ACM SIGKDD International Conference on Knowledge Discovery and Data Mining},
+  pages     = {1135--1144},
+  year      = {2016}
+}
+
+@inproceedings{lundberg2017shap,
+  title     = {A Unified Approach to Interpreting Model Predictions},
+  author    = {Lundberg, Scott M. and Lee, Su-In},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  pages     = {4765--4774},
+  year      = {2017}
+}
+
+@inproceedings{sundararajan2017ig,
+  title     = {Axiomatic Attribution for Deep Networks},
+  author    = {Sundararajan, Mukund and Taly, Ankur and Yan, Qiqi},
+  booktitle = {International Conference on Machine Learning (ICML)},
+  pages     = {3319--3328},
+  year      = {2017}
+}
+
+@article{rudin2019stop,
+  title   = {Stop Explaining Black Box Machine Learning Models for High Stakes
+             Decisions and Use Interpretable Models Instead},
+  author  = {Rudin, Cynthia},
+  journal = {Nature Machine Intelligence},
+  volume  = {1},
+  number  = {5},
+  pages   = {206--215},
+  year    = {2019}
+}
+
+@article{samek2017aopc,
+  title   = {Evaluating the Visualization of What a Deep Neural Network Has Learned},
+  author  = {Samek, Wojciech and Binder, Alexander and Montavon, Gr{\'e}goire and
+             Lapuschkin, Sebastian and M{\"u}ller, Klaus-Robert},
+  journal = {IEEE Transactions on Neural Networks and Learning Systems},
+  volume  = {28},
+  number  = {11},
+  pages   = {2660--2673},
+  year    = {2017}
+}
+
+@article{jarvelin2002ndcg,
+  title   = {Cumulated Gain-based Evaluation of {IR} Techniques},
+  author  = {J{\"a}rvelin, Kalervo and Kek{\"a}l{\"a}inen, Jaana},
+  journal = {ACM Transactions on Information Systems},
+  volume  = {20},
+  number  = {4},
+  pages   = {422--446},
+  year    = {2002}
+}
+
+% ---------------------------------------------------------------------
+% Method, tools and infrastructure
+% ---------------------------------------------------------------------
+@article{demsar2006statistical,
+  title   = {Statistical Comparisons of Classifiers over Multiple Data Sets},
+  author  = {Dem{\v{s}}ar, Janez},
+  journal = {Journal of Machine Learning Research},
+  volume  = {7},
+  pages   = {1--30},
+  year    = {2006}
+}
+
+@inproceedings{kingma2015adam,
+  title     = {Adam: A Method for Stochastic Optimization},
+  author    = {Kingma, Diederik P. and Ba, Jimmy},
+  booktitle = {International Conference on Learning Representations (ICLR)},
+  year      = {2015}
+}
+
+@inproceedings{paszke2019pytorch,
+  title     = {PyTorch: An Imperative Style, High-Performance Deep Learning Library},
+  author    = {Paszke, Adam and Gross, Sam and Massa, Francisco and Lerer, Adam and
+               Bradbury, James and Chanan, Gregory and Killeen, Trevor and Lin, Zeming
+               and Gimelshein, Natalia and Antiga, Luca and others},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  pages     = {8026--8037},
+  year      = {2019}
+}
+
+@inproceedings{akiba2019optuna,
+  title     = {Optuna: A Next-generation Hyperparameter Optimization Framework},
+  author    = {Akiba, Takuya and Sano, Shotaro and Yanase, Toshihiko and
+               Ohta, Takeru and Koyama, Masanori},
+  booktitle = {ACM SIGKDD International Conference on Knowledge Discovery and Data Mining},
+  pages     = {2623--2631},
+  year      = {2019}
+}
+
+@inproceedings{balouek2013grid5000,
+  title     = {Adding Virtualization Capabilities to the {Grid'5000} Testbed},
+  author    = {Balouek, Daniel and Carpen Amarie, Alexandra and Charrier, Ghislain and
+               Desprez, Fr{\'e}d{\'e}ric and Jeannot, Emmanuel and Jeanvoine, Emmanuel and
+               L{\`e}bre, Adrien and Margery, David and Niclausse, Nicolas and
+               Nussbaum, Lucas and Richard, Olivier and P{\'e}rez, Christian and
+               Quesnel, Flavien and Rohr, Cyril and Sarzyniec, Luc},
+  booktitle = {Cloud Computing and Services Science},
+  series    = {Communications in Computer and Information Science},
+  volume    = {367},
+  pages     = {3--20},
+  year      = {2013}
+}
+
+% ---------------------------------------------------------------------
+% TODO: add here any paper I read during the internship and actually cite.
+% Candidates I may still need:
+%   - a recent TSC benchmark ("bake off" style) for the related-work paragraph
+%   - a paper on evaluating explanation faithfulness
+%   - anything my supervisor recommends
+% ---------------------------------------------------------------------
