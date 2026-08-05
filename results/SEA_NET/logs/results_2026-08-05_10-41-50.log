@@ -1,0 +1,37 @@
+[log] command 'results' started at 2026-08-05_10-41-50
+[log] a copy of everything below is being saved to: results/SEA_NET/logs/results_2026-08-05_10-41-50.log
+
+Cross-model comparison over 28 model(s), on the 85 datasets MILLET published (best accuracy first):   (38 more have WebTraffic-only results, not shown here)
+  model                                acc    loss    aopcr   acc W/T/L
+  seanet__sea_mstcn_sep__mil_additive  0.8298  0.5088    0.551    24/19/42
+  seanet_classwise__sea_mstcn_sep__sea_classwise_conjunctive  0.8292  0.5113    0.564    27/19/39
+  millet__mil_inceptiontime__mil_conjunctive  0.8274  0.5297    0.812    13/25/46
+  seanet_conjunctive__sea_mstcn_sep__mil_conjunctive  0.8238  0.5180    0.626    23/20/42
+  seanet_gated_max__sea_mstcn_sep_gated__sea_classwise_conjunctive  0.8237  0.5214    0.619    20/17/48
+  seanet_inputgate_adaptive__sea_mstcn_sep_inputgate__sea_adaptive_classwise  0.8153  0.5545    0.964    20/15/50
+  resnet__mil_resnet__mil_conjunctive  0.8146  0.5709    1.330    25/11/49
+  seanet_bottleneck_gatedattn__sea_mstcn_sep_bottleneck__sea_gated_attention  0.8146  0.5330    0.688    23/14/48
+  fcn__mil_fcn__mil_conjunctive     0.8141  0.5727    1.378    21/12/52
+  seanet_recon_adaptive__sea_mstcn_sep_recon__sea_adaptive_classwise  0.8140  0.5502    1.091    19/18/48
+  seanet_acp__sea_mstcn_sep__sea_adaptive_classwise  0.8134  0.5354    0.891    25/17/43
+  seanet_inputgate_topk__sea_mstcn_sep_inputgate__sea_topk_conjunctive  0.8131  0.5365    0.964    23/16/46
+  seanet_softmax__sea_mstcn_sep__sea_softmax_conjunctive  0.8131  0.5436    1.247    17/13/55
+  seanet_gated_max_topk__sea_mstcn_sep_gated__sea_topk_conjunctive  0.8108  0.5464    0.936    22/16/47
+  seanet_bottleneck_softmax__sea_mstcn_sep_bottleneck__sea_softmax_conjunctive  0.8106  0.5509    0.759    22/17/46
+  seanet_bottleneck_topk__sea_mstcn_sep_bottleneck__sea_topk_conjunctive  0.8097  0.5506    1.091    20/15/50
+  seanet_slim_topk__sea_mstcn_sep__sea_topk_conjunctive  0.8093  0.5525    1.018    20/11/54
+  seanet_spiketrend_topk__sea_mstcn_sep_spiketrend__sea_topk_conjunctive  0.8089  0.5460    1.108    19/23/43
+  seanet_gated_mean_topk__sea_mstcn_sep_gated__sea_topk_conjunctive  0.8083  0.5560    1.064    19/13/53
+  seanet_recon_topk__sea_mstcn_sep_recon__sea_topk_conjunctive  0.8063  0.5530    1.222    19/19/47
+  seanet_gated_last_gatedattn__sea_mstcn_sep_gated__sea_gated_attention  0.8048  0.5564    0.500    17/15/53
+  seanet_spiketrend_gatedattn__sea_mstcn_sep_spiketrend__sea_gated_attention  0.8039  0.5537    0.682    15/14/56
+  seanet_gated_last_adaptive__sea_mstcn_sep_gated__sea_adaptive_classwise  0.8029  0.5633    0.796    18/18/49
+  seanet_gated_last_topk__sea_mstcn_sep_gated__sea_topk_conjunctive  0.8015  0.5531    0.967    17/17/51
+  seanet_spiketrend_adaptive__sea_mstcn_sep_spiketrend__sea_adaptive_classwise  0.8010  0.5641    0.677    24/12/49
+  seanet_gated__sea_mstcn_sep_gated__sea_classwise_conjunctive  0.7900  0.5848    0.486    16/15/54
+  seanet_gated_last__sea_mstcn_sep_gated__sea_classwise_conjunctive  0.7888  0.5922    0.535    17/12/56
+  seanet_bottleneck_adaptive__sea_mstcn_sep_bottleneck__sea_adaptive_classwise  0.7772  0.5645    0.886       0/0/6
+  MILLET (the baseline)             0.8445  1.2241    4.553
+  wrote results/SEA_NET/model_comparison.csv
+
+[log] finished; full output saved to results/SEA_NET/logs/results_2026-08-05_10-41-50.log

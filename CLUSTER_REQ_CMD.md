@@ -3,6 +3,7 @@ oarsub -q abaca -I -l gpu=1,walltime=12:00:00 -p musa
 
 # A100 80 GiB
 oarsub -q abaca -I -l gpu=1,walltime=12:00:00 -p esterel37
+oarsub -q besteffort -I -l gpu=1,walltime=12:00:00 -p "esterel37"
 
 # RTX A6000 48 GiB
 oarsub -q abaca -I -l gpu=1,walltime=8:00:00 -p esterel17 not working 

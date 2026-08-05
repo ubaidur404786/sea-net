@@ -20,7 +20,7 @@ run:
   mode: single # single = train + evaluate one dataset (the only mode for now)
   dataset: WebTraffic # the dataset to use when mode is "single"
   smoke: false # true = quick 3-epoch check (for testing the pipeline, NOT a real result)
-  re_train: true # false = if this dataset is already done for this model, skip it (the normal,
+  re_train: false # false = if this dataset is already done for this model, skip it (the normal,
     #         safe behaviour). true = train it AGAIN even if it is already done, and
     #         REPLACE its old row in results.csv with the new numbers. Turn this on
     #         when you just want to re-check a model's accuracy without hand-deleting

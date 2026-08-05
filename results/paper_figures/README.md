@@ -103,10 +103,10 @@ Each table is written as `.tex` (booktabs), `.csv` (raw numbers) and `.md`.
 | table | rows | about |
 |---|---|---|
 | `table1_main_results` | 10 | Main results: the 10 best models by WebTraffic accuracy |
-| `table_appendix_full_leaderboard` | 57 | Complete leaderboard: all 57 evaluated models, ranked by WebTraffic accuracy |
-| `table_ranking_accuracy` | 16 | Statistical summary over 85 datasets for the 16 fully-swept models: average accuracy rank (1 is best), the per-dataset win/tie/loss record against the published MILLET results (ties are differences within 0 |
+| `table_appendix_full_leaderboard` | 66 | Complete leaderboard: all 66 evaluated models, ranked by WebTraffic accuracy |
+| `table_ranking_accuracy` | 27 | Statistical summary over 84 datasets for the 27 fully-swept models: average accuracy rank (1 is best), the per-dataset win/tie/loss record against the published MILLET results (ties are differences within 0 |
 | `table_efficiency` | 15 | Computational cost of the 15 most accurate models |
-| `table_appendix_per_dataset` | 85 | Per-dataset accuracy of the 5 best-ranked models against the published MILLET results, over 85 datasets |
+| `table_appendix_per_dataset` | 84 | Per-dataset accuracy of the 5 best-ranked models against the published MILLET results, over 84 datasets |
 
 ## The rule these figures follow
 
