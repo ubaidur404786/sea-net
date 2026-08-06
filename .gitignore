@@ -80,9 +80,9 @@ text papers/
 # ICLR_2025_Report/Seanet is the REAL report I am writing. Without the line
 # below the blanket "*.tex" above was hiding all of it from git - the whole
 # draft was untracked and would have been lost by a git clean.
-# !/ICLR_2025_Report/**/*.tex
-!/report/**/*.tex
-!/results/paper_figures/**/*.tex
+
+
+
 
 # Everything latexmk generates. It is rebuilt from the .tex files in seconds,
 # so committing it would only create noise and merge conflicts.
