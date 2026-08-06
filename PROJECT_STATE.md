@@ -123,9 +123,24 @@ without checking here first.**
 | `results/SEA_NET/profile.csv` | params / FLOPs / memory / latency | yes — efficiency table |
 | `results/SEA_NET/data_summary.csv` | dataset statistics | yes — setup section |
 
-Deleted on 2026-08-06 as junk (recoverable from git history if ever needed):
-`results/SEA_NET/*/figures/` and `results/SEA_NET/*/logs/` — per-run preview
-PNGs and training logs, superseded by `results/paper_figures/`.
+**Cleanup done 2026-08-06 (~138 MB freed).** All of it is still recoverable from
+git history, because the files were committed before being deleted. Removed:
+
+- `results/SEA_NET/*/figures/` — per-run preview PNGs, superseded by `results/paper_figures/`
+- `results/SEA_NET/*/logs/` — per-run training logs
+- `logs/` and `OAR.*.stdout` at the root — raw Grid5000 console dumps, ~108 MB.
+  `logs/` is recreated automatically: `scripts/run_all.sh` and `scripts/launch.sh`
+  both run `mkdir -p logs` first. Both are now in `.gitignore`.
+
+**Kept on purpose — do not confuse these with the deleted ones:**
+
+- `results/SEA_NET/figures/` (top level, 13 PNGs) — cross-model comparison
+  figures: `winner_dashboard`, `model_comparison`, WebTraffic accuracy tier bands
+- `results/SEA_NET/logs/` (top level, 56 logs) — the log of every `main.py`
+  command run (`paper`, `report`, `teaser`, `results`, `web-compare`, `leaderboard`)
+
+The difference is the folder depth: `results/SEA_NET/<model>/figures/` was junk,
+`results/SEA_NET/figures/` is a keeper.
 
 ### Using a generated figure or table in the report
 
@@ -183,7 +198,6 @@ results/                 <- all outputs, see section 4
 ICLR_2025_Report/        <- THE REPORT, see section 3
 Latex/                   <- old presentation leftovers + archi_level1-3.png
 report/                  <- OLD abandoned draft, ignored by git — not the report
-logs/, OAR.*.stdout      <- raw Grid5000 job dumps, ~108 MB, not used by anything
 workflow.md              <- my long working notes (git-ignored, 53 KB)
 GRID5K_CMD_HELP.md       <- Grid5000 command cheatsheet (30 KB)
 MLFLOW_GUIDE.md          <- MLflow how-to
