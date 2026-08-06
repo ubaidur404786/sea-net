@@ -1,0 +1,178 @@
+% =====================================================================
+% 7. EXPERIMENTAL SETUP AND ENGINEERING     target: 2.5 - 3 pages
+%
+% "How I did it". Two things live here:
+%   (a) the scientific protocol (data, baselines, metrics, seeds),
+%   (b) the engineering I built to make the study possible.
+% The examiner said NOT to give a full dataset description or a full
+% hyperparameter list -- keep those short, and push details to the
+% appendix.
+% =====================================================================
+
+\section{Experimental Setup}
+\label{sec:setup}
+
+\begin{guide}
+Keep this section factual and compact. A reader should be able to answer: what data,
+what baselines, what recipe, what metrics, how many runs. Anything longer than three
+lines about hyperparameters belongs in \Cref{app:repro}.
+\end{guide}
+
+% ---------------------------------------------------------------------
+\subsection{Datasets}
+\label{sec:setup:data}
+
+\begin{guide}
+Half a page, no more. One paragraph per dataset family, and one small table. Do not
+list the 128 \ucr{} datasets here -- the appendix can hold the per-dataset table.
+\textbf{Questions to answer:} Why is \webtraffic{} special (it is the only one with
+per-time-step ground truth, so it is the only place NDCG@$n$ can be computed)? Why
+also run 85 \ucr{} datasets (to show the result is not one lucky dataset)?
+\end{guide}
+
+\paragraph{\webtraffic{}.}
+\todo{Three or four sentences: synthetic dataset from \citet{early2024millet},
+\num{n} series of length \num{T}, \num{C} classes, and -- the important part -- the
+time steps that were modified are known, so explanations can be scored directly. Say
+that I used it as my screening set: fast to train, and the only place explanation
+quality can be measured against the truth.}
+
+\paragraph{\ucr{} archive.}
+\todo{Two or three sentences: the \ucr{} archive \citep{dau2019ucr} holds 128
+univariate datasets of very different lengths and sizes; \millet{} published results
+on 85 of them, so I sweep the same 85 for a fair head-to-head, plus the rest for
+completeness.}
+
+\begin{table}[h]
+\caption{The two dataset families used in this study. \todo{Fill in the numbers from
+\texttt{results/SEA\_NET/data\_summary.csv}.}}
+\label{tab:datasets}
+\begin{center}
+\small
+\begin{tabular}{lrrrl}
+\toprule
+\textbf{Dataset} & \textbf{\#series} & \textbf{Length} & \textbf{\#classes} &
+\textbf{Per-step ground truth?} \\
+\midrule
+\webtraffic{}       & \tbd & \tbd & \tbd & yes \\
+\ucr{} (85 published) & \tbd & \tbd (range) & \tbd (range) & no \\
+\ucr{} (128 total)    & \tbd & \tbd (range) & \tbd (range) & no \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+% ---------------------------------------------------------------------
+\subsection{Baselines}
+\label{sec:setup:baselines}
+
+\begin{guide}
+Be very clear about one point, because it is the strongest methodological decision of
+the internship: I did not only compare against numbers printed in a paper, I
+\emph{re-trained} the published backbones myself with my own recipe. Explain why that
+matters (different recipes give different numbers, and the comparison would otherwise
+be unfair in my favour or against me).
+\end{guide}
+
+\todo{One paragraph: FCN \citep{wang2017fcn}, ResNet \citep{wang2017fcn} and
+InceptionTime \citep{fawaz2020inceptiontime}, each with \millet{} Conjunctive pooling,
+trained here with exactly the same recipe as \seanet{}. Also report the published
+\millet{} numbers, but never mix them with my own in the same column.}
+
+% ---------------------------------------------------------------------
+\subsection{Training protocol}
+\label{sec:setup:protocol}
+
+\begin{guide}
+Short paragraph plus a compact table. The examiner does not want every hyperparameter,
+so give the ones that affect a comparison (optimiser, epochs, batch size, early
+stopping, seeds) and send the rest to the appendix.
+\textbf{Questions to answer:} What is fixed for every model, and why does that make
+the comparison fair? How many seeds, and why that number? How is early stopping done
+when a dataset has very few training series?
+\end{guide}
+
+\todo{One paragraph describing the recipe in words, then:}
+
+\begin{table}[h]
+\caption{Training recipe, identical for every model in this study.
+\todo{Fill from \texttt{configs/main.yaml}.}}
+\label{tab:protocol}
+\begin{center}
+\small
+\begin{tabular}{ll}
+\toprule
+\textbf{Setting} & \textbf{Value} \\
+\midrule
+Optimiser              & \todo{Adam \citep{kingma2015adam}, lr \tbd} \\
+Epochs / early stopping& \tbd \\
+Batch size             & \tbd \\
+Validation split       & \todo{stratified 80/20 when enough training series} \\
+Label smoothing        & \tbd \\
+Seeds                  & \todo{3 seeds; results reported as mean $\pm$ std} \\
+Hardware               & \todo{Grid'5000 GPU nodes (Lille, Sophia)} \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+% ---------------------------------------------------------------------
+\subsection{Metrics}
+\label{sec:setup:metrics}
+
+\todo{Short paragraph: accuracy and cross-entropy loss for classification; AOPCR and
+NDCG@$n$ for explanation quality (defined in \Cref{sec:bg:metrics}); parameters,
+model size, FLOPs, training time and inference latency for cost. Say explicitly that
+reporting cost prevents a model from ``winning'' just by being bigger.}
+
+\begin{guide}
+Add one warning sentence here about AOPCR being unnormalised, so a reader does not
+compare my AOPCR column with the published one. Repeating this once in
+\Cref{sec:results} is fine -- it is the single easiest number to misread.
+\end{guide}
+
+% ---------------------------------------------------------------------
+\subsection{The experimental pipeline I built}
+\label{sec:setup:pipeline}
+
+\begin{contribution}
+The whole experimental pipeline -- configuration system, model registry, resumable
+sweeps, results store, figure and table generation, experiment tracking -- is my own
+work. It is what made it possible to train and compare \num{N} model variants over
+129 datasets within the internship.
+\end{contribution}
+
+\begin{guide}
+This subsection is where the software engineering side of the internship becomes
+visible, and examiners value it. Do not turn it into a code tour: give the design
+idea, one diagram, and the benefit of each choice in half a sentence.
+\textbf{Questions to answer:} Why a config-driven design instead of editing code for
+each experiment? How does a sweep survive a job that is killed by the scheduler? How
+do I guarantee that no number in this report was typed by hand?
+\end{guide}
+
+\todo{One paragraph: a model is always \emph{encoder + pooling head}, both chosen by
+name in a YAML file, so any combination can be trained without touching the code. Each
+model writes into its own results folder, one row per dataset, updated in place.}
+
+\todo{One paragraph: sweeps are resumable (a finished dataset is recorded and skipped
+on restart), which matters because Grid'5000 jobs have a time limit. Runs are tracked
+with MLflow, and every figure and table in this report is regenerated by a single
+command from the stored results.}
+
+\begin{figure}[t]
+  \centering
+  \figph{\textbf{Figure X -- Training and evaluation pipeline.} Config (YAML)
+  $\rightarrow$ data loading $\rightarrow$ model build (encoder + pooling head)
+  $\rightarrow$ training with early stopping $\rightarrow$ evaluation (accuracy, loss,
+  AOPCR, NDCG) $\rightarrow$ per-model results store $\rightarrow$ automatic figures
+  and \LaTeX{} tables $\rightarrow$ this report. Show the resume loop and the MLflow
+  side branch.}
+  \caption{\todo{Caption: the path from a config file to a number in this report; no
+  value is copied by hand.}}
+  \label{fig:pipeline}
+\end{figure}
+
+\todo{Optional last paragraph: the tools used (PyTorch \citep{paszke2019pytorch},
+MLflow, Optuna \citep{akiba2019optuna}, Git, \LaTeX{}) and the environment differences
+between my local Windows machine and the Grid'5000 Linux nodes.}

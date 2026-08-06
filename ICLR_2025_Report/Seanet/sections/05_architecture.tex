@@ -1,0 +1,239 @@
+% =====================================================================
+% 5. THE SEA-NET ARCHITECTURE (MY PROPOSAL)     target: 3.5 - 4 pages
+%
+% First half of the examiner's third part: "what I did, how I did it,
+% and why I chose that approach". Every subsection should answer WHY,
+% not only WHAT. This section is about the ENCODER; the pooling heads
+% get their own section right after.
+%
+% All figures here are placeholders. The new architecture diagram will be
+% drawn later and dropped into figures/.
+% =====================================================================
+
+\section{Proposed Architecture: \seanet{}}
+\label{sec:architecture}
+
+\begin{contribution}
+The encoder described in this section is my own design. It replaces the
+InceptionTime backbone used by \millet{} while keeping exactly the same interface, so
+that any encoder can be paired with any pooling head and the comparison stays fair.
+\end{contribution}
+
+\begin{guide}
+Structure that works well here: design goals $\rightarrow$ overview picture
+$\rightarrow$ one building block in detail $\rightarrow$ the variants I derived from
+it $\rightarrow$ why it is small (with the parameter formula).
+\textbf{Questions to answer:} Why did I not simply keep InceptionTime? What exactly
+does ``multi-scale'' mean here, and why does a time series need it? Why cap the
+dilation? Why must the output length stay equal to $\nsteps$?
+\end{guide}
+
+% ---------------------------------------------------------------------
+\subsection{Design goals}
+\label{sec:arch:goals}
+
+\begin{guide}
+Three or four numbered goals, each one sentence. Every design decision later in the
+section should point back to one of them. Write them as constraints, e.g.
+``G3: the length $\nsteps$ must never change, because the interpretation has one
+value per time step and AOPCR masks single time steps.''
+\end{guide}
+
+\begin{enumerate}\itemsep2pt
+  \item[\textbf{G1}] \todo{Smaller: clearly fewer parameters than InceptionTime.}
+  \item[\textbf{G2}] \todo{At least as accurate under an identical training recipe.}
+  \item[\textbf{G3}] \todo{Length-preserving: one embedding per time step, always.}
+  \item[\textbf{G4}] \todo{Local: each time step's embedding must stay tied to a
+        limited window, otherwise the importance map smears out.}
+  \item[\textbf{G5}] \todo{Modular: encoder and pooling head swappable from a config
+        file.}
+\end{enumerate}
+
+% ---------------------------------------------------------------------
+\subsection{Overview}
+\label{sec:arch:overview}
+
+\begin{guide}
+One paragraph plus the big figure. Follow the tensor shapes end to end, because that
+is what makes an architecture concrete:
+$(B,1,\nsteps) \rightarrow (B,\dmodel,\nsteps) \rightarrow$ bag logits $(B,\nclz)$ and
+interpretation $(B,\nclz,\nsteps)$.
+\end{guide}
+
+\todo{One paragraph: \seanet{} is \emph{input $\rightarrow$ encoder $\rightarrow$ MIL
+pooling head}. The encoder is a stack of multi-scale depthwise-separable residual
+blocks with growing but capped dilation. The head is one of the pooling heads of
+\Cref{sec:pooling}. Give the shapes as above and name $B$, $\nsteps$, $\nclz$,
+$\dmodel$.}
+
+% ----- THE NEW ARCHITECTURE DIAGRAM GOES HERE ------------------------
+% TODO: replace \figph by
+%   \includegraphics[width=\linewidth]{figures/seanet_architecture}
+% once the new diagram is drawn.
+\begin{figure}[t]
+  \centering
+  \figph{\textbf{Figure X -- Overall \seanet{} architecture.} Left to right: raw
+  series $(B,1,\nsteps)$, stem convolution, $N$ multi-scale separable residual blocks
+  with dilations $1,2,4,8,16,16$, per-time-step embeddings $(B,\dmodel,\nsteps)$, MIL
+  pooling head, and the two outputs: bag logits $(B,\nclz)$ and interpretation
+  $(B,\nclz,\nsteps)$.}
+  \caption{\todo{Caption: read the diagram left to right in three sentences. Say
+  which parts are new (encoder, pooling head) and which are standard.}}
+  \label{fig:arch_overall}
+\end{figure}
+
+% ---------------------------------------------------------------------
+\subsection{The multi-scale separable block}
+\label{sec:arch:block}
+
+\begin{guide}
+The heart of the encoder. Explain in this order: (a) why several kernel sizes at once,
+(b) why depthwise-separable, (c) why a residual connection, (d) why the dilation is
+capped. One equation, one figure, and words a beginner can follow.
+\textbf{Questions to answer:} What does a kernel of size 5 see that a kernel of size
+23 does not? What would happen with a single kernel size? What does ``depthwise''
+mean, in one sentence?
+\end{guide}
+
+Let $\mathbf{h} \in \R^{\dmodel \times \nsteps}$ be the input of a block and $\delta$
+its dilation. Write $D_k^{(\delta)}$ for a depthwise convolution of kernel size $k$ and
+dilation $\delta$ (one filter per channel), and $P$ for a pointwise $1\times1$
+convolution (which mixes the channels). One \emph{unit} is
+\begin{equation}
+  \mathcal{U}(\mathbf{h})
+  = \operatorname{Drop}\Big(\operatorname{ReLU}\Big(\operatorname{BN}\Big(
+      P\Big(\textstyle\sum_{k \in \mathcal{K}} D_k^{(\delta)}(\mathbf{h})\Big)\Big)\Big)\Big),
+  \qquad \mathcal{K} = \{5, 11, 23\},
+  \label{eq:unit}
+\end{equation}
+and one block runs two units and adds the input back:
+\begin{equation}
+  \operatorname{Block}(\mathbf{h}) = \operatorname{ReLU}\big(\mathbf{h} +
+  (\mathcal{U} \circ \mathcal{U})(\mathbf{h})\big).
+  \label{eq:block}
+\end{equation}
+Zero ``same'' padding is used everywhere, so the length $\nsteps$ is unchanged
+(goal~G3). Block $i$ uses $\delta_i = \min(2^i, \delta_{\max})$, which grows the
+receptive field quickly but keeps it local (goal~G4).
+
+\todo{One short paragraph in words explaining \Cref{eq:unit}: the three kernel sizes
+look at the signal at three time scales at once and their outputs are summed;
+$1\times1$ then mixes channels; BatchNorm \citep{ioffe2015batchnorm} and ReLU are
+standard; dropout regularises.}
+
+\begin{figure}[t]
+  \centering
+  \figph[0.85]{\textbf{Figure X -- Multi-scale feature extraction.} One block: the
+  three parallel depthwise convolutions (kernels 5, 11, 23) at dilation $\delta$,
+  their sum, the pointwise $1\times1$ mixing, BatchNorm, ReLU, dropout, and the
+  residual connection. Below, a sketch of the receptive field growing with the
+  dilation but stopping at the cap.}
+  \caption{\todo{Caption: what one block computes, and why three kernel sizes.}}
+  \label{fig:arch_block}
+\end{figure}
+
+\paragraph{Why this is small.}
+\begin{guide}
+Do the arithmetic explicitly -- it is short, it is convincing, and it directly proves
+goal~G1. Fill in the numbers for $\dmodel$ and $\mathcal{K}$ from the config.
+\end{guide}
+A standard convolution with $\dmodel$ input and output channels and kernel size $k$
+costs $\dmodel^2 k$ weights. A depthwise-separable pair costs only
+\begin{equation}
+  \underbrace{\dmodel k}_{\text{depthwise}} \;+\; \underbrace{\dmodel^2}_{\text{pointwise}}
+  \;\ll\; \dmodel^2 k .
+  \label{eq:sep_cost}
+\end{equation}
+\todo{One sentence with the real numbers: with $\dmodel = \num{d}$ and kernels
+$\{5,11,23\}$ this gives \num{params} parameters per block instead of \num{params}.}
+
+% ---------------------------------------------------------------------
+\subsection{Encoder variants}
+\label{sec:arch:variants}
+
+\begin{guide}
+I built several encoders on top of the same block. Give each one a short paragraph
+with the same shape: \emph{what problem it attacks} $\rightarrow$ \emph{the change in
+one equation} $\rightarrow$ \emph{what I expected}. Do not report results here;
+\Cref{sec:results} does that.
+\textbf{Questions to answer:} Which variants were my own idea, and which followed a
+supervisor's suggestion or a paper? Which one did I expect to win, and why?
+\end{guide}
+
+\paragraph{Bottleneck.}
+\todo{Problem: the pointwise $1\times1$ convolution dominates the parameter count
+(it costs $\dmodel^2$).} I factorise it through a narrower rank $r < \dmodel$:
+\begin{equation}
+  P = P_2 P_1, \qquad P_1 \in \R^{r \times \dmodel}, \quad P_2 \in \R^{\dmodel \times r},
+  \qquad \text{cost } \dmodel^2 \rightarrow 2\dmodel r .
+  \label{eq:bottleneck}
+\end{equation}
+\todo{One sentence: with $r = \dmodel/\num{ratio}$ this removes \num{pct}\,\% of the
+encoder weights.}
+
+\paragraph{Gated.}
+\todo{Problem: not every channel matters for every series.} A summary over time drives
+a channel gate:
+\begin{equation}
+  \bar{\mathbf{h}} = \tfrac{1}{\nsteps}\textstyle\sum_j \mathbf{h}_{:,j},
+  \qquad
+  \mathbf{h}' = \mathbf{h} \odot \sig(W_g \bar{\mathbf{h}}),
+  \label{eq:gate}
+\end{equation}
+where $\odot$ multiplies element by element. \todo{One sentence on why this helps.}
+
+\paragraph{Input gate.}
+\todo{Same idea, but the gate is read directly from the raw input instead of from the
+deep features. Write the one-line equation and say why I tried both.}
+
+\paragraph{Spike / trend.}
+\todo{Two branches: a smoothed (trend) branch and a high-pass (spike) branch, mixed
+and gated. Say which datasets motivated it.}
+
+\paragraph{Multi-scale channels \note{wrapper, not an encoder}.}
+\todo{Rolling max, min and standard deviation over a window are appended as extra
+input channels, so the network gets local statistics for free. Length unchanged.}
+
+\paragraph{Multi-scale pyramid \note{wrapper, not an encoder}.}
+\todo{The same encoder runs on the series downsampled by $1,2,4,8$; the outputs are
+upsampled back to length $\nsteps$ and fused (attention / mean / max / concat). Write
+the fusion in one equation.}
+
+\begin{table}[t]
+\caption{The encoder variants I designed, what each one changes, and why.
+\todo{Fill the last two columns.}}
+\label{tab:encoder_variants}
+\begin{center}
+\small
+\begin{tabular}{p{0.22\linewidth} p{0.34\linewidth} p{0.22\linewidth} r}
+\toprule
+\textbf{Variant} & \textbf{What changes} & \textbf{Motivation} & \textbf{Params} \\
+\midrule
+Base (MS-TCN sep.)   & \todo{--} & \todo{--} & \tbd \\
+Bottleneck           & \todo{--} & \todo{--} & \tbd \\
+Gated                & \todo{--} & \todo{--} & \tbd \\
+Input gate           & \todo{--} & \todo{--} & \tbd \\
+Spike / trend        & \todo{--} & \todo{--} & \tbd \\
+Multi-scale channels & \todo{--} & \todo{--} & \tbd \\
+Multi-scale pyramid  & \todo{--} & \todo{--} & \tbd \\
+\midrule
+InceptionTime \reused & baseline encoder & \citep{fawaz2020inceptiontime} & \tbd \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+% ---------------------------------------------------------------------
+\subsection{Why this design and not another}
+\label{sec:arch:why}
+
+\begin{guide}
+The examiner explicitly asks \emph{why} I chose this approach. Answer it in one
+honest paragraph: the alternatives I considered and rejected, and on what grounds.
+\textbf{Questions to answer:} Why not a Transformer? Why not simply prune
+InceptionTime? Why not use a post-hoc explainer on a bigger model? What would I lose?
+\end{guide}
+
+\todo{One paragraph naming two or three alternatives and the reason each was
+rejected (compute cost, loss of locality, explanation not guaranteed to match the
+prediction, \dots).}

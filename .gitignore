@@ -63,9 +63,14 @@ text papers/
 
 # --- The report ------------------------------------------------------------
 # The line "*.tex" above was there to keep stray LaTeX scratch files out of the
-# code repo. But the report lives in report/ and we DO want its sources in git,
-# so we switch the rule back off for that folder only. (Order matters in
-# .gitignore: a later "!" rule cancels an earlier ignore rule.)
+# code repo. But the report sources we DO want in git, so we switch the rule
+# back off for those folders only. (Order matters in .gitignore: a later "!"
+# rule cancels an earlier ignore rule.)
+#
+# ICLR_2025_Report/Seanet is the REAL report I am writing. Without the line
+# below the blanket "*.tex" above was hiding all of it from git - the whole
+# draft was untracked and would have been lost by a git clean.
+!/ICLR_2025_Report/**/*.tex
 !/report/**/*.tex
 !/results/paper_figures/**/*.tex
 

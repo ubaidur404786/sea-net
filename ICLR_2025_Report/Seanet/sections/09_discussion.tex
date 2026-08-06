@@ -1,0 +1,102 @@
+% =====================================================================
+% 9. DISCUSSION                     target: 2 - 2.5 pages
+%
+% Section 8 says WHAT happened. This section says WHAT IT MEANS.
+% This is where personal analysis and scientific judgement are shown,
+% so it weighs heavily in the evaluation. Use "I" throughout.
+% =====================================================================
+
+\section{Analysis and Discussion}
+\label{sec:discussion}
+
+\begin{guide}
+Four subsections: what I found, what did not work, why the numbers must be read
+carefully, and the limits of the study. Keep it honest -- an internship report that
+admits a negative result reads as more competent, not less.
+\end{guide}
+
+% ---------------------------------------------------------------------
+\subsection{What worked}
+\label{sec:disc:worked}
+
+\begin{guide}
+Three or four short paragraphs, one finding each. Structure every one the same way:
+the observation $\rightarrow$ the evidence (point at a table) $\rightarrow$ my
+explanation of \emph{why} it happens.
+\textbf{Questions to answer:} Which of my design goals (\Cref{sec:arch:goals}) were
+actually reached? Which head repaired the weakness it was designed for? Does the
+mechanism I claimed in \Cref{sec:pooling} show up in the numbers, or did the head
+help for a different reason?
+\end{guide}
+
+\todo{Finding 1 -- the size / accuracy trade-off.}
+
+\todo{Finding 2 -- explanation quality.}
+
+\todo{Finding 3 -- which encoder $\times$ head pairing wins and why.}
+
+% ---------------------------------------------------------------------
+\subsection{What did not work}
+\label{sec:disc:negative}
+
+\begin{guide}
+A real section, not an apology. Every honest study has these, and reporting them is
+part of the scientific method.
+\textbf{Questions to answer:} Which of my ideas looked good on paper and did not pay
+off? Do I know why, or is it still open? What would I test next to find out?
+\end{guide}
+
+\todo{Negative result 1 -- e.g. a head that generalises the baseline but does not beat
+it in practice. Say what the theory promised (\Cref{prop:ad} or similar) and why the
+promise did not materialise: optimisation difficulty, not enough data, the weakness it
+fixes was not the binding one.}
+
+\todo{Negative result 2.}
+
+\todo{One sentence on what these negative results teach: extra capacity is only useful
+if training can find it.}
+
+% ---------------------------------------------------------------------
+\subsection{How the numbers should be read}
+\label{sec:disc:reading}
+
+\begin{guide}
+This subsection protects my own credibility. Two points must be made clearly:
+\begin{itemize}\itemsep2pt
+  \item AOPCR is not normalised, so its scale follows the scale of the logits. My
+        values must be compared with each other, never with the published column.
+        The proof that this is a measurement-scale effect and not a model effect is
+        that my \emph{re-trained} InceptionTime shows the same shift.
+  \item Any difference smaller than the seed-to-seed standard deviation is not a
+        result. Say what that spread is, and refuse to claim wins inside it.
+\end{itemize}
+\end{guide}
+
+\todo{Paragraph 1 -- the AOPCR scale issue, with the re-trained baseline as evidence.}
+
+\todo{Paragraph 2 -- seed variance and what counts as a real difference.}
+
+\todo{Paragraph 3 -- any difference between my training budget and the published one
+(number of repeats, epochs), and how that shifts the comparison.}
+
+% ---------------------------------------------------------------------
+\subsection{Limitations}
+\label{sec:disc:limitations}
+
+\begin{guide}
+Bullet list, three to five items, one line each. Be specific: ``synthetic data'' is
+weak, ``\webtraffic{} is synthetic, so the per-time-step ground truth is exact but the
+signal is easier than real traffic'' is strong.
+\end{guide}
+
+\begin{itemize}\itemsep2pt
+  \item \todo{\webtraffic{} is synthetic; it is the only dataset with per-time-step
+        ground truth, so explanation quality is measured on one dataset only.}
+  \item \todo{Number of seeds and what that means for the size of a claim.}
+  \item \todo{Only univariate series were tested, although the architecture supports
+        multivariate input.}
+  \item \todo{Some variants were screened on \webtraffic{} alone before the full
+        \ucr{} sweep, which biases the selection slightly.}
+  \item \todo{No human study: a high AOPCR means the explanation is faithful to the
+        model, not that a person finds it useful.}
+\end{itemize}

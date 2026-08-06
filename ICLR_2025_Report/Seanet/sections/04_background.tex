@@ -1,0 +1,208 @@
+% =====================================================================
+% 4. BACKGROUND                     target: 3 - 3.5 pages
+%
+% This is the "teach the reader" section. The examiner asked for a report
+% a young researcher outside the field can follow. Everything my method
+% builds on is explained HERE, so sections 5 and 6 can stay focused on my
+% own work. Nothing in this section is my contribution -- say so.
+% =====================================================================
+
+\section{Background}
+\label{sec:background}
+
+\begin{guide}
+Four subsections: (1) time series classification, (2) multiple instance learning,
+(3) the \millet{} framework, (4) how an explanation is measured. Rules for this
+section:
+\begin{itemize}\itemsep2pt
+  \item Use ``we'' or the impersonal form -- this is other people's work.
+  \item Explain every symbol the first time it appears.
+  \item Prefer one small picture over a long paragraph.
+  \item Do not describe the datasets in detail here (\Cref{sec:setup} does that).
+\end{itemize}
+\end{guide}
+
+% ---------------------------------------------------------------------
+\subsection{Time series classification}
+\label{sec:bg:tsc}
+
+\begin{guide}
+Half a page. Define the task, then name the three standard deep backbones that this
+work compares against, and say in one line what each does.
+\textbf{Questions to answer:} What makes time series different from images or text?
+Why do convolutions work on them? What is a \emph{receptive field} and why does it
+matter for long series?
+\end{guide}
+
+\todo{Definition paragraph.} A univariate time series of length $\nsteps$ is a vector
+$\bag = (\inst_1, \dots, \inst_{\nsteps})$, and time series classification (TSC) means
+predicting one label $y \in \{1, \dots, \nclz\}$ for the whole series.
+
+\todo{One paragraph on the standard deep baselines: FCN and ResNet
+\citep{wang2017fcn}, InceptionTime \citep{fawaz2020inceptiontime}, and the general
+picture given by the review of \citet{fawaz2019review}. One sentence each. Say that
+all three end with global average pooling, which is exactly the step that destroys
+the per-time-step information.}
+
+\todo{One short paragraph on dilated / temporal convolutional networks
+\citep{bai2018tcn} and depthwise-separable convolutions
+\citep{chollet2017xception, howard2017mobilenets}, because my encoder is built from
+them. Keep it to what the reader needs later.}
+
+% ---------------------------------------------------------------------
+\subsection{Multiple instance learning}
+\label{sec:bg:mil}
+
+\begin{guide}
+Half a page. This is the key idea of the whole report, so explain it with a picture
+and an everyday example (a key ring: the ring opens the door if \emph{at least one}
+key on it fits; you are told the ring works, not which key).
+\textbf{Questions to answer:} What is a bag, what is an instance, what is a pooling
+function? Why does MIL give a per-instance score for free? Which pooling functions
+exist (mean, max, attention) and what are they good at?
+\end{guide}
+
+\todo{Definition paragraph.} In multiple instance learning
+\citep{dietterich1997mil}, a \emph{bag} carries the label and the \emph{instances}
+inside it do not. Applied to a time series, the bag is the whole series and each
+time step is one instance.
+
+\todo{One paragraph on attention-based MIL \citep{ilse2018attention}: the network
+learns a weight for each instance, and those weights are readable as importance.}
+
+\begin{figure}[t]
+  \centering
+  \figph[0.85]{The MIL view of a time series: the series is a bag, each time step is
+  an instance, the encoder embeds every instance, and the pooling head turns the
+  instance scores into one bag prediction plus one importance value per time step.}
+  \caption{\todo{Caption explaining bag / instance / pooling in one sentence each.}}
+  \label{fig:mil_view}
+\end{figure}
+
+% ---------------------------------------------------------------------
+\subsection{The \millet{} framework}
+\label{sec:bg:millet}
+
+\begin{guide}
+About one page. This is the direct starting point of my work, so be precise, and be
+equally precise that it is \emph{not} mine. Present the general model first, then the
+Conjunctive head, which is the baseline I try to beat everywhere in this report.
+\textbf{Questions to answer:} What does \millet{} change compared with a normal
+classifier? Why is the explanation ``free'' and always consistent with the
+prediction? What are the weak points I later attack?
+\end{guide}
+
+\begin{priorwork}
+Everything in this subsection is the work of \citet{early2024millet}. I reuse their
+formulation, their metric implementation and their data loaders without change; my
+own heads in \Cref{sec:pooling} are written in the same notation so that the two can
+be compared line by line.
+\end{priorwork}
+
+\paragraph{General form.}
+An encoder $f_\theta$ maps the series to one embedding per time step,
+\begin{equation}
+  \emb_j = f_\theta(\bag)_j \in \R^{\dmodel},
+  \qquad j = 1, \dots, \nsteps ,
+  \label{eq:encoder_generic}
+\end{equation}
+and a MIL pooling head turns these $\nsteps$ embeddings into a bag prediction
+$\bagpred \in \R^{\nclz}$ together with an interpretation
+$\interp \in \R^{\nclz \times \nsteps}$, where $\interp_{k,j}$ says how much time step
+$j$ pushed the model towards class $k$.
+
+\paragraph{Conjunctive pooling (the baseline).}
+The head used by the \millet{} baseline combines one attention gate with one
+per-time-step classifier:
+\begin{align}
+  a_j       &= \sig\!\left(\mathbf{w}_a^\top \tanh(W_a \emb_j)\right) \in [0,1],
+  \label{eq:conj_gate}\\
+  \instpred_j &= W_c \emb_j + \mathbf{b}_c \in \R^{\nclz},
+  \label{eq:conj_inst}\\
+  \bagpred^{\,k} &= \frac{1}{\nsteps} \sum_{j=1}^{\nsteps} a_j\, \instpred_j^{\,k},
+  \qquad
+  \interp_{k,j} = a_j\, \instpred_j^{\,k}.
+  \label{eq:conj_bag}
+\end{align}
+\todo{Two or three sentences in words: the gate $a_j$ says ``how much should I listen
+to this time step'', the classifier $\instpred_j$ says ``what does this time step
+argue for'', and the bag score is simply their average over time. Because the label is
+\emph{built} from $\interp$, the explanation cannot disagree with the prediction.}
+
+\paragraph{Weak points I build on.}
+\begin{guide}
+This short list is the hinge of the whole report: each weakness here becomes one of
+my pooling heads in \Cref{sec:pooling}. Keep the wording of the two lists identical
+so the reader sees the one-to-one mapping.
+\end{guide}
+\begin{enumerate}\itemsep2pt
+  \item \todo{The gate $a_j$ is shared by all classes, so it cannot say ``this point
+        supports class A but argues against class B''.}
+  \item \todo{The gate is unnormalised and divided by $\nsteps$, so the scale of the
+        bag score depends on the length of the series.}
+  \item \todo{The aggregator is a fixed mean, so a few strong evidence points get
+        diluted by hundreds of background points.}
+\end{enumerate}
+
+% ---------------------------------------------------------------------
+\subsection{Measuring the quality of an explanation}
+\label{sec:bg:metrics}
+
+\begin{guide}
+Half a page and very important: most readers have never seen AOPCR or NDCG@$n$.
+Explain the \emph{idea} first in one sentence, then the formula.
+\textbf{Questions to answer:} Why can we not just look at the pictures? What does
+AOPCR do to the series and why does that test the explanation? When can NDCG@$n$ be
+computed at all (only when per-time-step ground truth exists, i.e.\ \webtraffic{})?
+Is a higher AOPCR always better?
+\end{guide}
+
+\paragraph{AOPCR (Area Over the Perturbation Curve at Random).}
+\todo{Plain-English sentence first: remove the time steps the model called most
+important, one by one, and watch how fast the model's own confidence drops; compare
+that with removing random time steps.}
+\begin{equation}
+  \text{AOPCR} \;=\; \todo{write the formula in \millet{}'s notation},
+  \label{eq:aopcr}
+\end{equation}
+\todo{One sentence: a higher value means the ranking really points at the evidence.
+One sentence of warning: AOPCR is not normalised, so its scale follows the scale of
+the logits -- values are comparable \emph{between my models}, but not against numbers
+printed in another paper trained with a different recipe.}
+
+\paragraph{NDCG@$n$.}
+\todo{Plain-English sentence: on \webtraffic{} we know exactly which time steps were
+modified, so we can check whether the model ranked those time steps at the top.
+NDCG \citep{jarvelin2002ndcg} is the standard score for ``is the true item near the
+top of my ranked list''; 1.0 is perfect.}
+\begin{equation}
+  \text{NDCG@}n \;=\; \todo{formula},
+  \label{eq:ndcg}
+\end{equation}
+
+\begin{figure}[h]
+  \centering
+  \figph[0.85]{How AOPCR is computed: the perturbation curve of the model's own
+  confidence as the highest-ranked time steps are masked, next to the curve obtained
+  by masking random time steps. The shaded area between the two curves is the score.}
+  \caption{\todo{Caption: reading the AOPCR curve.}}
+  \label{fig:aopcr_curve}
+\end{figure}
+
+% ---------------------------------------------------------------------
+\subsection{Related work in one paragraph}
+\label{sec:bg:related}
+
+\begin{guide}
+Do not write a full related-work chapter -- this is an internship report, not a
+survey. One paragraph is enough: post-hoc explainers, MIL for medical images, and
+where my work sits between them.
+\end{guide}
+
+\todo{One paragraph. Post-hoc explainers \citep{ribeiro2016lime, lundberg2017shap,
+sundararajan2017ig} explain a fixed model afterwards and can disagree with it;
+\citet{rudin2019stop} argues for models that are interpretable by design. MIL is
+heavily used on whole-slide images, where a slide is a bag and a patch is an instance
+\citep{ilse2018attention, hashimoto2020msdamil, li2021dsmil}; two of my pooling heads
+adapt ideas from that literature to time series. End with one sentence positioning my
+work.}

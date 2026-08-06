@@ -1,0 +1,103 @@
+% =====================================================================
+% SEA-Net -- FINAL INTERNSHIP REPORT (template / first draft skeleton)
+%
+% This is the ONLY file you compile. Every section lives in sections/
+% and is pulled in with \input, so each file stays short and easy to edit.
+%
+% Build (from this folder):
+%     pdflatex main
+%     bibtex   main
+%     pdflatex main
+%     pdflatex main
+% or press Ctrl+Alt+B in VS Code (LaTeX Workshop).
+%
+% Target length: 20-30 pages INCLUDING the appendix (examiner rule).
+% See README.md in this folder for the page budget per section.
+% =====================================================================
+
+\documentclass{article}
+
+% ICLR 2025 style. The .sty file sits next to this file, so no path needed.
+\usepackage{iclr2025_conference,times}
+
+% Keep this ON for the internship report:
+%   - it prints our real name (no anonymous submission here),
+%   - it adds page numbers,
+%   - it removes the ICLR line numbers in the margin.
+\iclrfinalcopy
+
+% All \usepackage lines, colours and our own shortcuts live in preamble.tex
+\input{preamble}
+
+% ---------------------------------------------------------------------
+% Title page information
+% TODO: check the exact wording of the title with my supervisor.
+% ---------------------------------------------------------------------
+\title{SEA-Net: A Small and Inherently Interpretable\\
+       Neural Network for Time Series Classification\\[6pt]
+       \large Master's Internship Report}
+
+\author{
+Ubaid Ur Rehman \\
+% \todo{Master programme name, e.g. M2 AIEDA} \\
+{M2 DSAI} \\
+% \todo{Host laboratory / team / department} \\
+{Crystal Lab / Fox Team / Computer Science Department} \\
+\texttt{ubaidfr404786@gmail.com} \\[4pt]
+\textbf{Supervisor:} {Tanmoy MONDAL} \\
+\textbf{Internship period:} {01-June-2026} -- {30-September-2026} \\
+\textbf{Submitted:} {15-Aug-2026}
+}
+
+\begin{document}
+
+\maketitle
+
+% ---------------------------------------------------------------------
+% Abstract (write it LAST, when all the numbers are frozen)
+% ---------------------------------------------------------------------
+\begin{abstract}
+\input{sections/00_abstract}
+\end{abstract}
+
+% ---------------------------------------------------------------------
+% Table of contents.
+% A 25-page technical report needs one. Delete these two lines if the
+% supervisor prefers the paper look without a table of contents.
+% ---------------------------------------------------------------------
+{\small\tableofcontents}
+\newpage
+
+% ---------------------------------------------------------------------
+% Main body. The order follows the examiner's required structure:
+%   Introduction -> What I had to do -> What I did / how / why
+%   -> Results -> Conclusion -> References -> Additional results
+% ---------------------------------------------------------------------
+\input{sections/01_introduction}
+\input{sections/02_context}
+\input{sections/03_objectives}
+\input{sections/04_background}
+\input{sections/05_architecture}
+\input{sections/06_pooling}
+\input{sections/07_setup}
+\input{sections/08_results}
+\input{sections/09_discussion}
+\input{sections/10_skills}
+\input{sections/11_conclusion}
+
+% ---------------------------------------------------------------------
+% Bibliography. All entries live in refs.bib.
+% Cite with \citep{key} (in brackets) or \citet{key} (in the sentence).
+% ---------------------------------------------------------------------
+\bibliography{refs}
+\bibliographystyle{iclr2025_conference}
+
+% ---------------------------------------------------------------------
+% Appendix = the "Additional Results" the examiner asked for.
+% Everything that supports the story but is not needed to follow it.
+% ---------------------------------------------------------------------
+\appendix
+\input{sections/A1_additional_results}
+\input{sections/A2_reproducibility}
+
+\end{document}

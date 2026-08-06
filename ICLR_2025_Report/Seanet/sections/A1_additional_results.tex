@@ -1,0 +1,228 @@
+% =====================================================================
+% APPENDIX A -- ADDITIONAL RESULTS          target: 3 - 5 pages
+%
+% Everything that supports the main story but is not needed to follow it.
+% The rule I apply: if removing it would break an argument in section 8,
+% it belongs in section 8; otherwise it belongs here.
+%
+% These pages COUNT towards the 20-30 page limit, so keep the appendix
+% tight: tables and figures with one or two sentences each, no long prose.
+% =====================================================================
+
+\section{Additional Results}
+\label{app:additional}
+
+\begin{guide}
+Structure of this appendix:
+\begin{enumerate}\itemsep2pt
+  \item full leaderboard (every model I trained),
+  \item extended ablations,
+  \item per-dataset results,
+  \item extra experiments (ensembles, hyperparameter search, discarded approaches),
+  \item extra figures.
+\end{enumerate}
+Every item needs one sentence saying why it is here. An appendix with no text at all
+looks like a data dump.
+\end{guide}
+
+% ---------------------------------------------------------------------
+\subsection{Full leaderboard}
+\label{app:leaderboard}
+
+\todo{One sentence: every encoder $\times$ pooling combination I trained, ranked by
+\webtraffic{} accuracy. \Cref{tab:web_main} in the main text keeps only the top rows.}
+
+\begin{table}[h]
+\caption{All \num{N} model variants, ranked by \webtraffic{} accuracy.
+\todo{Fill from \texttt{results/SEA\_NET/leaderboard.csv}, or replace this whole table
+by the generated one, \texttt{table\_appendix\_full\_leaderboard} (see the README for
+the \texttt{\textbackslash input} path).}}
+\label{tab:full_leaderboard}
+\begin{center}
+\scriptsize
+\begin{tabular}{clcccccr}
+\toprule
+\textbf{\#} & \textbf{Model (encoder + head)} & \textbf{Acc} & \textbf{Loss} &
+\textbf{AOPCR} & \textbf{NDCG} & \textbf{Params} & \textbf{Size (MB)} \\
+\midrule
+1 & \todo{--} & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd \\
+2 & \todo{--} & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd \\
+$\vdots$ & & & & & & & \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+% ---------------------------------------------------------------------
+\subsection{Extended ablation studies}
+\label{app:ablations}
+
+\begin{guide}
+The main text keeps one ablation. Put the rest here, each as a small table or figure
+with two sentences: what was varied, and what it showed.
+\textbf{Candidates:} encoder depth and width; the dilation cap; the top-$k$ fraction
+$\kappa$; the initial sharpness $\beta_0$; positional encoding on/off; the attention
+focus penalty on/off; the attention width $\dattn$.
+\end{guide}
+
+\paragraph{A. Effect of the pooling head, encoder fixed.}
+\todo{One sentence + table or figure.}
+
+\paragraph{B. Effect of the encoder, pooling head fixed.}
+\todo{One sentence + table or figure.}
+
+\paragraph{C. Effect of the top-$k$ fraction $\kappa$.}
+\todo{One sentence + small table: $\kappa \in \{0.05, 0.1, 0.25, 0.5, 1.0\}$ against
+accuracy and AOPCR. This is the ablation that directly tests the claim of
+\Cref{prop:topk}.}
+
+\paragraph{D. Effect of the attention focus penalty.}
+\todo{One sentence + table: with and without the penalty of \Cref{eq:loss}.}
+
+\begin{table}[h]
+\caption{\todo{Ablation title.} \todo{Fill in.}}
+\label{tab:ablation_extended}
+\begin{center}
+\small
+\begin{tabular}{lccc}
+\toprule
+\textbf{Setting} & \textbf{Accuracy} & \textbf{AOPCR} & \textbf{NDCG@$n$} \\
+\midrule
+\todo{--} & \ms & \ms & \ms \\
+\todo{--} & \ms & \ms & \ms \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+% ---------------------------------------------------------------------
+\subsection{Per-dataset results}
+\label{app:per_dataset}
+
+\todo{One sentence: accuracy per \ucr{} dataset for my best model and for the
+re-trained baseline, so a reader can check any individual dataset.}
+
+\begin{table}[h]
+\caption{Per-dataset accuracy on the 85 published \ucr{} datasets.
+\todo{Fill, or \texttt{\textbackslash input} the generated table. Use a two-column
+layout so the table fits on one page.}}
+\label{tab:per_dataset}
+\begin{center}
+\scriptsize
+\begin{tabular}{lccc}
+\toprule
+\textbf{Dataset} & \textbf{Mine} & \textbf{\millet{} (re-trained)} & \textbf{Diff} \\
+\midrule
+\todo{Adiac} & \tbd & \tbd & \tbd \\
+$\vdots$ & & & \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+% ---------------------------------------------------------------------
+\subsection{Per-seed results}
+\label{app:seeds}
+
+\begin{guide}
+The main text reports mean $\pm$ std. Here show the individual seeds, so the reader
+can see whether the spread comes from one bad run or is uniform. Two or three
+sentences are enough.
+\end{guide}
+
+\begin{table}[h]
+\caption{Individual seed results on \webtraffic{}. \todo{Fill in.}}
+\label{tab:seeds}
+\begin{center}
+\small
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Model} & \textbf{Seed 0} & \textbf{Seed 1} & \textbf{Seed 2} &
+\textbf{Mean $\pm$ std} \\
+\midrule
+\todo{my best variant}     & \tbd & \tbd & \tbd & \ms \\
+\millet{} re-trained by me & \tbd & \tbd & \tbd & \ms \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+% ---------------------------------------------------------------------
+\subsection{Extra experiments}
+\label{app:extra}
+
+\begin{guide}
+Experiments I ran that are interesting but off the main line. One short paragraph
+each; drop any that does not add something.
+\end{guide}
+
+\paragraph{Ensemble voting.}
+\todo{Two or three sentences: combining the predictions of several of my variants by
+soft and hard voting, and how much accuracy that buys. Say whether the gain is worth
+the extra cost -- an ensemble is no longer a ``small'' model.}
+
+\begin{table}[h]
+\caption{Ensemble of my best variants against the individual models.
+\todo{Fill from \texttt{results/SEA\_NET/ensemble\_vote.csv}.}}
+\label{tab:ensemble}
+\begin{center}
+\small
+\begin{tabular}{lcc}
+\toprule
+\textbf{Configuration} & \textbf{Mean accuracy} & \textbf{\#members} \\
+\midrule
+\todo{single model A} & \tbd & 1 \\
+\todo{single model B} & \tbd & 1 \\
+Soft vote             & \tbd & \tbd \\
+Hard vote             & \tbd & \tbd \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+\paragraph{Hyperparameter search.}
+\todo{Two or three sentences: what I searched with Optuna \citep{akiba2019optuna},
+over what range, and whether the found setting beat the default. If it did not, say
+so -- that is a useful result about how sensitive the model is.}
+
+\paragraph{Approaches I tried and dropped.}
+\todo{Two or three sentences on a direction that did not make it into the final model
+(for example an earlier sliding-window formulation, or a Transformer encoder), and the
+reason I dropped it.}
+
+% ---------------------------------------------------------------------
+\subsection{Additional figures}
+\label{app:figures}
+
+\begin{guide}
+Figures that support the story but would slow the main text down. Each still needs a
+caption that can be understood on its own.
+\end{guide}
+
+\begin{figure}[h]
+  \centering
+  \figph[0.8]{\textbf{Figure X -- Accuracy against series length.} One point per
+  \ucr{} dataset: does my model lose accuracy on long series? This is the experiment
+  that checks the dilation cap of \Cref{sec:arch:block}.}
+  \caption{\todo{Caption.}}
+  \label{fig:acc_vs_length}
+\end{figure}
+
+\begin{figure}[h]
+  \centering
+  \figph[0.8]{\textbf{Figure X -- Per-dataset accuracy difference.} One bar per
+  \ucr{} dataset: my accuracy minus the re-trained baseline's, sorted. Shows
+  \emph{where} I win and lose, not just how often.}
+  \caption{\todo{Caption.}}
+  \label{fig:acc_diff}
+\end{figure}
+
+\begin{figure}[h]
+  \centering
+  \figph[0.8]{\textbf{Figure X -- More qualitative examples.} Four extra
+  \webtraffic{} series with their importance maps, including at least one failure
+  case where the explanation points at the wrong region.}
+  \caption{\todo{Caption. Including a failure case is a strength -- say why it fails
+  if I can tell.}}
+  \label{fig:qualitative_extra}
+\end{figure}

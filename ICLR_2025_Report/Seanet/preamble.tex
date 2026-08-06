@@ -1,0 +1,148 @@
+% =====================================================================
+% preamble.tex - packages, colours and our own shortcuts, in one place.
+% main.tex pulls this in with \input{preamble}
+% =====================================================================
+
+% --- Packages ---------------------------------------------------------
+\usepackage{graphicx}       % images: \includegraphics
+\usepackage{booktabs}       % clean table rules: \toprule \midrule \bottomrule
+\usepackage{amsmath}        % align, equation, most maths
+\usepackage{amssymb}        % \mathbb{R} and friends
+\usepackage{amsthm}         % theorem-like "Property" boxes for the pooling maths
+\usepackage{multirow}       % cells spanning several rows
+\usepackage{subcaption}     % (a) (b) sub-figures
+\usepackage[table]{xcolor}  % colours (also for coloured table cells)
+\usepackage{framed}         % shaded / leftbar boxes (guide + contribution boxes)
+\usepackage{comment}        % lets us switch the guide boxes off in one line
+\usepackage{microtype}      % small spacing tweaks, text looks cleaner
+\usepackage{url}
+\usepackage{hyperref}       % clickable links, \ref and \cite
+\usepackage{cleveref}       % \cref{fig:x} prints "Figure 1" by itself
+                            % NOTE: hyperref then cleveref, LAST and in this order.
+
+% --- Where LaTeX looks for images -------------------------------------
+% This report sits in ICLR_2025_Report/Seanet/, so the project root is two
+% folders up. Adding "../../" means a figure produced by the code can be used
+% with its project path, e.g.
+%     \includegraphics{results/paper_figures/01_main_figures/fig1_...}
+% and my own drawings go in the local figures/ folder.
+\graphicspath{{./}{figures/}{../../}}
+
+% =====================================================================
+% DRAFTING HELPERS
+% Turn these off with one line when the report is finished.
+% =====================================================================
+
+% Set to \showguidesfalse to hide every "Writing guide" box in the PDF.
+% Do that once the section is written, so the final report is clean.
+\newif\ifshowguides
+\showguidestrue
+
+\definecolor{shadecolor}{gray}{0.94}
+\definecolor{todored}{rgb}{0.80,0.10,0.10}
+\definecolor{notecolor}{rgb}{0.10,0.30,0.75}
+
+\ifshowguides
+  % A grey box holding "what to write here" + guiding questions.
+  \newenvironment{guide}%
+    {\begin{shaded}\small\noindent\textbf{Writing guide.}\par\vspace{2pt}}%
+    {\end{shaded}}
+\else
+  \excludecomment{guide}
+\fi
+
+% Inline red note for something still missing. Delete before submitting.
+\newcommand{\todo}[1]{\textcolor{todored}{\textbf{[TODO:}~#1\textbf{]}}}
+
+% Inline blue note (a reminder to myself, not a missing piece).
+\newcommand{\note}[1]{\textcolor{notecolor}{[#1]}}
+
+% A number I still have to read off a results file.
+% Example: accuracy of \num{web_acc of seanet_bottleneck_topk}
+\newcommand{\num}[1]{\textcolor{todored}{\texttt{<#1>}}}
+
+% =====================================================================
+% CONTRIBUTION BOXES
+% These STAY in the final PDF. They are how the reader sees at a glance
+% what I built myself and what came from previous work.
+% =====================================================================
+
+% My own work.
+\newenvironment{contribution}%
+  {\begin{leftbar}\small\noindent\textbf{My contribution.}\ }%
+  {\end{leftbar}}
+
+% Work that already existed and that I only reused.
+\newenvironment{priorwork}%
+  {\begin{leftbar}\small\noindent\textbf{Existing work (reused).}\ }%
+  {\end{leftbar}}
+
+% Short inline tags, for when a full box would be too heavy.
+\newcommand{\mine}{\textbf{(mine)}}
+\newcommand{\reused}{\textbf{(reused)}}
+
+% =====================================================================
+% PLACEHOLDERS (so the report compiles before any figure exists)
+% =====================================================================
+
+% Figure placeholder: a grey box with a description of the picture to draw.
+% Usage:  \figph{Overall SEA-Net architecture: input -> encoder -> pooling head}
+%         \figph[0.6]{...}          <- optional width fraction
+\newcommand{\figph}[2][0.92]{%
+  \setlength{\fboxsep}{0pt}%
+  \fcolorbox{black!45}{black!6}{%
+    \parbox[c][0.30\linewidth][c]{#1\linewidth}{%
+      \centering\ttfamily\footnotesize FIGURE PLACEHOLDER\\[4pt]%
+      \normalfont\itshape\small #2\\[4pt]%
+      \ttfamily\scriptsize replace this line with \textbackslash includegraphics}}}
+
+% Same idea for a table I have not filled in yet.
+\newcommand{\tabph}[1]{%
+  \setlength{\fboxsep}{6pt}%
+  \fcolorbox{black!45}{black!6}{%
+    \parbox{0.90\linewidth}{\centering\ttfamily\footnotesize TABLE PLACEHOLDER\\[3pt]%
+    \normalfont\itshape\small #1}}}
+
+% A cell whose number I still have to fill in: writes "--"
+\newcommand{\tbd}{\textcolor{todored}{--}}
+% A "mean +- std" cell that is still empty.
+\newcommand{\ms}{\textcolor{todored}{--\,$\pm$\,--}}
+
+% =====================================================================
+% MATHS SHORTCUTS
+% One name = one symbol everywhere, so the notation never drifts.
+% =====================================================================
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\bag}{\mathcal{X}}            % the bag (one time series)
+\newcommand{\inst}{x}                     % one instance (one time step)
+\newcommand{\emb}{\mathbf{z}}             % encoder embedding of one time step
+\newcommand{\bagpred}{\hat{\mathbf{Y}}}   % bag-level logits (whole series)
+\newcommand{\instpred}{\mathbf{p}}        % per-time-step class logits
+\newcommand{\interp}{\Phi}                % the interpretation (importance map)
+\newcommand{\nclz}{C}                     % number of classes
+\newcommand{\nsteps}{T}                   % series length
+\newcommand{\dmodel}{d}                   % encoder width
+\newcommand{\dattn}{d_a}                  % attention hidden width
+\newcommand{\sig}{\sigma}                 % sigmoid
+\newcommand{\softmaxt}{\operatorname{softmax}_j}   % softmax over time
+\DeclareMathOperator{\softplus}{softplus}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+% Names, written the same way everywhere.
+\newcommand{\seanet}{SEA-Net}
+\newcommand{\millet}{MILLET}
+\newcommand{\webtraffic}{WebTraffic}
+\newcommand{\ucr}{UCR}
+
+% "Property" blocks used in the pooling section (each head generalises
+% the MILLET baseline, and we state that formally).
+\theoremstyle{definition}
+\newtheorem{property}{Property}[section]
+
+% --- Link colours -----------------------------------------------------
+\hypersetup{
+  colorlinks = true,
+  linkcolor  = {black},
+  citecolor  = {blue!60!black},
+  urlcolor   = {blue!60!black},
+}

@@ -1,0 +1,70 @@
+% =====================================================================
+% 10. SKILLS ACQUIRED               target: 1 - 1.5 pages
+%
+% The examiner asked the report to cover "the work completed,
+% achievements, and skills acquired". Sections 5-9 cover the first two;
+% this short section covers the third.
+%
+% Keep it concrete. "I learned PyTorch" says nothing. "I learned to
+% write a model as an encoder/pooling pair so that any combination can
+% be trained from a config file" says something.
+% =====================================================================
+
+\section{Skills Acquired}
+\label{sec:skills}
+
+\begin{guide}
+Three subsections: scientific, technical, professional. Two to four bullets each. For
+every bullet, name the skill \emph{and} the moment in the project where I used it.
+Write in the first person and in the past tense.
+\textbf{Questions to answer:} What can I do now that I could not do in the first week?
+Which mistake taught me the most? What would I do differently if I started this
+project again tomorrow?
+\end{guide}
+
+\subsection{Scientific skills}
+
+\begin{itemize}\itemsep3pt
+  \item \todo{Reading a research paper well enough to re-implement it and to find its
+        weak points -- \Cref{sec:bg:millet}.}
+  \item \todo{Designing a controlled comparison: change one thing at a time, keep the
+        recipe fixed, re-train the baselines instead of quoting them.}
+  \item \todo{Reading a metric critically instead of trusting it (the AOPCR scale
+        issue, \Cref{sec:disc:reading}).}
+  \item \todo{Transferring a method between fields: MIL pooling from
+        whole-slide-image pathology to time series.}
+\end{itemize}
+
+\subsection{Technical skills}
+
+\begin{itemize}\itemsep3pt
+  \item \todo{PyTorch: writing custom modules, keeping a strict input/output contract
+        so components stay interchangeable.}
+  \item \todo{Experiment engineering: configuration files, a model registry, resumable
+        sweeps, atomic result writing, MLflow tracking.}
+  \item \todo{Running jobs on a shared HPC platform (Grid'5000): reserving nodes with
+        the scheduler, working with a job time limit, splitting one study over two
+        sites.}
+  \item \todo{Reproducibility: one command regenerates every figure and table in this
+        report from the stored results.}
+  \item \todo{Tooling: Git, remote development over SSH, \LaTeX{}.}
+\end{itemize}
+
+\subsection{Professional skills}
+
+\begin{itemize}\itemsep3pt
+  \item \todo{Planning a multi-month project with a fixed deadline and a shared,
+        limited computing resource.}
+  \item \todo{Reporting progress to a supervisor: what to show, how often, and how to
+        present a negative result.}
+  \item \todo{Writing for a reader who is not a specialist -- this report.}
+  \item \todo{Keeping documentation up to date so that another student can continue
+        the project.}
+\end{itemize}
+
+\begin{guide}
+\todo{Optional closing paragraph (3--4 sentences): the single most valuable lesson of
+the internship. Choose something specific -- for example that a careful experimental
+protocol changed a conclusion I had already believed, or that engineering effort spent
+early paid for itself many times over during the sweeps.}
+\end{guide}

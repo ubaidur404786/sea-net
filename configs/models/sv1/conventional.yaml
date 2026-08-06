@@ -1,0 +1,39 @@
+# sv1/conventional.yaml - the "conventional TSC" black-box baseline for the teaser figure.
+#
+# This is a normal deep classifier: MILLET's InceptionTime backbone + Global Average
+# Pooling (GAP). GAP just averages the features over time and classifies, so it gives a
+# class label but NO useful per-timestep explanation. That is exactly the "phase 1" model
+# in the teaser: it predicts, but it cannot say WHERE in the series the evidence is.
+#
+# (Technically GAP can produce a coarse CAM, but MILLET's own Figure 1 shows the
+#  conventional model as probabilities only, so the teaser draws it the same way.)
+#
+# Same backbone and training recipe as millet.yaml, so the only difference from the MILLET
+# baseline is the pooling head (mil_gap instead of mil_conjunctive) - a fair comparison.
+#
+# Run it (WebTraffic by default):  python main.py run --model sv1/conventional
+
+name: conventional
+
+# ---- the encoder: same InceptionTime feature extractor as MILLET (outputs 128 channels) ----
+encoder:
+  type: mil_inceptiontime
+
+# ---- the pooling head: Global Average Pooling (the black box - no attention, no local map) ----
+pooling:
+  type: mil_gap
+  dropout: 0.1
+  positional_encoding: false   # GAP averages over time, so timestep order is not used here
+
+# ---- the training recipe (same generic loop as MILLET) ----
+training:
+  n_epochs: 400
+  patience: 60
+  max_batch: 16
+  learning_rate: 0.00125
+  weight_decay: 0.00012
+  label_smoothing: 0.13
+  lambda_entropy: 0.0    # no attention-focus penalty (there is no attention gate to focus)
+  min_train_for_val: 100
+  val_frac: 0.2
+  optimizer: adam

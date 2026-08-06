@@ -1,0 +1,40 @@
+% =====================================================================
+% ABSTRACT  (~1/2 page, one paragraph, no citations, no figures)
+% Write this LAST, once every number is frozen.
+% =====================================================================
+
+% ---------------------------------------------------------------------
+% WRITING GUIDE (as comments, because the abstract is a quote environment
+% and a grey guide box cannot be placed inside one).
+%
+% One paragraph, about 150-200 words. Recipe, one or two sentences each:
+%   1. THE PROBLEM      - deep models classify time series well but do not say
+%                         WHICH PART of the signal caused the decision.
+%   2. EXISTING ANSWER  - MILLET makes the model explain itself with MIL pooling.
+%   3. WHAT I BUILT     - SEA-Net: a small multi-scale encoder plus my own family
+%                         of MIL pooling heads.
+%   4. HOW I TESTED IT  - WebTraffic + the 85 UCR datasets, 3 seeds, accuracy and
+%                         explanation quality (AOPCR, NDCG@n).
+%   5. HEADLINE NUMBER  - one clear result: accuracy ~ baseline, explanations
+%                         better, parameters down.
+%
+% Questions to answer before writing:
+%   - If a reader only reads this paragraph, what single sentence do I want them
+%     to remember?
+%   - What is the one number that proves it?
+% ---------------------------------------------------------------------
+
+\todo{Write the abstract last.}
+
+Deep neural networks classify time series accurately, but they usually give only a
+label and no reason for it. The \millet{} framework showed that Multiple Instance
+Learning (MIL) pooling turns a standard backbone into a model that explains itself:
+the network scores every time step, and those scores \emph{are} the explanation.
+During this internship I built \seanet{}, \todo{one sentence: what \seanet{} is}.
+My main contribution is \todo{one sentence: the new encoder family and the new
+pooling heads}. I evaluated \num{N} model variants on the \webtraffic{} dataset and
+on the 85 \ucr{} datasets used by \millet{}, measuring both classification quality
+(accuracy, loss) and explanation quality (AOPCR, NDCG@$n$), over \num{S} random
+seeds. My best variant reaches \num{web\_acc} accuracy on \webtraffic{} against
+\num{millet\_acc} for my re-trained \millet{} baseline, while using \num{X}$\times$
+fewer parameters and improving AOPCR from \num{a1} to \num{a2}.

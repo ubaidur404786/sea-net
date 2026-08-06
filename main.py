@@ -539,6 +539,39 @@ def cmd_interpret(args):
         torch.cuda.empty_cache()
 
 
+def cmd_teaser(args):
+    """
+    "teaser" command: build the page-1 figure that compares several models on ONE WebTraffic series.
+
+    It trains each selected model (no weights are saved on disk, same as the interpret command),
+    finds a single test series they all classify correctly, and draws them stacked - one row per
+    model: the prediction bars on the left, the series coloured by per-timestep importance on the
+    right, with the injected anomaly shaded and the parameter count printed on each row. A
+    conventional (GAP) model has no per-timestep map, so its row is drawn as "prediction only".
+
+    Pick the models with --models (comma-separated config names, top to bottom); the default is the
+    three phases conventional -> MILLET -> SEA-Net. Use --smoke for a quick throwaway preview.
+
+    args : parsed arguments (args.models, args.dataset, args.sample, args.target_class, args.seed,
+           args.config, args.out, args.smoke).
+    returns : nothing.
+    """
+    from seanet.paper.teaser import make_teaser         # imported here so matplotlib loads only for this command
+
+    models = [m.strip() for m in args.models.split(",")] if args.models else None
+    make_teaser(
+        model_names=models,
+        dataset=args.dataset or D.WEB_TRAFFIC,
+        out_dir=args.out,
+        smoke=bool(args.smoke),
+        sample_idx=args.sample,
+        target_class=args.target_class,
+        seed=args.seed if args.seed is not None else 0,
+        config_path=args.config,
+        verbose=True,
+    )
+
+
 def cmd_optuna(args):
     """
     "optuna" command: run an Optuna hyperparameter search for the chosen model.
@@ -743,6 +776,22 @@ def main():
     p = sub.add_parser("interpret", help="train a model + draw per-sample explanation figures (WebTraffic)")
     _add_model_flags(p, with_dataset=True)
     p.set_defaults(func=cmd_interpret)
+
+    # teaser (page-1 figure: several models on ONE WebTraffic series)
+    p = sub.add_parser("teaser", help="page-1 figure: compare models on one WebTraffic series "
+                                      "(prediction + per-timestep explanation + params)")
+    p.add_argument("--config", default=os.path.join("configs", "main.yaml"), help="path to main.yaml")
+    p.add_argument("--models", help="comma-separated config names to compare, top to bottom "
+                                    "(default: sv1/conventional,sv1/millet,sv4/seanet_bottleneck_topk)")
+    p.add_argument("--dataset", help="dataset to draw (default: WebTraffic - the only one with ground truth)")
+    p.add_argument("--sample", type=int, help="force a specific test-series index "
+                                              "(default: auto-pick one every model gets right)")
+    p.add_argument("--target-class", type=int, dest="target_class",
+                   help="only search series of this class when auto-picking a sample")
+    p.add_argument("--seed", type=int, help="training seed (default 0; the same for every model)")
+    p.add_argument("--out", help="output folder (default: results/SEA_NET/teaser/<date-time>)")
+    p.add_argument("--smoke", action="store_true", help="quick 3-epoch preview per model, not a saved result")
+    p.set_defaults(func=cmd_teaser)
 
     # optuna (hyperparameter search)
     p = sub.add_parser("optuna", help="run an Optuna hyperparameter search (reads the model's optuna block)")

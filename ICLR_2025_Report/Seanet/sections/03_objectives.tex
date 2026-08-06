@@ -1,0 +1,124 @@
+% =====================================================================
+% 3. WHAT I HAD TO DO               target: 1.5 - 2 pages
+%
+% This section answers the examiner's second required part: "What I had
+% to do". It is the MISSION, not the solution. Keep the solution for
+% sections 5-8. Written mostly in the past tense.
+% =====================================================================
+
+\section{What I Had to Do}
+\label{sec:objectives}
+
+\begin{guide}
+Describe the task \emph{as it was given to me}, then how I turned it into concrete
+objectives. A good structure is: (1) the starting point I was handed, (2) the
+problem statement, (3) the objectives with success criteria, (4) the constraints,
+(5) how the plan changed along the way.
+\textbf{Questions to answer:} What exactly was handed to me on day one (a paper? a
+code base? nothing?). What did my supervisor ask for in one sentence? What would
+``success'' have looked like? What was left open for me to decide?
+\end{guide}
+
+\subsection{Starting point}
+
+\todo{Two or three sentences: the subject started from the \millet{} paper
+\citep{early2024millet} and its public code. Say what already existed (their
+backbones, their pooling heads, their metrics) and that reproducing it was step
+zero, not a contribution.}
+
+\begin{priorwork}
+\todo{One or two sentences naming precisely what I reused without change: the
+\millet{} training loop, the AOPCR and NDCG@$n$ metric code, the \webtraffic{} and
+\ucr{} data loaders. Being explicit here protects the credibility of everything I
+claim later.}
+\end{priorwork}
+
+\subsection{Problem statement}
+
+\begin{guide}
+Turn the subject into one clear research question. A good template:
+``Can a much smaller encoder match the accuracy of the \millet{} baseline while
+producing \emph{better} explanations?'' Then say why that question is not obvious --
+smaller models usually lose accuracy, and better explanations usually cost accuracy.
+\end{guide}
+
+\todo{Three or four sentences ending with one clearly stated research question.}
+
+\subsection{Objectives}
+
+\begin{guide}
+Three to five objectives. Each one needs a \emph{measurable} success criterion,
+otherwise the conclusion cannot say whether it was reached. Come back to this list
+in \Cref{sec:conclusion} and answer each point honestly.
+\end{guide}
+
+\begin{table}[h]
+\caption{The objectives I set with my supervisor, and how each one was measured.
+\todo{Fill in the criteria; keep them measurable.}}
+\label{tab:objectives}
+\begin{center}
+\small
+\begin{tabular}{p{0.32\linewidth} p{0.36\linewidth} p{0.22\linewidth}}
+\toprule
+\textbf{Objective} & \textbf{Success criterion} & \textbf{Reached?} \\
+\midrule
+O1. \todo{Reproduce the baseline} & \todo{e.g. accuracy within X of the published
+number under my own training recipe} & \tbd \\
+O2. \todo{Design a smaller encoder} & \todo{e.g. $\geq$ 50\,\% fewer parameters at
+equal accuracy} & \tbd \\
+O3. \todo{Improve explanation quality} & \todo{e.g. higher AOPCR and NDCG@$n$ on
+\webtraffic{}} & \tbd \\
+O4. \todo{Build a reproducible benchmark} & \todo{e.g. any model reproducible from
+one command and one config file} & \tbd \\
+O5. \todo{optional fifth objective} & \todo{criterion} & \tbd \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+\subsection{Constraints}
+
+\begin{guide}
+Short bullet list. Constraints make the work look real, and they explain later
+choices (for example: why only three seeds, why \webtraffic{} was the screening
+dataset).
+\textbf{Questions to answer:} How much time did I have? How much GPU time? Which
+comparisons had to stay fair (same recipe for every model)? What could I not change
+(the metric definitions, the data splits)?
+\end{guide}
+
+\begin{itemize}\itemsep2pt
+  \item \todo{Time: \num{months} months of internship.}
+  \item \todo{Compute: shared GPU nodes with a job time limit; a full sweep over 128
+        datasets takes \num{hours} hours per model.}
+  \item \todo{Fairness: every model trained with the same recipe, so that only the
+        architecture differs.}
+  \item \todo{Comparability: keep \millet{}'s metric code untouched, so my numbers
+        can be read next to theirs.}
+\end{itemize}
+
+\subsection{How the plan evolved}
+
+\begin{guide}
+Very valuable for the examiner: it shows scientific judgement rather than blind
+execution. Two or three sentences. Be honest -- a plan that changed for a good
+reason is a strength, not a weakness.
+\textbf{Questions to answer:} What did I try first that did not work? What made me
+change direction (a result? a paper I read? a supervisor's remark?). Where did the
+idea of borrowing pooling ideas from cancer-pathology MIL papers come from?
+\end{guide}
+
+\todo{Three or four sentences describing the path: baseline reproduction $\rightarrow$
+smaller encoder $\rightarrow$ pooling heads $\rightarrow$ ideas imported from
+whole-slide-image MIL \citep{ilse2018attention, li2021dsmil} $\rightarrow$ multi-seed
+validation.}
+
+% Optional but nice: a small timeline figure of the internship.
+\begin{figure}[h]
+  \centering
+  \figph[0.85]{Timeline of the internship: reading and reproduction, encoder design,
+  pooling design, large-scale sweeps on Grid'5000, analysis and writing. One
+  horizontal bar per phase, weeks on the $x$ axis.}
+  \caption{\todo{Caption: how the \num{months} months were spent.}}
+  \label{fig:timeline}
+\end{figure}

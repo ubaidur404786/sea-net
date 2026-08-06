@@ -1,0 +1,21 @@
+[log] command 'teaser' started at 2026-08-06_14-23-40
+[log] a copy of everything below is being saved to: results\SEA_NET\logs\teaser_2026-08-06_14-23-40.log
+
+
+=== teaser [1/3]: training sv1/conventional (pooling=mil_gap) ===
+    stage 1/3: loading data ...
+    stage 2/3: training on 400 series (val=100, C=10, T=1008, batch=16) ...
+
+=== teaser [2/3]: training sv1/millet (pooling=mil_conjunctive) ===
+    stage 1/3: loading data ...
+    stage 2/3: training on 400 series (val=100, C=10, T=1008, batch=16) ...
+
+=== teaser [3/3]: training sv4/seanet_bottleneck_topk (pooling=sea_topk_conjunctive) ===
+    stage 1/3: loading data ...
+    stage 2/3: training on 400 series (val=100, C=10, T=1008, batch=16) ...
+  chosen sample: #50 (true class 1, localised anomaly, all models correct)
+
+saved teaser to results\SEA_NET\teaser\2026-08-06_14-23-44\teaser_WebTraffic_idx0050.pdf
+  (PNG next to it: results\SEA_NET\teaser\2026-08-06_14-23-44\teaser_WebTraffic_idx0050.png)
+
+[log] finished; full output saved to results\SEA_NET\logs\teaser_2026-08-06_14-23-40.log

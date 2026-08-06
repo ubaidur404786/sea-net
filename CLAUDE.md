@@ -2,6 +2,30 @@
 
 Read this file fully before doing any work in this project. These rules override any default behavior and must be followed exactly.
 
+## 0. Start here — orientation without burning tokens
+
+**Read `PROJECT_STATE.md` before exploring the repo.** It holds the project
+overview, where we are, the folder map, the current results and the commands.
+Reading that one file is cheaper than searching the codebase, so do that first
+and only look at real files for the specific thing I asked about.
+
+Short version, so you are never lost even before opening it:
+
+- **Phase right now: writing the report. Not running new experiments.**
+  Experiments are done — 66 models trained and ranked in
+  `results/SEA_NET/leaderboard.csv`. The job is a complete first draft.
+- **The real report is `ICLR_2025_Report/Seanet/`.** I am actively writing in
+  it. Do not delete, move, rename or "clean" anything inside it, and do not
+  delete anything elsewhere that the report might need now or later.
+- **`report/` is NOT the report** — it is an abandoned older draft. Never
+  confuse the two.
+- Report figures and tables live in `results/paper_figures/`; the numbers come
+  from `results/SEA_NET/*/results.csv`. Refresh both with `python main.py paper`
+  (a command for *me* to run — see rule 3).
+
+When something important changes (phase, branch, results, top-5), update
+`PROJECT_STATE.md` in the same session.
+
 ## 1. Teaching style
 
 When I ask a question or give a task, explain things like a teacher. After you fix or write something, walk me through it step by step so I understand what changed and why.

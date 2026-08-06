@@ -1,0 +1,103 @@
+% =====================================================================
+% APPENDIX B -- REPRODUCIBILITY AND DETAILS     target: 1 - 1.5 pages
+%
+% The place for the details the examiner did not want in the main text:
+% the full hyperparameter list, the exact commands, the environment.
+% Short and factual.
+% =====================================================================
+
+\section{Reproducibility and Implementation Details}
+\label{app:repro}
+
+\begin{guide}
+Three short subsections: hyperparameters, commands, environment. No prose needed
+beyond one sentence per subsection.
+\end{guide}
+
+\subsection{Full hyperparameters}
+\label{app:hparams}
+
+\todo{One sentence: every model in this report is defined by one YAML file, and the
+table below lists the values shared by all of them.}
+
+\begin{table}[h]
+\caption{Complete hyperparameter list. \todo{Fill from \texttt{configs/main.yaml} and
+the model configs.}}
+\label{tab:hparams}
+\begin{center}
+\small
+\begin{tabular}{lll}
+\toprule
+\textbf{Group} & \textbf{Parameter} & \textbf{Value} \\
+\midrule
+Encoder & width $\dmodel$              & \tbd \\
+        & number of blocks             & \tbd \\
+        & kernel sizes $\mathcal{K}$   & \tbd \\
+        & dilation cap $\delta_{\max}$ & \tbd \\
+        & dropout                      & \tbd \\
+\midrule
+Pooling & attention width $\dattn$     & \tbd \\
+        & dropout                      & \tbd \\
+        & positional encoding          & \tbd \\
+        & head-specific ($\kappa$, $\beta_0$, $\tau_0$, $\lambda_0$) & \tbd \\
+\midrule
+Training& optimiser / learning rate    & \tbd \\
+        & batch size                   & \tbd \\
+        & epochs / patience            & \tbd \\
+        & label smoothing              & \tbd \\
+        & focus penalty weight         & \tbd \\
+        & seeds                        & \tbd \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+\subsection{Commands}
+\label{app:commands}
+
+\todo{One sentence: the whole study is reproduced by the commands below, run at the
+project root.}
+
+\begin{verbatim}
+# train one model over WebTraffic + the UCR archive
+python main.py train --model <config>
+
+# comparison tables and the cross-model ranking
+python main.py results
+
+# every figure and LaTeX table used in this report
+python main.py paper
+\end{verbatim}
+
+\todo{One sentence: figures and tables in this report are produced by the last
+command, so no number was typed by hand.}
+
+\subsection{Software and hardware environment}
+\label{app:env}
+
+\begin{table}[h]
+\caption{Environment. \todo{Fill in -- the local and the Grid'5000 environments differ,
+so give both.}}
+\label{tab:environment}
+\begin{center}
+\small
+\begin{tabular}{lll}
+\toprule
+ & \textbf{Local (development)} & \textbf{Grid'5000 (training)} \\
+\midrule
+OS              & \tbd & \tbd \\
+Python          & \tbd & \tbd \\
+PyTorch / CUDA  & \tbd & \tbd \\
+GPU             & \tbd & \tbd \\
+Job scheduler   & --   & \todo{OAR} \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+\subsection{Code availability}
+\label{app:code}
+
+\todo{Two sentences: where the code lives (repository, branch), how it is organised
+(one module per stage of the pipeline), and the licence / access conditions if there
+are any. Check with my supervisor before publishing a public link.}

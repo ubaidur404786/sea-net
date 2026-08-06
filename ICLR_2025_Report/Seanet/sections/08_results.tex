@@ -1,0 +1,291 @@
+% =====================================================================
+% 8. RESULTS                        target: 4 - 4.5 pages
+%
+% Only the results that carry the story. Everything else goes to
+% Appendix A (Additional Results).
+%
+% GOLDEN RULE: never type a number by hand. Either fill the cell from a
+% results file, or -- better -- \input the auto-generated table:
+%
+%   \input{../../results/paper_figures/tables/table1_main_results}
+%
+% The path is "../../" because this report lives two folders below the
+% project root. The same holds for figures:
+%
+%   \includegraphics[width=\linewidth]%
+%     {results/paper_figures/01_main_figures/fig1_benchmark_strongest_web_acc}
+%
+% (that one works without "../../" because \graphicspath already adds it).
+% =====================================================================
+
+\section{Results}
+\label{sec:results}
+
+\begin{guide}
+Write each subsection in the same three steps: (1) one sentence saying what the table
+or figure shows, (2) the table or figure, (3) two or three sentences reading it out
+loud for the reader -- who wins, by how much, and at what cost. Never leave a table
+without a comment. Report mean $\pm$ standard deviation over the seeds, and say once,
+here, how many seeds were used.
+\end{guide}
+
+\todo{Opening paragraph: what is compared, over how many datasets, over how many
+seeds, and which numbers are mine versus published.}
+
+% ---------------------------------------------------------------------
+\subsection{Main comparison on \webtraffic{}}
+\label{sec:res:web}
+
+\begin{guide}
+This is \emph{the} table of the report: \webtraffic{} is the only dataset where
+accuracy and explanation quality can both be measured against the truth. Keep it
+small -- my two best models, the baseline I re-trained, and the published number.
+\end{guide}
+
+\begin{table}[t]
+\caption{\webtraffic{} results, mean $\pm$ standard deviation over \num{S} seeds.
+Higher is better for accuracy, AOPCR and NDCG@$n$; lower is better for parameters.
+\todo{Fill from \texttt{results/SEA\_NET/webtraffic\_comparison.csv} and the per-seed
+files.}}
+\label{tab:web_main}
+\begin{center}
+\small
+\begin{tabular}{lcccr}
+\toprule
+\textbf{Model} & \textbf{Accuracy} & \textbf{AOPCR} & \textbf{NDCG@$n$} &
+\textbf{Params} \\
+\midrule
+\multicolumn{5}{l}{\emph{Proposed (mine)}}\\
+\texttt{seanet\_bottleneck\_topk}     & \ms & \ms & \ms & \tbd \\
+\texttt{seanet\_inputgate\_adaptive}  & \ms & \ms & \ms & \tbd \\
+\todo{third variant, if useful}       & \ms & \ms & \ms & \tbd \\
+\midrule
+\multicolumn{5}{l}{\emph{Baselines re-trained by me, same recipe}}\\
+\millet{} (InceptionTime + Conjunctive) & \ms & \ms & \ms & \tbd \\
+ResNet + Conjunctive                    & \ms & \ms & \ms & \tbd \\
+FCN + Conjunctive                       & \ms & \ms & \ms & \tbd \\
+\midrule
+\multicolumn{5}{l}{\emph{Published, different recipe -- not directly comparable}}\\
+\millet{} \citep{early2024millet}      & \tbd & \tbd & \tbd & \tbd \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+\todo{Two or three sentences reading \Cref{tab:web_main}: which model wins on
+accuracy, which on explanation quality, and what it costs in parameters. If the two
+are not the same model, say so plainly -- that is an interesting result, not a
+failure.}
+
+\begin{figure}[t]
+  \centering
+  \figph{\textbf{Figure X -- Result comparison.} Grouped bar chart on \webtraffic{}:
+  one group per model, bars for accuracy, AOPCR and NDCG@$n$ (each normalised so they
+  fit one axis), with error bars over the seeds. My models in one colour, re-trained
+  baselines in another, published number as a dashed line.}
+  \caption{\todo{Caption: the headline comparison in one picture.}}
+  \label{fig:web_bars}
+\end{figure}
+
+% ---------------------------------------------------------------------
+\subsection{Accuracy across the 85 \ucr{} datasets}
+\label{sec:res:ucr}
+
+\begin{guide}
+One dataset proves nothing. This subsection shows the result holds broadly. Report
+the mean accuracy, but also the win/tie/loss record, because a mean can hide a model
+that wins hugely on three datasets and loses everywhere else.
+\textbf{Questions to answer:} Is the difference between my model and the baseline
+larger than the difference between two seeds of the same model? On which kinds of
+datasets do I win or lose (long series? few training examples? many classes?)
+\end{guide}
+
+\begin{table}[t]
+\caption{Accuracy over the 85 \ucr{} datasets published by \millet{}, mean $\pm$ std
+over \num{S} seeds. ``W/T/L'' is the win / tie / loss record against my re-trained
+\millet{} baseline, counted per dataset. \todo{Fill from
+\texttt{results/SEA\_NET/leaderboard.csv}.}}
+\label{tab:ucr_accuracy}
+\begin{center}
+\small
+\begin{tabular}{lccc}
+\toprule
+\textbf{Model} & \textbf{Mean accuracy} & \textbf{Mean rank} &
+\textbf{W/T/L vs \millet{}} \\
+\midrule
+\todo{my best variant}       & \ms & \tbd & \tbd \\
+\todo{my second variant}     & \ms & \tbd & \tbd \\
+\millet{} re-trained by me   & \ms & \tbd & -- \\
+ResNet + Conjunctive         & \ms & \tbd & \tbd \\
+FCN + Conjunctive            & \ms & \tbd & \tbd \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+\todo{Two or three sentences reading \Cref{tab:ucr_accuracy}.}
+
+\begin{figure}[t]
+  \centering
+  \figph[0.8]{\textbf{Figure X -- Is the difference real?} Critical-difference diagram
+  of accuracy ranks over the 85 \ucr{} datasets \citep{demsar2006statistical}: models
+  joined by a bar are not statistically distinguishable.}
+  \caption{\todo{Caption: explain in one sentence how to read a
+  critical-difference diagram -- a reader outside the field has never seen one.}}
+  \label{fig:cd}
+\end{figure}
+
+% ---------------------------------------------------------------------
+\subsection{Explanation quality}
+\label{sec:res:explanations}
+
+\begin{guide}
+The part that matters most for the topic of the internship. Give AOPCR and NDCG@$n$
+their own table so they are not lost next to accuracy, and repeat the warning that
+AOPCR is only comparable inside my own results.
+\end{guide}
+
+\begin{table}[t]
+\caption{Explanation quality on \webtraffic{} (mean $\pm$ std over \num{S} seeds).
+AOPCR values are comparable \emph{between the rows of this table only}; see
+\Cref{sec:setup:metrics}. \todo{Fill in.}}
+\label{tab:explanation_quality}
+\begin{center}
+\small
+\begin{tabular}{lccc}
+\toprule
+\textbf{Model} & \textbf{AOPCR} & \textbf{NDCG@$n$} & \textbf{Accuracy} \\
+\midrule
+\todo{my best AOPCR model}   & \ms & \ms & \ms \\
+\todo{my best NDCG model}    & \ms & \ms & \ms \\
+\millet{} re-trained by me   & \ms & \ms & \ms \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+\todo{Two or three sentences: does a better explanation cost accuracy here? Which
+pooling head concentrates the evidence best, and does that match the intention behind
+its design (\Cref{sec:pool:topk}, \Cref{sec:pool:dsmil})?}
+
+\begin{figure}[t]
+  \centering
+  \figph{\textbf{Figure X -- Qualitative visualisation.} Two or three \webtraffic{}
+  test series. For each: the raw signal on top with the ground-truth modified region
+  shaded, and below the per-time-step importance produced by (a) the \millet{}
+  Conjunctive baseline and (b) my best head. The reader should be able to see, without
+  reading any number, which explanation is sharper.}
+  \caption{\todo{Caption: state what the shaded region is and what a good explanation
+  should look like. Add the predicted class and its probability to each panel.}}
+  \label{fig:qualitative}
+\end{figure}
+
+\todo{Two sentences commenting on \Cref{fig:qualitative}. Be honest if a case is
+picked because it is representative rather than because it is the best one.}
+
+% ---------------------------------------------------------------------
+\subsection{Model cost}
+\label{sec:res:cost}
+
+\begin{guide}
+Goal G1 of \Cref{sec:arch:goals} was ``smaller''. This is where it is proved. Report
+size and speed together: a model that is small but slow is not obviously better.
+\end{guide}
+
+\begin{table}[t]
+\caption{Cost of each model: size, compute and speed. Measured on the same GPU with
+the same batch size. \todo{Fill from \texttt{results/SEA\_NET/profile.csv}.}}
+\label{tab:cost}
+\begin{center}
+\small
+\begin{tabular}{lrrrrr}
+\toprule
+\textbf{Model} & \textbf{Params} & \textbf{Size (MB)} & \textbf{FLOPs (M)} &
+\textbf{Train time} & \textbf{Inference (ms)} \\
+\midrule
+\todo{my best variant}     & \tbd & \tbd & \tbd & \tbd & \tbd \\
+\todo{my second variant}   & \tbd & \tbd & \tbd & \tbd & \tbd \\
+\millet{} re-trained by me & \tbd & \tbd & \tbd & \tbd & \tbd \\
+ResNet + Conjunctive       & \tbd & \tbd & \tbd & \tbd & \tbd \\
+FCN + Conjunctive          & \tbd & \tbd & \tbd & \tbd & \tbd \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+\todo{Two sentences: the parameter reduction as a percentage, and whether it also
+translates into faster inference (it does not always -- say so if it does not).}
+
+\begin{figure}[t]
+  \centering
+  \figph[0.8]{\textbf{Figure X -- Accuracy versus cost.} Scatter plot: \webtraffic{}
+  accuracy on the $y$ axis, parameter count on the $x$ axis, one marker per model, the
+  Pareto front joined by a dashed line. Filled markers are Pareto-optimal (nothing
+  else is both smaller and better).}
+  \caption{\todo{Caption: name the model sitting in the good corner and say what
+  ``Pareto-optimal'' means in one sentence.}}
+  \label{fig:pareto}
+\end{figure}
+
+% ---------------------------------------------------------------------
+\subsection{Training behaviour}
+\label{sec:res:training}
+
+\begin{guide}
+Short subsection, but it answers a question a supervisor always asks: did the models
+train properly, or did the small one only win because the big one overfitted?
+\textbf{Questions to answer:} Do training and validation loss separate? Does early
+stopping fire at a similar epoch for both models? Is my model more stable across
+seeds?
+\end{guide}
+
+\begin{table}[h]
+\caption{Final training and validation loss, and time to train one dataset
+(mean $\pm$ std over \num{S} seeds). \todo{Fill in.}}
+\label{tab:losses}
+\begin{center}
+\small
+\begin{tabular}{lccc}
+\toprule
+\textbf{Model} & \textbf{Training loss} & \textbf{Validation loss} &
+\textbf{Training time (s)} \\
+\midrule
+\todo{my best variant}     & \ms & \ms & \ms \\
+\millet{} re-trained by me & \ms & \ms & \ms \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+\begin{figure}[h]
+  \centering
+  \figph[0.8]{\textbf{Figure X -- Training curves.} Training and validation loss
+  against epoch for my best model and for the \millet{} baseline, on \webtraffic{},
+  with the early-stopping epoch marked.}
+  \caption{\todo{Caption: one sentence on what the curves show.}}
+  \label{fig:curves}
+\end{figure}
+
+\todo{Two sentences reading \Cref{tab:losses} and \Cref{fig:curves}.}
+
+% ---------------------------------------------------------------------
+\subsection{Ablations}
+\label{sec:res:ablation}
+
+\begin{guide}
+Keep only the ablation that answers the main question: does the gain come from the
+encoder, from the pooling head, or from their combination? The rest of the ablations
+go to \Cref{app:ablations}.
+\end{guide}
+
+\begin{figure}[h]
+  \centering
+  \figph[0.8]{\textbf{Figure X -- Encoder $\times$ pooling head grid.} Heat map of
+  \webtraffic{} accuracy for every encoder (rows) and every pooling head (columns), so
+  the two effects can be separated.}
+  \caption{\todo{Caption: how to read the grid, and which row/column stands out.}}
+  \label{fig:ablation_grid}
+\end{figure}
+
+\todo{Three sentences: the effect of the encoder alone, the effect of the head alone,
+and whether the best pair is the pair of the two individual bests (often it is not).}
