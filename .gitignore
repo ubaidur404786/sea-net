@@ -61,6 +61,16 @@ CLUSTERS_CMD.md
 text papers/
 # ICLR_2025_Report/
 
+# Raw Grid5000 job dumps. These are just the console output of a training run
+# (one file was 23 MB) and nothing reads them back - the numbers we actually
+# need are already saved in results/SEA_NET/<model>/results.csv and summary.csv.
+# OAR.*.stdout/stderr are written by oarsub in the folder we launch from.
+# logs/ is written by scripts/run_all.sh and scripts/launch.sh, and both do
+# "mkdir -p logs" first, so it is fine that the folder is not in git.
+/OAR.*.stdout
+/OAR.*.stderr
+/logs/
+
 # --- The report ------------------------------------------------------------
 # The line "*.tex" above was there to keep stray LaTeX scratch files out of the
 # code repo. But the report sources we DO want in git, so we switch the rule

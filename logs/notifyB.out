@@ -1,3 +1,0 @@
-nohup: ignoring input
-tail: logs/run_all_seanet_conjunctive.log: file truncated
-tail: 'logs/run_all_seanet_conjunctive.log' has become inaccessible: No such file or directory
