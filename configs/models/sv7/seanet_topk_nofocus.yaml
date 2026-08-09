@@ -1,0 +1,44 @@
+# sv7/seanet_topk_nofocus.yaml - attention focus penalty OFF (lambda_entropy = 0)
+#
+# Why this file exists: every model in the sweep was trained with lambda_entropy = 0.01, so the
+# report cannot say what that penalty actually buys - we never trained the matching model without
+# it. This config is sv4/seanet_bottleneck_topk with that ONE value set to 0, so the pair
+# (seanet_bottleneck_topk, seanet_topk_nofocus) is a controlled on/off comparison.
+#
+# Reminder of what the penalty does (report Eq. loss): it adds the entropy of the attention to the
+# loss, which pushes the model to put its weight on a few time steps instead of spreading it over
+# the whole series. So the number to watch here is NDCG@n and AOPCR, not only accuracy.
+#
+# Run it (WebTraffic only - NDCG needs the per-timestep ground truth):
+#   python main.py webtraffic --model sv7/seanet_topk_nofocus
+
+name: seanet_topk_nofocus
+use_params: default
+
+encoder:
+  type: sea_mstcn_sep_bottleneck
+  d: 64
+  n_blocks: 4
+  dropout: 0.2
+  max_dilation: 16
+  kernels: [5, 11, 23]
+  bottleneck_ratio: 4
+
+pooling:
+  type: sea_topk_conjunctive
+  d_attn: 8
+  dropout: 0.2
+  positional_encoding: true
+  top_frac: 0.1
+
+training:
+  n_epochs: 400
+  patience: 60
+  max_batch: 16
+  learning_rate: 0.00125
+  weight_decay: 0.00012
+  label_smoothing: 0.13
+  lambda_entropy: 0.0 # <-- the only line that differs from sv4/seanet_bottleneck_topk
+  min_train_for_val: 100
+  val_frac: 0.2
+  optimizer: adam

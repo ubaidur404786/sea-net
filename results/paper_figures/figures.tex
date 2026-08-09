@@ -12,7 +12,7 @@
 \begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{results/paper_figures/01_main_figures/fig1_benchmark_strongest_web_acc}
-  \caption{Accuracy of the strongest models on WebTraffic (13 models, Accuracy $\geq$ 0.94). Bars are sorted best-first; blue marks models proposed in this work and orange our reproduction of the published backbones. Labels read \texttt{encoder\_\_pooling}, abbreviated, where sea\_ marks a component introduced here and mil\_ one reused unchanged from MILLET. The dashed line is the accuracy reported in the MILLET paper. Bands are disjoint, so each model appears in exactly one of Figures 1--3.}
+  \caption{Accuracy of the strongest models on WebTraffic (16 models, Accuracy $\geq$ 0.94). Bars are sorted best-first; blue marks models proposed in this work and orange our reproduction of the published backbones. Labels read \texttt{encoder\_\_pooling}, abbreviated, where sea\_ marks a component introduced here and mil\_ one reused unchanged from MILLET. The dashed line is the accuracy reported in the MILLET paper. Bands are disjoint, so each model appears in exactly one of Figures 1--3.}
   \label{fig:fig1_benchmark_strongest_web_acc}
 \end{figure}
 
@@ -21,7 +21,7 @@
 \begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{results/paper_figures/01_main_figures/fig2_benchmark_competitive_web_acc}
-  \caption{Accuracy of the competitive models on WebTraffic (10 models, 0.93 $\leq$ Accuracy $<$ 0.94). Bars are sorted best-first; blue marks models proposed in this work and orange our reproduction of the published backbones. Labels read \texttt{encoder\_\_pooling}, abbreviated, where sea\_ marks a component introduced here and mil\_ one reused unchanged from MILLET. The dashed line is the accuracy reported in the MILLET paper. Bands are disjoint, so each model appears in exactly one of Figures 1--3.}
+  \caption{Accuracy of the competitive models on WebTraffic (11 models, 0.92 $\leq$ Accuracy $<$ 0.94). Bars are sorted best-first; blue marks models proposed in this work and orange our reproduction of the published backbones. Labels read \texttt{encoder\_\_pooling}, abbreviated, where sea\_ marks a component introduced here and mil\_ one reused unchanged from MILLET. The dashed line is the accuracy reported in the MILLET paper. Bands are disjoint, so each model appears in exactly one of Figures 1--3.}
   \label{fig:fig2_benchmark_competitive_web_acc}
 \end{figure}
 
@@ -144,7 +144,7 @@
 \begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{results/paper_figures/05_statistics/tradeoff_web_acc_vs_web_aopcr}
-  \caption{WebTraffic accuracy against AOPCR (interpretability) for every evaluated model. Spearman rank correlation is 0.20: a value near zero means the two objectives are largely independent, so gains on one do not have to be paid for on the other.}
+  \caption{WebTraffic accuracy against AOPCR (interpretability) for every evaluated model. Spearman rank correlation is 0.19: a value near zero means the two objectives are largely independent, so gains on one do not have to be paid for on the other.}
   \label{fig:tradeoff_web_acc_vs_web_aopcr}
 \end{figure}
 
@@ -153,7 +153,7 @@
 \begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{results/paper_figures/05_statistics/tradeoff_web_acc_vs_web_ndcg}
-  \caption{WebTraffic accuracy against NDCG@n (explanation quality) for every evaluated model. Spearman rank correlation is 0.60: a value near zero means the two objectives are largely independent, so gains on one do not have to be paid for on the other.}
+  \caption{WebTraffic accuracy against NDCG@n (explanation quality) for every evaluated model. Spearman rank correlation is 0.65: a value near zero means the two objectives are largely independent, so gains on one do not have to be paid for on the other.}
   \label{fig:tradeoff_web_acc_vs_web_ndcg}
 \end{figure}
 
@@ -200,7 +200,7 @@
 \begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{results/paper_figures/03_appendix/fig3_benchmark_remaining_web_acc}
-  \caption{Accuracy of the remaining models on WebTraffic (34 models, Accuracy $<$ 0.93). Bars are sorted best-first; blue marks models proposed in this work and orange our reproduction of the published backbones. Labels read \texttt{encoder\_\_pooling}, abbreviated, where sea\_ marks a component introduced here and mil\_ one reused unchanged from MILLET. The dashed line is the accuracy reported in the MILLET paper. Bands are disjoint, so each model appears in exactly one of Figures 1--3.}
+  \caption{Accuracy of the remaining models on WebTraffic (39 models, Accuracy $<$ 0.92). Bars are sorted best-first; blue marks models proposed in this work and orange our reproduction of the published backbones. Labels read \texttt{encoder\_\_pooling}, abbreviated, where sea\_ marks a component introduced here and mil\_ one reused unchanged from MILLET. The dashed line is the accuracy reported in the MILLET paper. Bands are disjoint, so each model appears in exactly one of Figures 1--3.}
   \label{fig:fig3_benchmark_remaining_web_acc}
 \end{figure}
 
@@ -209,7 +209,7 @@
 \begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{results/paper_figures/03_appendix/appendix_web_all_web_acc}
-  \caption{WebTraffic accuracy for all 57 evaluated models, sorted best-first. The main-paper version of this figure shows only the top 10.}
+  \caption{WebTraffic accuracy for all 66 evaluated models, sorted best-first. The main-paper version of this figure shows only the top 10.}
   \label{fig:appendix_web_all_web_acc}
 \end{figure}
 
@@ -218,7 +218,7 @@
 \begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{results/paper_figures/03_appendix/appendix_web_all_web_aopcr}
-  \caption{AOPCR (interpretability) for all 57 evaluated models, sorted best-first. The main-paper version of this figure shows only the top 10.}
+  \caption{AOPCR (interpretability) for all 66 evaluated models, sorted best-first. The main-paper version of this figure shows only the top 10.}
   \label{fig:appendix_web_all_web_aopcr}
 \end{figure}
 
@@ -227,7 +227,7 @@
 \begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{results/paper_figures/03_appendix/appendix_web_all_web_ndcg}
-  \caption{NDCG@n (explanation quality) for all 57 evaluated models, sorted best-first. The main-paper version of this figure shows only the top 10.}
+  \caption{NDCG@n (explanation quality) for all 66 evaluated models, sorted best-first. The main-paper version of this figure shows only the top 10.}
   \label{fig:appendix_web_all_web_ndcg}
 \end{figure}
 
@@ -236,7 +236,7 @@
 \begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{results/paper_figures/03_appendix/appendix_web_all_web_loss}
-  \caption{WebTraffic test loss for all 57 evaluated models, sorted best-first. The main-paper version of this figure shows only the top 10.}
+  \caption{WebTraffic test loss for all 66 evaluated models, sorted best-first. The main-paper version of this figure shows only the top 10.}
   \label{fig:appendix_web_all_web_loss}
 \end{figure}
 

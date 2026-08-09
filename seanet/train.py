@@ -33,6 +33,7 @@ import time
 from typing import Callable, Dict, List, Optional, Tuple
 
 import numpy as np
+import pandas as pd
 import torch
 from sklearn.metrics import accuracy_score, balanced_accuracy_score
 from torch import nn
@@ -446,6 +447,7 @@ def train_one(
     logged_model_name: Optional[str] = None,
     log_model_weights: bool = True,
     pred_dir: Optional[str] = None,
+    curve_dir: Optional[str] = None,
 ) -> Dict:
     """
     Train a model on one dataset and score it on the test set. This is the single path used for
@@ -507,7 +509,7 @@ def train_one(
     row = score_model(model, name, train_ds, val_ds, test_ds, device, seed, lambda_entropy,
                       train_time_s, verbose=verbose, mlf=mlf, mlf_params=mlf_params,
                       mlf_tags=mlf_tags, logged_model_name=logged_model_name,
-                      log_model_weights=log_model_weights, pred_dir=pred_dir)
+                      log_model_weights=log_model_weights, pred_dir=pred_dir, curve_dir=curve_dir)
     del model                                                   # free the model
     if device.type == "cuda":                                  # free GPU memory before the next dataset
         torch.cuda.empty_cache()
@@ -560,11 +562,49 @@ def save_predictions(model, name: str, test_ds, seed: int, pred_dir: str) -> str
     return path
 
 
+def save_curve(model, name: str, seed: int, curve_dir: str, has_val: bool) -> Optional[str]:
+    """
+    Save this run's per-epoch loss curve to a small CSV, so we can plot it later.
+
+    Why we need this: results.csv only has the FINAL test numbers. It cannot say when early stopping
+    fired or whether the loss was still going down when we stopped. fit() already records that curve
+    in model.history (one loss per epoch), but until now it only went to MLflow - which stays on the
+    machine that trained the model. A tiny CSV next to results.csv travels with the results instead.
+
+    What the "loss" column is: the loss early stopping was watching. That is the VALIDATION loss when
+    the dataset was big enough for a validation split (>= min_train_for_val series), and the TRAINING
+    loss otherwise - the same rule fit() uses. The monitored column says which one it was, so a plot
+    can never mislabel the curve.
+
+    model : the trained SeaNetModel (its .history holds the curve).
+    name : dataset name.  seed : the training seed (part of the filename, so seeds do not clash).
+    curve_dir : the folder to write into (created if missing).
+    has_val : True when this run had a validation split (so the curve is the validation loss).
+    returns : the path written, or None when there is no curve to write.
+    """
+    history = getattr(model, "history", None)
+    if not history:                                              # no epochs ran (or fit was skipped)
+        return None
+    os.makedirs(curve_dir, exist_ok=True)
+    monitored = "val_loss" if has_val else "train_loss"
+    frame = pd.DataFrame({
+        "epoch": range(1, len(history) + 1),
+        "loss": history,
+        "monitored": monitored,
+    })
+    # the best epoch is where the monitored loss was lowest - that is the point fit() kept the
+    # weights from, so it is also the epoch to mark on a training-curve figure.
+    frame["best_epoch"] = int(np.argmin(history)) + 1
+    path = os.path.join(curve_dir, f"{name}__seed{int(seed)}.csv")
+    frame.to_csv(path, index=False)
+    return path
+
+
 def score_model(model, name: str, train_ds, val_ds, test_ds, device: torch.device, seed: int,
                 lambda_entropy: float, train_time_s: float, verbose: bool = False,
                 mlf=None, mlf_params: Optional[Dict] = None, mlf_tags: Optional[Dict] = None,
                 logged_model_name: Optional[str] = None, log_model_weights: bool = True,
-                pred_dir: Optional[str] = None) -> Dict:
+                pred_dir: Optional[str] = None, curve_dir: Optional[str] = None) -> Dict:
     """
     Score a trained model on the test set, pack the results into one flat row, and (optionally) record
     the whole run in MLflow so every model can be compared later.
@@ -596,6 +636,11 @@ def score_model(model, name: str, train_ds, val_ds, test_ds, device: torch.devic
             save_predictions(model, name, test_ds, seed, pred_dir)
         except Exception as e:                                   # never fail a run over a side file
             print(f"    (could not save predictions for {name}: {type(e).__name__}: {e})", flush=True)
+    if curve_dir:                                                # keep the per-epoch loss curve so the
+        try:                                                     # training-behaviour figure can be drawn
+            save_curve(model, name, seed, curve_dir, has_val=val_ds is not None)
+        except Exception as e:                                   # never fail a run over a side file
+            print(f"    (could not save curve for {name}: {type(e).__name__}: {e})", flush=True)
     row = {
         "dataset": name,
         "model": model.name,

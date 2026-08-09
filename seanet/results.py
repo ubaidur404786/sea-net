@@ -129,6 +129,18 @@ def predictions_dir(model_id: str) -> str:
     return os.path.join(model_dir(model_id), "predictions")
 
 
+def curves_dir(model_id: str) -> str:
+    """
+    Where that model's training curves are saved (one small CSV per dataset per seed).
+
+    results.csv only keeps the FINAL test numbers, so it cannot answer "did this model overfit?" or
+    "at which epoch did early stopping fire?". The per-epoch loss lives in model.history, which used
+    to go to MLflow only - and MLflow lives on whichever machine trained the model. Writing the same
+    curve next to results.csv means the answer travels with the results when we copy them back.
+    """
+    return os.path.join(model_dir(model_id), "curves")
+
+
 def logs_dir(model_id: str) -> str:
     """Where that model's run logs are saved (one dated file per run)."""
     return os.path.join(model_dir(model_id), "logs")

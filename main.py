@@ -74,7 +74,7 @@ from seanet.train import train_one_from_config, fit_model_from_config, score_mod
 from seanet.results import (result_exists, save_result_row, build_comparison, compare_models,
                             millet_baseline, sweep_order, summarise_model, write_summary,
                             results_csv, done_txt, interpretation_dir, model_dir,
-                            predictions_dir, MILLET_WEBTRAFFIC_DIR)
+                            predictions_dir, curves_dir, MILLET_WEBTRAFFIC_DIR)
 
 # The commands that train (or tune) a model. They all resolve a config + a model id up front, so
 # their log file can be saved inside that model's own folder. Everything else logs to the shared folder.
@@ -229,6 +229,10 @@ def _train_and_save(name, cfg, model_id, device, smoke, command, mlf, log_weight
         # keep the per-series test predictions (smoke runs are throwaway, so not those). They are
         # tiny and they are the only way to build an ensemble vote later without retraining.
         pred_dir=None if smoke else predictions_dir(model_id),
+        # keep the per-epoch loss curve too. It is a few KB, it costs nothing extra to record
+        # (fit() already builds it), and it is the only way to draw the training-behaviour figure
+        # after the results have been copied off the training machine.
+        curve_dir=None if smoke else curves_dir(model_id),
     )
     # the two things that define this model, written into every row so results.csv is self-describing
     row["encoder"] = cfg.model_config.encoder.type
