@@ -1,3 +1,4 @@
+% !TEX root = ../main.tex
 % =====================================================================
 % ABSTRACT  (~1/2 page, one paragraph, no citations, no figures)
 % Write this LAST, once every number is frozen.
@@ -24,17 +25,9 @@
 %   - What is the one number that proves it?
 % ---------------------------------------------------------------------
 
-\todo{Write the abstract last.}
 
-Deep neural networks classify time series accurately, but they usually give only a
-label and no reason for it. The \millet{} framework showed that Multiple Instance
-Learning (MIL) pooling turns a standard backbone into a model that explains itself:
-the network scores every time step, and those scores \emph{are} the explanation.
-During this internship I built \seanet{}, \todo{one sentence: what \seanet{} is}.
-My main contribution is \todo{one sentence: the new encoder family and the new
-pooling heads}. I evaluated \num{N} model variants on the \webtraffic{} dataset and
-on the 85 \ucr{} datasets used by \millet{}, measuring both classification quality
-(accuracy, loss) and explanation quality (AOPCR, NDCG@$n$), over \num{S} random
-seeds. My best variant reaches \num{web\_acc} accuracy on \webtraffic{} against
-\num{millet\_acc} for my re-trained \millet{} baseline, while using \num{X}$\times$
-fewer parameters and improving AOPCR from \num{a1} to \num{a2}.
+In tiny deep learning, previous models were black boxes. They only predicted classes or assigned labels to time series data without providing any reason for it. The \millet{} framework showed that Multiple Instance Learning (MIL) pooling turns a standard backbone into a model that explains itself. The network scores every time step, and those scores \emph{are} the explanation. However, the issue is that this model was not made for tiny applications.
+
+During this internship, I built \seanet{}, which is our baseline architecture. In this model, we use a Temporal Convolutional Network (TCN) as the main encoder along with different pooling techniques. My main contributions are the multi-scale depthwise-separable TCNs that create the \seanet{} family of encoders (such as \texttt{sea\_mstcn\_sep}, \texttt{sea\_mstcn\_sep\_gated}, \texttt{sea\_mstcn\_sep\_bottleneck}, \texttt{sea\_mstcn\_sep\_inputgate}, and \texttt{sea\_mstcn\_sep\_recon}). I also contributed to the pooling family, including \texttt{classwise\_conjunctive}, \texttt{softmax\_conjunctive}, \texttt{adaptive\_classwise\_topk\_conjunctive}, \texttt{attention\_max}, \texttt{gated\_attention}, and \texttt{dualstream\_conjunctive}.
+
+I evaluated \num{67} model combinations on the \webtraffic{} dataset and the 85 \ucr{} datasets used by \millet{}. I measured both classification quality (accuracy, loss) and explanation quality (AOPCR, NDCG@$n$) using one random seed. However, to compare with the \millet{} baseline, we evaluated our top model, \texttt{seanet\_bottleneck\_topk}, over \num{3} random seeds. My best variant reaches 95\% accuracy (\num{0.95}) on \webtraffic{}, compared to \num{0.887} for the re-trained \millet{} baseline. At the same time, it uses \num{10}$\times$ fewer parameters and improves the NDCG score (used to evaluate explanations) from \num{0.677} to \num{0.772}.

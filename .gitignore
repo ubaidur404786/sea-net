@@ -88,3 +88,19 @@ text papers/
 # so committing it would only create noise and merge conflicts.
 /report/build/
 /report/
+
+# --- LaTeX build leftovers (anywhere) --------------------------------------
+# ICLR_2025_Report/Template/ is the blank ICLR sample, not our report. VS Code
+# used to compile it by mistake, which dropped .aux/.log/.pdf files there. The
+# root-file setting in .vscode/settings.json stops that now, but ignore the
+# leftovers anyway so `git status` stays readable.
+ICLR_2025_Report/Template/*.aux
+ICLR_2025_Report/Template/*.bbl
+ICLR_2025_Report/Template/*.blg
+ICLR_2025_Report/Template/*.log
+ICLR_2025_Report/Template/*.out
+ICLR_2025_Report/Template/*.synctex.gz
+ICLR_2025_Report/Template/*.toc
+
+# pdflatex writes texput.log when it is started with no file name at all.
+texput.log

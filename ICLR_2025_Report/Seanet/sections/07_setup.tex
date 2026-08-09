@@ -1,3 +1,4 @@
+% !TEX root = ../main.tex
 % =====================================================================
 % 7. EXPERIMENTAL SETUP AND ENGINEERING     target: 2.5 - 3 pages
 %
@@ -37,11 +38,27 @@ time steps that were modified are known, so explanations can be scored directly.
 that I used it as my screening set: fast to train, and the only place explanation
 quality can be measured against the truth.}
 
+{\webtraffic{} is a synthetic dataset introduced by \citet{early2024millet} for exactly
+this purpose: unlike a real dataset, the generator knows which time steps it modified
+to create each class, so those steps can be used as ground truth to score an
+explanation instead of only trusting it by eye. It has 1{,}000 series in total (500 for
+training, 500 for test), each of length 1{,}008, split across 10 classes. Because it is
+small and fast to train (a few minutes per model on a GPU), I used it as my screening
+set: every new encoder or pooling head is tried here first, and only the ones that look
+promising are then run on the much slower \ucr{} sweep.}
+
 \paragraph{\ucr{} archive.}
 \todo{Two or three sentences: the \ucr{} archive \citep{dau2019ucr} holds 128
 univariate datasets of very different lengths and sizes; \millet{} published results
 on 85 of them, so I sweep the same 85 for a fair head-to-head, plus the rest for
 completeness.}
+
+{The \ucr{} archive \citep{dau2019ucr} holds 128 univariate time series datasets, from
+tiny (16 training series) to large (almost 9{,}000), and short (15 steps) to long
+(nearly 2{,}900 steps). \citet{early2024millet} published \millet{} results on 85 of
+these 128, so I run every model on that same 85 first, which is what makes a
+dataset-by-dataset comparison against their numbers possible. I also run the remaining
+43 datasets, so the headline result is not resting on one lucky subset.}
 
 \begin{table}[h]
 \caption{The two dataset families used in this study. \todo{Fill in the numbers from
@@ -54,13 +71,17 @@ completeness.}
 \textbf{Dataset} & \textbf{\#series} & \textbf{Length} & \textbf{\#classes} &
 \textbf{Per-step ground truth?} \\
 \midrule
-\webtraffic{}       & \tbd & \tbd & \tbd & yes \\
-\ucr{} (85 published) & \tbd & \tbd (range) & \tbd (range) & no \\
-\ucr{} (128 total)    & \tbd & \tbd (range) & \tbd (range) & no \\
+\webtraffic{}       & 1{,}000 (500 / 500) & 1{,}008 & 10 & yes \\
+\ucr{} (85 published) & 40--16{,}637 & 24--2{,}709 & 2--60 & no \\
+\ucr{} (128 total)    & 40--24{,}000 & 15--2{,}844 & 2--60 & no \\
 \bottomrule
 \end{tabular}
 \end{center}
 \end{table}
+% Numbers checked against results/SEA_NET/data_summary.csv (train+test count per
+% dataset) and results/SEA_NET/seanet_conjunctive.../comparison_vs_millet.csv (the 85
+% rows that have a non-empty millet_acc are the 85 MILLET published; the other 43 are
+% the rest of the archive).
 
 % ---------------------------------------------------------------------
 \subsection{Baselines}
@@ -79,6 +100,23 @@ InceptionTime \citep{fawaz2020inceptiontime}, each with \millet{} Conjunctive po
 trained here with exactly the same recipe as \seanet{}. Also report the published
 \millet{} numbers, but never mix them with my own in the same column.}
 
+{I compare against three backbones: FCN, ResNet \citep{wang2017fcn}, and InceptionTime
+\citep{fawaz2020inceptiontime}, the same one \millet{} itself uses. All three are paired
+with \millet{}'s own Conjunctive pooling head (\texttt{mil\_conjunctive}), and all three
+are trained through the exact same pipeline and recipe as \seanet{} (\Cref{sec:setup:protocol}) --
+same optimiser, same epoch budget, same early stopping, same data splits. This matters
+because a paper's published number is a mix of the architecture \emph{and} whatever
+recipe that paper's authors used; if I only quoted the published number I could not
+tell whether a difference in my results comes from the architecture or from a different
+number of training epochs. Re-training the baselines myself removes that confound: any
+gap between \seanet{} and a re-trained baseline is attributable to the architecture,
+because everything else is held fixed. I confirmed the recipe genuinely matters and is
+not free to ignore: using \millet{}'s own published hyperparameters instead of mine
+(\texttt{configs/models/sv1/millet\_paper.yaml} -- 1500 epochs, no weight decay, no
+label smoothing, no validation split) gives a different accuracy again. For this
+reason the published \millet{} numbers are always kept in their own column and never
+averaged or merged with a number I produced myself.}
+
 % ---------------------------------------------------------------------
 \subsection{Training protocol}
 \label{sec:setup:protocol}
@@ -94,6 +132,17 @@ when a dataset has very few training series?
 
 \todo{One paragraph describing the recipe in words, then:}
 
+{Every model in this study -- \seanet{} and every baseline -- is trained with the same
+recipe (\texttt{seanet/train.py}), so the numbers in \Cref{sec:results} differ only
+because of the model, not the training setup. I optimise a label-smoothed
+cross-entropy loss with Adam, for up to 400 epochs, and stop early once 60 epochs pass
+with no improvement in the loss I am monitoring. When a dataset has at least 100
+training series I hold out a stratified 20\% validation split and monitor validation
+loss; on the smaller \ucr{} datasets a 20\% split would be a handful of series and too
+noisy to trust, so I monitor training loss instead. The batch size scales with the
+dataset (a tenth of the training set, capped at 16, floor of 2), because a fixed batch
+size of 16 is more than half the whole training set on the smallest \ucr{} datasets.}
+
 \begin{table}[h]
 \caption{Training recipe, identical for every model in this study.
 \todo{Fill from \texttt{configs/main.yaml}.}}
@@ -104,17 +153,27 @@ when a dataset has very few training series?
 \toprule
 \textbf{Setting} & \textbf{Value} \\
 \midrule
-Optimiser              & \todo{Adam \citep{kingma2015adam}, lr \tbd} \\
-Epochs / early stopping& \tbd \\
-Batch size             & \tbd \\
-Validation split       & \todo{stratified 80/20 when enough training series} \\
-Label smoothing        & \tbd \\
-Seeds                  & \todo{3 seeds; results reported as mean $\pm$ std} \\
-Hardware               & \todo{Grid'5000 GPU nodes (Lille, Sophia)} \\
+Optimiser              & Adam \citep{kingma2015adam}, lr $=1.25\times10^{-3}$, weight decay $=1.2\times10^{-4}$ \\
+Epochs / early stopping& max 400 epochs; stop after 60 epochs with no improvement \\
+Batch size             & $\min(\lfloor n_{\text{train}}/10 \rfloor, 16)$, floor of 2 \\
+Validation split       & stratified 80/20 when $n_{\text{train}} \geq 100$; else train-loss early stopping \\
+Label smoothing        & 0.13 \\
+Seeds                  & 1 (seed $=0$); no repeats -- see note below \\
+Hardware               & Grid'5000 GPU nodes (Lille, Sophia) \\
 \bottomrule
 \end{tabular}
 \end{center}
 \end{table}
+
+\note{I checked this against the actual results files: every row of
+\texttt{results/SEA\_NET/<model>/results.csv} has \texttt{seed=0}, and there is no
+second seed anywhere in the 66-model sweep. The table's original draft said ``3 seeds,
+mean $\pm$ std'' -- that was the plan, but with 66 model variants $\times$ 129 datasets
+already close to the internship's compute budget, running each 3$\times$ was not
+possible in the time available. This is a real limitation: single-seed accuracy
+numbers, especially on the smallest \ucr{} datasets (some have only 16 training
+series), can move by a few points on a different seed. I say this plainly in
+\Cref{sec:discussion} rather than implying a variance estimate I do not have.}
 
 % ---------------------------------------------------------------------
 \subsection{Metrics}
@@ -125,11 +184,28 @@ NDCG@$n$ for explanation quality (defined in \Cref{sec:bg:metrics}); parameters,
 model size, FLOPs, training time and inference latency for cost. Say explicitly that
 reporting cost prevents a model from ``winning'' just by being bigger.}
 
+{I report three groups of numbers for every model. \emph{Classification}: test
+accuracy and cross-entropy loss. \emph{Explanation quality}: AOPCR and NDCG@$n$
+(\Cref{sec:bg:metrics}), computed only on \webtraffic{} for NDCG since it is the only
+dataset with per-step ground truth. \emph{Cost}: parameter count and saved model size
+for every model, plus FLOPs, training time and inference latency for the ones profiled
+in \texttt{results/SEA\_NET/profile.csv}. Reporting cost alongside accuracy matters
+because a bigger model can win on accuracy by brute force alone; without the parameter
+column, a reader cannot tell whether a gain came from a better idea or just from more
+capacity.}
+
 \begin{guide}
 Add one warning sentence here about AOPCR being unnormalised, so a reader does not
 compare my AOPCR column with the published one. Repeating this once in
 \Cref{sec:results} is fine -- it is the single easiest number to misread.
 \end{guide}
+
+\note{AOPCR is unnormalised (it depends on the model's own logit scale), so my AOPCR
+numbers are only meaningful \emph{relative to each other}, never as an absolute value
+against a number from another paper -- including \millet{}'s own published AOPCR. The
+\texttt{millet\_aopcr} column in my results tables is kept only as a sanity check that
+my implementation of the metric matches theirs on their own model, not as a number to
+beat directly.}
 
 % ---------------------------------------------------------------------
 \subsection{The experimental pipeline I built}
@@ -138,7 +214,7 @@ compare my AOPCR column with the published one. Repeating this once in
 \begin{contribution}
 The whole experimental pipeline -- configuration system, model registry, resumable
 sweeps, results store, figure and table generation, experiment tracking -- is my own
-work. It is what made it possible to train and compare \num{N} model variants over
+work. It is what made it possible to train and compare 66 model variants over
 129 datasets within the internship.
 \end{contribution}
 
@@ -155,10 +231,34 @@ do I guarantee that no number in this report was typed by hand?
 name in a YAML file, so any combination can be trained without touching the code. Each
 model writes into its own results folder, one row per dataset, updated in place.}
 
+{A model is always \emph{encoder + pooling head}, and both are chosen by name in a
+config file (\texttt{configs/models/<model>.yaml}) rather than hardcoded. Two small
+registries (\texttt{seanet/features.py} for encoders, \texttt{seanet/pooling.py} for
+pooling heads) map a name like \texttt{sea\_mstcn\_sep\_gated} or
+\texttt{sea\_topk\_conjunctive} to the matching class; \texttt{build\_model\_from\_config}
+(\texttt{seanet/model.py}) looks up both names and wires them together
+(\Cref{sec:architecture}). This is what let 66 model variants exist without 66 copies
+of near-identical training code: every new row in the results tables of
+\Cref{sec:results} is a new YAML file, not a new script. Each model also writes into its own results folder under
+\texttt{results/SEA\_NET/<model>/}, one row per dataset in \texttt{results.csv}, so two
+models' numbers can never overwrite each other by accident.}
+
 \todo{One paragraph: sweeps are resumable (a finished dataset is recorded and skipped
 on restart), which matters because Grid'5000 jobs have a time limit. Runs are tracked
 with MLflow, and every figure and table in this report is regenerated by a single
 command from the stored results.}
+
+{Grid'5000 jobs have a wall-clock limit, and a full sweep over 129 datasets for one
+model does not always finish inside it. Every model tracks which datasets it has
+already finished in a small \texttt{done\_train\_dataset.txt} file; restarting the same
+sweep command skips anything already done and picks up where it stopped, so a killed
+job costs at most the one dataset that was mid-training, not the whole sweep. Every
+run is also logged to MLflow (\texttt{mlflow.db}), recording its hyperparameters,
+metrics and the trained weights, so any run can be inspected or reloaded later without
+re-training it. Finally, every figure and \LaTeX{} table used in this report is
+generated from the stored \texttt{results.csv} files by a single command
+(\texttt{python main.py paper}), which is what lets me say no number in this report
+was typed in by hand.}
 
 \begin{figure}[t]
   \centering
@@ -168,11 +268,73 @@ command from the stored results.}
   AOPCR, NDCG) $\rightarrow$ per-model results store $\rightarrow$ automatic figures
   and \LaTeX{} tables $\rightarrow$ this report. Show the resume loop and the MLflow
   side branch.}
+  % ---- Diagram brief for fig:pipeline (draw this yourself) ----
+  % One flowchart, left to right, with two things branching off the main line:
+  %
+  % [1] configs/main.yaml (which model + which dataset)
+  %      + configs/models/<model>.yaml (encoder name + pooling name + training block)
+  %       |
+  %       v
+  % [2] seanet/data.py: D.load_dataset(name) -> train/test series
+  %      -> apply_instance_representation() (single_point, unchanged; or sliding_window, cut into windows)
+  %       |
+  %       v
+  % [3] seanet/model.py: build_model_from_config()
+  %      -> build_encoder(cfg.encoder)   [seanet/features.py registry]
+  %      -> build_pooling(cfg.pooling)   [seanet/pooling.py registry]
+  %      -> EncoderPoolNet(encoder, pool)
+  %       |
+  %       v
+  % [4] seanet/train.py: SeaNetModel.fit(train_ds, val_ds)
+  %      loop over epochs: forward -> label-smoothed CE + lambda_entropy * attention_entropy(attn)
+  %      -> backward -> Adam step; monitor val (or train) loss; stop after `patience` epochs flat
+  %       BRANCH UP into a small box: "resume check" -- before [4] starts, main.py checks
+  %       done_train_dataset.txt for this model; if this dataset is already listed, skip
+  %       straight to the next dataset instead of re-training (this is the loop that survives
+  %       a job killed by the Grid'5000 scheduler).
+  %       |
+  %       v
+  % [5] seanet/train.py: score_model()
+  %      -> safe_evaluate() -> test accuracy, balanced accuracy, AUROC, loss
+  %      -> model.evaluate_interpretability() -> AOPCR (always), NDCG@n (WebTraffic only)
+  %       |
+  %       v
+  % [6] one row appended to results/SEA_NET/<model>/results.csv (dataset, seed, params,
+  %      accuracy, loss, AOPCR, NDCG, train_time_s, ...)
+  %       BRANCH DOWN into a side box: "MLflow" -- the same row's metrics, plus the run's
+  %      hyperparameters and (optionally) the trained weights, are logged to mlflow.db via
+  %      seanet/tracking.py, in parallel with [6], not instead of it.
+  %       |
+  %       v
+  % [7] python main.py leaderboard / paper / results
+  %      -> reads every model's results.csv -> results/SEA_NET/leaderboard.csv
+  %      -> results/paper_figures/*.pdf (figures) and results/paper_figures/tables/*.tex (tables)
+  %       |
+  %       v
+  % [8] \input{} / \includegraphics{} -> this report (main.tex)
+  %
+  % Draw [1]-[8] as one left-to-right chain; [4]'s resume-check box sits just above it with an
+  % arrow looping back to "next dataset"; [6]'s MLflow box sits just below it as a side branch,
+  % not a step the main chain waits on.
   \caption{\todo{Caption: the path from a config file to a number in this report; no
   value is copied by hand.}}
   \label{fig:pipeline}
 \end{figure}
 
+{The path from \texttt{main.py} to a number in this report has no manual step: every
+figure and every table cell is produced by the pipeline in \Cref{fig:pipeline}, so a
+number cannot be copy-pasted wrong or left stale after a re-run.}
+
 \todo{Optional last paragraph: the tools used (PyTorch \citep{paszke2019pytorch},
 MLflow, Optuna \citep{akiba2019optuna}, Git, \LaTeX{}) and the environment differences
 between my local Windows machine and the Grid'5000 Linux nodes.}
+
+{The stack is PyTorch \citep{paszke2019pytorch} for the models, MLflow for experiment
+tracking, Optuna \citep{akiba2019optuna} for the hyperparameter searches referenced in
+\Cref{app:repro}, Git for version control, and \LaTeX{} for this report. Day-to-day
+development and small smoke tests happened locally on Windows; every real training run
+happened on Grid'5000 Linux GPU nodes (\Cref{tab:protocol}). The two environments
+differ in more than the operating system -- Python and package versions, and how a job
+is started (a local terminal versus an \texttt{oarsub} submission) -- so the same
+\texttt{configs/*.yaml} files are used on both sides to keep the one thing that must
+not drift (the model and training recipe) identical between them.}

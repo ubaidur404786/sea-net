@@ -1,3 +1,4 @@
+% !TEX root = ../main.tex
 % =====================================================================
 % 5. THE SEA-NET ARCHITECTURE (MY PROPOSAL)     target: 3.5 - 4 pages
 %
@@ -65,11 +66,56 @@ pooling head}. The encoder is a stack of multi-scale depthwise-separable residua
 blocks with growing but capped dilation. The head is one of the pooling heads of
 \Cref{sec:pooling}. Give the shapes as above and name $B$, $\nsteps$, $\nclz$,
 $\dmodel$.}
+{\seanet{} follows the same two-stage template as \millet{} (\Cref{sec:bg:millet}): a raw
+series goes in, an encoder turns it into one embedding per time step, and a MIL pooling
+head turns those embeddings into a class prediction plus an explanation. A batch of $B$
+series of length $\nsteps$ enters as $(B, 1, \nsteps)$ -- one input channel, because every
+dataset in this report is univariate. The encoder (\Cref{sec:arch:block}) is a stack of
+multi-scale depthwise-separable residual blocks whose dilation grows but is capped
+(goal~G4, \Cref{sec:arch:goals}); it turns the input into one $\dmodel$-wide embedding per
+time step, $(B, \dmodel, \nsteps)$, exactly \Cref{eq:encoder_generic} from
+\Cref{sec:bg:millet}. This is the only place \seanet{} changes \millet{}: the pooling head
+afterwards is one of the heads of \Cref{sec:pooling} (the \millet{} Conjunctive baseline, or
+one of my own), unchanged in shape. It reads the $(B, \dmodel, \nsteps)$ embeddings and
+returns the bag logits $(B, \nclz)$ and the interpretation $(B, \nclz, \nsteps)$, following
+the same input/output contract for every encoder (\texttt{seanet/features.py}, module
+docstring).}
 
 % ----- THE NEW ARCHITECTURE DIAGRAM GOES HERE ------------------------
 % TODO: replace \figph by
 %   \includegraphics[width=\linewidth]{figures/seanet_architecture}
 % once the new diagram is drawn.
+% ----- DIAGRAM BRIEF for fig:arch_overall (draw this in your own tool) -------------------
+% Source of truth: seanet/features.py (MSTCNSepEncoder, MultiScaleSepBlock), seanet/model.py
+% (EncoderPoolNet), configs/models/sv2/seanet.yaml (the base recipe).
+%
+% Boxes, LEFT TO RIGHT, with the exact shape written under each box:
+%   1. Input series                          (B, 1, T)
+%   2. Stem: Conv1d(1 -> d, kernel=7, pad=3)  (B, d, T)
+%   3. Block 1, dilation=1                    (B, d, T)
+%   4. Block 2, dilation=2                    (B, d, T)
+%   5. Block 3, dilation=4                    (B, d, T)
+%   6. Block 4, dilation=8                    (B, d, T)
+%   7. Block 5, dilation=16                   (B, d, T)   <- capped here (max_dilation=16)
+%   8. Block 6, dilation=16                   (B, d, T)   <- stays capped
+%      [draw 3-8 as one repeated "block" box with a small xN loop if space is tight; the
+%       dilation sequence is min(2^i, max_dilation) for i=0..n_blocks-1, i.e. 1,2,4,8,16,16]
+%   9. Per-time-step embeddings z_j           (B, d, T)   <- this is Eq. (1), Section 4.3
+%  10. MIL pooling head (ONE box; detailed separately in Section 6's own figure)
+%  11. Two output arrows out of box 10:
+%        - bag logits          (B, C)
+%        - interpretation      (B, C, T)
+%
+% Numbers to print on the diagram (base recipe, configs/models/sv2/seanet.yaml):
+%   d = 128, n_blocks = 6, kernels = {5, 11, 23}, max_dilation = 16, dropout = 0.2
+% The SMALL variants actually compared in Section 8 use d = 64, n_blocks = 4
+% (e.g. configs/models/sv4/seanet_bottleneck.yaml) -- consider a small inset showing this
+% size for contrast, since "small" is goal G1.
+%
+% Suggested colours: stem = grey (fixed/standard part), blocks = your accent colour (new,
+% mine), pooling head = the SAME colour you use for the pooling figure in Section 6, so a
+% reader flipping pages recognises it's the same box.
+% -------------------------------------------------------------------------------------------
 \begin{figure}[t]
   \centering
   \figph{\textbf{Figure X -- Overall \seanet{} architecture.} Left to right: raw
@@ -78,7 +124,13 @@ $\dmodel$.}
   pooling head, and the two outputs: bag logits $(B,\nclz)$ and interpretation
   $(B,\nclz,\nsteps)$.}
   \caption{\todo{Caption: read the diagram left to right in three sentences. Say
-  which parts are new (encoder, pooling head) and which are standard.}}
+  which parts are new (encoder, pooling head) and which are standard.} The stem and the
+  six blocks (grey/accent) are the new encoder proposed in this section; the pooling head
+  on the right is swappable and detailed separately in \Cref{sec:pooling}. Left to right:
+  the stem lifts the raw series from one channel to $\dmodel$ channels; the blocks refine
+  these features while keeping the length $\nsteps$ fixed and the dilation capped at
+  \num{16}; the result is one embedding per time step, which the pooling head turns into a
+  class prediction and a matching interpretation.}
   \label{fig:arch_overall}
 \end{figure}
 
@@ -120,7 +172,48 @@ receptive field quickly but keeps it local (goal~G4).
 look at the signal at three time scales at once and their outputs are summed;
 $1\times1$ then mixes channels; BatchNorm \citep{ioffe2015batchnorm} and ReLU are
 standard; dropout regularises.}
+{In words, \Cref{eq:unit} looks at the same signal at three time scales at once: a short
+kernel of size 5 sees a narrow local pattern, while a kernel of size 23 sees roughly four
+times as far, and their outputs are simply added together so the block does not have to
+pick one scale in advance. The $1\times1$ pointwise convolution $P$ that follows does not
+look at time at all -- it only mixes the $\dmodel$ channels at each time step, combining
+what the three kernels found. BatchNorm \citep{ioffe2015batchnorm} keeps the activations on
+a stable scale, ReLU adds the non-linearity, and dropout regularises. Because every
+convolution in \Cref{eq:unit} is \emph{depthwise} (one filter per channel, \texttt{groups=d}
+in the code), this whole step is far cheaper than a normal convolution that mixes channels
+and looks at multiple time scales at the same time -- see ``Why this is small'' below for
+the exact numbers.}
 
+% ----- DIAGRAM BRIEF for fig:arch_block (draw this in your own tool) ---------------------
+% Source of truth: seanet/features.py, class MultiScaleSepBlock (forward() method).
+%
+% This is a ZOOM-IN on ONE block (one of the repeated boxes in fig:arch_overall).
+% A block runs TWO identical "units" in sequence, then adds the block's own input back
+% (a residual connection). Draw ONE unit in full detail, then a small "x2" box, then the
+% residual add.
+%
+% Inside ONE unit:
+%   input h                                                        (B, d, T)
+%     |-- depthwise conv, kernel=5,  dilation=delta, groups=d  --\
+%     |-- depthwise conv, kernel=11, dilation=delta, groups=d  --+--> SUM --> (B, d, T)
+%     |-- depthwise conv, kernel=23, dilation=delta, groups=d  --/
+%   SUM -> pointwise Conv1d(d, d, kernel=1)                        (B, d, T)
+%       -> BatchNorm1d(d) -> ReLU -> Dropout                       (B, d, T)
+%
+% unit output -> (second identical unit) -> y
+% block output = ReLU(x + y)     <- residual: x is the BLOCK's own input, not the unit's
+%
+% Draw the three depthwise convolutions as three parallel lanes of different width (to
+% suggest "looking wider"), converging into one SUM symbol -- this is what "multi-scale"
+% means in the block's name.
+%
+% Second panel (small inset, as the guide box asks): sketch the receptive field. Show one
+% output position and shade which INPUT positions feed it, at two dilations -- dilation=1
+% vs dilation=16 -- same number of taps, much wider spacing at dilation=16 (that is the
+% whole point of a dilated depthwise conv: wider reach, same cost). Annotate with the real
+% numbers from configs/models/sv2/seanet.yaml: kernels = {5, 11, 23}, max_dilation = 16,
+% dilation sequence over 6 blocks = 1, 2, 4, 8, 16, 16.
+% -------------------------------------------------------------------------------------------
 \begin{figure}[t]
   \centering
   \figph[0.85]{\textbf{Figure X -- Multi-scale feature extraction.} One block: the
@@ -128,7 +221,11 @@ standard; dropout regularises.}
   their sum, the pointwise $1\times1$ mixing, BatchNorm, ReLU, dropout, and the
   residual connection. Below, a sketch of the receptive field growing with the
   dilation but stopping at the cap.}
-  \caption{\todo{Caption: what one block computes, and why three kernel sizes.}}
+  \caption{\todo{Caption: what one block computes, and why three kernel sizes.} One
+  block: three depthwise convolutions look at the signal at three time scales at once,
+  their outputs are summed, a pointwise $1\times1$ convolution mixes the channels, and
+  the block adds its own input back. Below, the receptive field grows with the dilation
+  but is capped, so the view stays wide without growing without bound.}
   \label{fig:arch_block}
 \end{figure}
 
@@ -146,6 +243,20 @@ costs $\dmodel^2 k$ weights. A depthwise-separable pair costs only
 \end{equation}
 \todo{One sentence with the real numbers: with $\dmodel = \num{d}$ and kernels
 $\{5,11,23\}$ this gives \num{params} parameters per block instead of \num{params}.}
+{Counting the weights in \Cref{eq:unit} directly from the code
+(\texttt{seanet/features.py}, \texttt{MultiScaleSepBlock}): with the base width
+$\dmodel = 128$ and kernels $\{5,11,23\}$, the three depthwise convolutions together cost
+$\dmodel \cdot 6 + \dmodel \cdot 12 + \dmodel \cdot 24 = 5{,}376$ weights (each term includes
+one bias per channel), while the pointwise convolution alone costs
+$\dmodel^2 + \dmodel = 16{,}512$ -- already three times more than all three depthwise
+convolutions combined. With BatchNorm's $2\dmodel = 256$, one unit costs $22{,}144$
+parameters, one block (two units, \Cref{eq:block}) costs $44{,}288$, and the full six-block
+encoder plus its stem costs about $266{,}752$ parameters. This matches the $269{,}083$
+measured for \texttt{seanet\_conjunctive} in \texttt{results/SEA\_NET/leaderboard.csv} (the
+small remainder is the pooling head). A standard, non-separable convolution that looked at
+the same three kernel sizes would instead cost
+$\dmodel^2 \cdot (5{+}11{+}23) = 638{,}976$ weights for that same step -- about $29\times$
+more -- which is exactly why goal~G1 is reachable at all.}
 
 % ---------------------------------------------------------------------
 \subsection{Encoder variants}
@@ -170,6 +281,15 @@ supervisor's suggestion or a paper? Which one did I expect to win, and why?
 \end{equation}
 \todo{One sentence: with $r = \dmodel/\num{ratio}$ this removes \num{pct}\,\% of the
 encoder weights.}
+{With the ratio $=4$ used in \texttt{configs/models/sv4/seanet\_bottleneck.yaml}, the
+pointwise cost drops from $\dmodel^2$ to $2\dmodel r = \dmodel^2/2$ -- exactly half,
+whatever $\dmodel$ is, since $r = \dmodel/4$. Counting the whole encoder at the size
+actually used in the experiments ($\dmodel=64$, $4$ blocks): the plain
+\texttt{sea\_mstcn\_sep} encoder costs about $56{,}320$ parameters, and the bottleneck
+version costs about $40{,}064$ -- a real $29\,\%$ cut in the \emph{full} encoder, not just
+the pointwise step, because the pointwise convolution is the single biggest term. This lines
+up with the $41{,}324$ measured for \texttt{sea\_mstcn\_sep\_bottleneck} paired with
+top-$k$ pooling (\texttt{configs/models/sv6/seanet\_bottleneck\_mschan.yaml}).}
 
 \paragraph{Gated.}
 \todo{Problem: not every channel matters for every series.} A summary over time drives
@@ -181,23 +301,105 @@ a channel gate:
   \label{eq:gate}
 \end{equation}
 where $\odot$ multiplies element by element. \todo{One sentence on why this helps.}
+{This lets the whole-series context decide which feature channels to trust, without
+touching individual time steps: the gate multiplies by $(1+\text{gate}) \in [1,2]$ rather
+than replacing the features outright (\texttt{seanet/features.py}, \texttt{SummaryGate}), so
+the per-time-step differences that AOPCR and NDCG depend on are never flattened -- only the
+channels are turned up or down, never the time axis. The code offers three ways to summarise
+time into that one vector (max, mean, or the last time step);
+\texttt{configs/models/sv4/seanet\_gated\_last.yaml} uses the last time step, kept so all
+three could be compared under the same recipe.}
 
 \paragraph{Input gate.}
 \todo{Same idea, but the gate is read directly from the raw input instead of from the
 deep features. Write the one-line equation and say why I tried both.}
+\begin{equation}
+  g_j = \sig\!\big(W_g \ast \bag\big)_j \in [0,1]^{\dmodel},
+  \qquad
+  \mathbf{h}'_j = \mathbf{h}_j \odot (1 + g_j) ,
+  \label{eq:input_gate}
+\end{equation}
+{where $W_g \ast \bag$ is a small convolution (kernel size~7 in
+\texttt{configs/models/sv4/seanet\_inputgate.yaml}) applied to the \emph{raw} input series,
+not to the encoder's features. The difference from the Gated variant above is exactly this:
+\Cref{eq:gate} builds ONE gate for the whole series from the deep features, while
+\Cref{eq:input_gate} builds a gate that changes at \emph{every} time step, read straight from
+the raw signal (\texttt{seanet/features.py}, \texttt{InputGate}). I tried both because they
+attack the same idea -- not every channel matters everywhere -- at two different
+granularities, coarse (whole-series) versus fine (per-time-step); comparing them tells us
+which granularity the gating idea actually needs.}
 
 \paragraph{Spike / trend.}
 \todo{Two branches: a smoothed (trend) branch and a high-pass (spike) branch, mixed
 and gated. Say which datasets motivated it.}
+\begin{align}
+  \text{trend}_j &= \text{mstcn\_sep}(\bag)_j \in \R^{\dmodel} ,
+  \label{eq:spike_trend}\\
+  \text{spike}_j &= \operatorname{ReLU}\!\big(\operatorname{BN}(\operatorname{Conv1d}_3(
+  \bag - \operatorname{avg}_w(\bag)))\big)_j \in \R^{d_{\text{spike}}} ,
+  \label{eq:spike_branch}\\
+  \mathbf{h}_j &= P_{1\times 1}\big([\text{trend}_j \,;\, \text{spike}_j]\big) \in \R^{\dmodel} ,
+  \label{eq:spike_mix}
+\end{align}
+{followed by the same SummaryGate as the Gated variant. The trend branch is the usual
+encoder, unchanged. The spike branch first removes a local moving average $\operatorname{avg}_w$
+(window~5 in \texttt{configs/models/sv4/seanet\_spiketrend.yaml}) from the raw series --
+what is left is close to zero on smooth stretches and large only where the signal jumps --
+and a small convolution turns that high-pass signal into $d_{\text{spike}} = 16$ extra
+channels (\texttt{seanet/features.py}, \texttt{SpikeBranch}). The two branches are
+concatenated and mixed back to width $\dmodel$ with a $1{\times}1$ convolution.
+\note{Add the specific dataset(s) where a single sharp point, rather than a slow trend,
+carries the label -- I could not find a confirmed example in the code comments, so check
+this against Section 8 before printing a claim.}}
 
 \paragraph{Multi-scale channels \note{wrapper, not an encoder}.}
 \todo{Rolling max, min and standard deviation over a window are appended as extra
 input channels, so the network gets local statistics for free. Length unchanged.}
+\begin{equation}
+  \bag^{+} = \Big[\, \bag \,;\; \big(\text{roll\_max}_w(\bag)\big)_{w \in \mathcal{W}} \;;\;
+  \big(\text{roll\_min}_w(\bag)\big)_{w \in \mathcal{W}} \;;\;
+  \big(\text{roll\_std}_w(\bag)\big)_{w \in \mathcal{W}} \;;\; \operatorname{sign}(\Delta \bag) \,\Big] ,
+  \label{eq:mschan}
+\end{equation}
+{where $\mathcal{W} = \{3,7,15,31\}$ (all odd, so each window stays centred on its time
+step) and $\Delta \bag_j = \bag_j - \bag_{j-1}$. This wrapper does not replace an encoder --
+it only widens the input from $1$ channel to $1{+}|\mathcal{W}|{\cdot}3{+}1 = 14$ channels
+before handing it to any of the encoders above
+(\texttt{configs/models/sv6/seanet\_bottleneck\_mschan.yaml} wraps the Bottleneck encoder).
+Max, min and standard deviation are used instead of a rolling mean because a mean is a
+\emph{linear} operation the stem convolution could already learn on its own, while
+max/min/std are non-linear and genuinely add information a convolution cannot compute by
+itself. One BatchNorm is applied to these 14 channels before the encoder sees them, because
+the built channels do not share the raw series' scale (a rolling max sits high, a rolling
+std is small and always positive); skipping this normalisation was tried first and cost
+accuracy (\texttt{seanet/features.py}, \texttt{MultiScaleChannelEncoder} docstring). The
+series length $\nsteps$ never changes, so goal~G3 still holds.}
 
 \paragraph{Multi-scale pyramid \note{wrapper, not an encoder}.}
 \todo{The same encoder runs on the series downsampled by $1,2,4,8$; the outputs are
 upsampled back to length $\nsteps$ and fused (attention / mean / max / concat). Write
 the fusion in one equation.}
+\begin{equation}
+  \mathbf{h}_j = \sum_{s \in \mathcal{S}} \alpha_j^{s} \, \mathbf{h}_j^{(s)} ,
+  \qquad
+  \alpha_j^{s} = \operatorname{softmax}_{s}\big(\text{score}(\mathbf{h}_j^{(s)})\big),
+  \qquad \sum_{s \in \mathcal{S}} \alpha_j^{s} = 1 ,
+  \label{eq:pyramid_fusion}
+\end{equation}
+{where $\mathcal{S} = \{1,2,4,8\}$ (\texttt{configs/models/sv6/seanet\_bottleneck\_pyramid.yaml}),
+$\mathbf{h}_j^{(s)}$ is the SAME shared encoder run on the series averaged down by a factor
+$s$ and stretched back to length $\nsteps$, and the softmax normalises over the
+\emph{scale} axis, never over time -- so the per-time-step signal AOPCR and NDCG depend on
+is untouched (\texttt{seanet/features.py}, \texttt{MultiScalePyramid}). One encoder is
+shared across every scale, so the parameter count barely moves; the extra cost is mostly
+compute ($1+\tfrac12+\tfrac14+\tfrac18 \approx 1.9\times$), not parameters.
+\textbf{One constraint made this work at all:} the wrapped encoder must stay shallow enough
+that its receptive field does not exceed $\nsteps / \max(\mathcal{S})$, otherwise the
+coarsest scales collapse to a near-constant signal and the interpretation degrades badly --
+this is why \texttt{configs/models/sv6/seanet\_bottleneck\_pyramid.yaml} uses a shallow
+\num{2}-block, \texttt{max\_dilation=1} base instead of the usual \num{4}-block one, and
+\texttt{scripts/check\_multiscale.py} checks this automatically for any new scale/base
+combination.}
 
 \begin{table}[t]
 \caption{The encoder variants I designed, what each one changes, and why.
@@ -209,18 +411,25 @@ the fusion in one equation.}
 \toprule
 \textbf{Variant} & \textbf{What changes} & \textbf{Motivation} & \textbf{Params} \\
 \midrule
-Base (MS-TCN sep.)   & \todo{--} & \todo{--} & \tbd \\
-Bottleneck           & \todo{--} & \todo{--} & \tbd \\
-Gated                & \todo{--} & \todo{--} & \tbd \\
-Input gate           & \todo{--} & \todo{--} & \tbd \\
-Spike / trend        & \todo{--} & \todo{--} & \tbd \\
-Multi-scale channels & \todo{--} & \todo{--} & \tbd \\
-Multi-scale pyramid  & \todo{--} & \todo{--} & \tbd \\
+Base (MS-TCN sep.)   & \todo{--} stacked multi-scale depthwise-separable residual blocks, dilation capped & \todo{--} the proposed encoder itself (\Cref{sec:arch:block}) & \tbd \\
+Bottleneck           & \todo{--} pointwise $d\to d$ conv factorised to $d\to r\to d$, $r=d/4$ & \todo{--} pointwise dominates the parameter count; cut it directly (G1) & \tbd \\
+Gated                & \todo{--} one whole-series summary re-weights channels & \todo{--} not every channel matters for every series & \tbd \\
+Input gate           & \todo{--} same idea, gate read from the raw input, per time step & \todo{--} test coarse vs.\ fine-grained gating & \tbd \\
+Spike / trend        & \todo{--} second high-pass branch mixed in before gating & \todo{--} some evidence is a spike, not a trend & \tbd \\
+Multi-scale channels & \todo{--} 14 rolling-statistic input channels, same encoder underneath & \todo{--} give the stem non-linear local statistics for free & \tbd \\
+Multi-scale pyramid  & \todo{--} same encoder shared across 4 downsampled copies, fused by attention & \todo{--} the 1-D analogue of multi-magnification WSI MIL & \tbd \\
 \midrule
 InceptionTime \reused & baseline encoder & \citep{fawaz2020inceptiontime} & \tbd \\
 \bottomrule
 \end{tabular}
 \end{center}
+% Params column: fill with `python main.py params --model <name>`, or pull from
+% results/SEA_NET/leaderboard.csv / results/SEA_NET/profile.csv. Known anchors already
+% measured (source: results/SEA_NET/leaderboard.csv, PROJECT_STATE.md sec. 5, and
+% configs/models/sv6/seanet_bottleneck_mschan.yaml comment):
+%   seanet_conjunctive (base sea_mstcn_sep, d=128, n_blocks=6) + mil_conjunctive = 269,083
+%   sea_mstcn_sep_bottleneck (d=64, n_blocks=4, ratio=4) + sea_topk_conjunctive  = 41,324
+%   sea_mstcn_sep_gated + sea_topk_conjunctive                                   = 61,740
 \end{table}
 
 % ---------------------------------------------------------------------
@@ -237,3 +446,23 @@ InceptionTime? Why not use a post-hoc explainer on a bigger model? What would I 
 \todo{One paragraph naming two or three alternatives and the reason each was
 rejected (compute cost, loss of locality, explanation not guaranteed to match the
 prediction, \dots).}
+{\note{Confirm this matches what you actually considered -- adjust freely.} Three
+alternatives were considered and rejected. A Transformer encoder was the most obvious
+alternative to a convolutional stack, but full self-attention costs
+$\mathcal{O}(\nsteps^2)$ in time and memory, and the series in this report run to
+\num{1000}--\num{1500} time points (\Cref{sec:objectives}) -- far too expensive for the
+microcontroller target of this internship (\Cref{sec:context}); just as importantly,
+unrestricted attention lets any time step attend to any other, which works against
+goal~G4 (locality) and would make the interpretation harder to trust, since a single output
+could be built from evidence smeared across the whole series. Simply pruning or quantising
+the existing InceptionTime backbone was also rejected: pruning shrinks a network, but does
+nothing about the real problem identified in \Cref{sec:bg:tsc} -- InceptionTime still ends
+in global average pooling, which destroys per-time-step information before the classifier
+ever sees it, so a pruned InceptionTime would still need a separate, post-hoc explainer,
+with the same faithfulness problem raised in \Cref{sec:bg:related}. Finally, keeping a
+bigger, more accurate backbone and explaining it after the fact with a post-hoc method
+(\Cref{sec:bg:related}) was rejected for the same reason \millet{} rejects it: a post-hoc
+explanation is not guaranteed to match what the model actually computed, while every
+encoder in this section keeps the MIL contract of \Cref{eq:encoder_generic} exactly, so any
+pooling head from \Cref{sec:pooling} can still turn it into a faithful, built-in
+explanation.}

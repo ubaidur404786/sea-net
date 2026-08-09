@@ -1,3 +1,4 @@
+% !TEX root = ../main.tex
 % =====================================================================
 % 3. WHAT I HAD TO DO               target: 1.5 - 2 pages
 %
@@ -9,52 +10,57 @@
 \section{What I Had to Do}
 \label{sec:objectives}
 
-\begin{guide}
-Describe the task \emph{as it was given to me}, then how I turned it into concrete
-objectives. A good structure is: (1) the starting point I was handed, (2) the
-problem statement, (3) the objectives with success criteria, (4) the constraints,
-(5) how the plan changed along the way.
-\textbf{Questions to answer:} What exactly was handed to me on day one (a paper? a
-code base? nothing?). What did my supervisor ask for in one sentence? What would
-``success'' have looked like? What was left open for me to decide?
-\end{guide}
+% \begin{guide}
+% Describe the task \emph{as it was given to me}, then how I turned it into concrete
+% objectives. A good structure is: (1) the starting point I was handed, (2) the
+% problem statement, (3) the objectives with success criteria, (4) the constraints,
+% (5) how the plan changed along the way.
+% \textbf{Questions to answer:} What exactly was handed to me on day one (a paper? a
+% code base? nothing?). What did my supervisor ask for in one sentence? What would
+% ``success'' have looked like? What was left open for me to decide?
+% \end{guide}
 
 \subsection{Starting point}
 
-\todo{Two or three sentences: the subject started from the \millet{} paper
-\citep{early2024millet} and its public code. Say what already existed (their
-backbones, their pooling heads, their metrics) and that reproducing it was step
-zero, not a contribution.}
+% \todo{Two or three sentences: the subject started from the \millet{} paper
+% \citep{early2024millet} and its public code. Say what already existed (their
+% backbones, their pooling heads, their metrics) and that reproducing it was step
+% zero, not a contribution.}
+
+{At the start, I read the papers suggested by my supervisor, such as the \millet{} paper \citep{early2024millet}, "SHEDDING LIGHT ON TIME SERIES CLASSIFICATION USING INTERPRETABILITY GATED NETWORKS", "Abstracted Shapes as Tokens: A Generalizable and Interpretable Model for Time-series Classification", and others. I also read the code base of the paper, the papers related to MIL pooling, such as \citep{ilse2018attention, li2021dsmil}, and the papers related to the TCN encoder, such as \citep{bai2018}. An interesting point was that when we used the same trained model, we got different results than those reported in their paper. When we ran the exact same model on the same dataset, we also got different results. However, in this case, the \millet{} model was still the best baseline.}
 
 \begin{priorwork}
-\todo{One or two sentences naming precisely what I reused without change: the
-\millet{} training loop, the AOPCR and NDCG@$n$ metric code, the \webtraffic{} and
-\ucr{} data loaders. Being explicit here protects the credibility of everything I
-claim later.}
+% \todo{One or two sentences naming precisely what I reused without change: the
+% \millet{} training loop, the AOPCR and NDCG@$n$ metric code, the \webtraffic{} and
+% \ucr{} data loaders. Being explicit here protects the credibility of everything I
+% claim later.}
+
+{For the \millet{} part, I did not change anything in the real code. I reused their code for \millet{} training exactly as they used it. The only thing I changed was wrapping their code in our pipeline. At the start, my end goal was to reuse their code and adjust it to fit our pipeline.}
 \end{priorwork}
 
 \subsection{Problem statement}
 
-\begin{guide}
-Turn the subject into one clear research question. A good template:
-``Can a much smaller encoder match the accuracy of the \millet{} baseline while
-producing \emph{better} explanations?'' Then say why that question is not obvious --
-smaller models usually lose accuracy, and better explanations usually cost accuracy.
-\end{guide}
+% \begin{guide}
+% Turn the subject into one clear research question. A good template:
+% ``Can a much smaller encoder match the accuracy of the \millet{} baseline while
+% producing \emph{better} explanations?'' Then say why that question is not obvious --
+% smaller models usually lose accuracy, and better explanations usually cost accuracy.
+% \end{guide}
 
-\todo{Three or four sentences ending with one clearly stated research question.}
+% \todo{Three or four sentences ending with one clearly stated research question.}
+{The problem was clear: can we get a smaller model with good accuracy and better explanations? If we reduce the layers or minimize the architecture, it usually costs accuracy. So the end goal is to improve the accuracy and explanation while reducing the size as much as possible, and also make sure the models work well on tiny devices.}
 
 \subsection{Objectives}
 
-\begin{guide}
-Three to five objectives. Each one needs a \emph{measurable} success criterion,
-otherwise the conclusion cannot say whether it was reached. Come back to this list
-in \Cref{sec:conclusion} and answer each point honestly.
-\end{guide}
+% \begin{guide}
+% Three to five objectives. Each one needs a \emph{measurable} success criterion,
+% otherwise the conclusion cannot say whether it was reached. Come back to this list
+% in \Cref{sec:conclusion} and answer each point honestly.
+% \end{guide}
 
 \begin{table}[h]
-\caption{The objectives I set with my supervisor, and how each one was measured.
-\todo{Fill in the criteria; keep them measurable.}}
+\caption{The objectives I set with my supervisor, and how each one was measured.}
+% \todo{Fill in the criteria; keep them measurable.}}
 \label{tab:objectives}
 \begin{center}
 \small
@@ -62,15 +68,16 @@ in \Cref{sec:conclusion} and answer each point honestly.
 \toprule
 \textbf{Objective} & \textbf{Success criterion} & \textbf{Reached?} \\
 \midrule
-O1. \todo{Reproduce the baseline} & \todo{e.g. accuracy within X of the published
-number under my own training recipe} & \tbd \\
-O2. \todo{Design a smaller encoder} & \todo{e.g. $\geq$ 50\,\% fewer parameters at
-equal accuracy} & \tbd \\
-O3. \todo{Improve explanation quality} & \todo{e.g. higher AOPCR and NDCG@$n$ on
-\webtraffic{}} & \tbd \\
-O4. \todo{Build a reproducible benchmark} & \todo{e.g. any model reproducible from
-one command and one config file} & \tbd \\
-O5. \todo{optional fifth objective} & \todo{criterion} & \tbd \\
+
+O1. {Reproduce all the baselines} & {Compare their architecture and results, and select one for interpretation} & Yes, we selected the \millet{} paper as the baseline \\
+O2. {Match published results / Reproduce \millet{} results} & {Rerun the same \millet{} model; compare our 89\% accuracy to the published 0.940 for Conjunctive InceptionTime} & We emailed them that using their exact same weights, we get 0.922 accuracy in evaluation. When we retrain the same architecture, we get 89\%, but they report 0.940 in the paper. We are still waiting for their reply. \\
+O3. {Design a smaller encoder} & {$\geq$ 50\,\% fewer parameters at
+equal accuracy} & Yes, we got a model 10 times smaller \\
+O4. {Improve explanation quality} & {e.g. higher AOPCR and NDCG@$n$ on
+\webtraffic{}} & Yes, on \webtraffic{} it works well, but on the full UCR set it struggles on some datasets \\
+O5. {Build a reproducible benchmark} & {any model reproducible from
+one command and one config file} & Yes, we have one config YAML file where we can control all the model compilation \\
+O6. {Test on a tiny device} & {Test and check the device performance on the latest model} & Not yet. We are still improving the model. We have the devices, but first we need to fix the model. \\
 \bottomrule
 \end{tabular}
 \end{center}
@@ -78,47 +85,41 @@ O5. \todo{optional fifth objective} & \todo{criterion} & \tbd \\
 
 \subsection{Constraints}
 
-\begin{guide}
-Short bullet list. Constraints make the work look real, and they explain later
-choices (for example: why only three seeds, why \webtraffic{} was the screening
-dataset).
-\textbf{Questions to answer:} How much time did I have? How much GPU time? Which
-comparisons had to stay fair (same recipe for every model)? What could I not change
-(the metric definitions, the data splits)?
-\end{guide}
+% \begin{guide}
+% Short bullet list. Constraints make the work look real, and they explain later
+% choices (for example: why only three seeds, why \webtraffic{} was the screening
+% dataset).
+% \textbf{Questions to answer:} How much time did I have? How much GPU time? Which
+% comparisons had to stay fair (same recipe for every model)? What could I not change
+% (the metric definitions, the data splits)?
+% \end{guide}
 
 \begin{itemize}\itemsep2pt
-  \item \todo{Time: \num{months} months of internship.}
-  \item \todo{Compute: shared GPU nodes with a job time limit; a full sweep over 128
-        datasets takes \num{hours} hours per model.}
-  \item \todo{Fairness: every model trained with the same recipe, so that only the
-        architecture differs.}
-  \item \todo{Comparability: keep \millet{}'s metric code untouched, so my numbers
-        can be read next to theirs.}
+%   \item {Time: \num{months} months of internship.}
+  \item {I have only \num{4} months of internship time.}
+  \item {Compute: shared GPU nodes with a job time limit; a full sweep over 128
+        datasets takes \num{5} hours per model.}
+  \item {We need to wait for the GPU nodes to become free, and each job has a time limit, so we need to wait for the next job to start.}
+  \item {We use the \webtraffic{} dataset to first compare accuracy. It has two types of labels: time series labels and time point labels, which let us evaluate both the model's class prediction and its explanation accuracy. Keep in mind that NDCG can only be used when we have time point labels.}
+  
+  
 \end{itemize}
 
 \subsection{How the plan evolved}
 
-\begin{guide}
-Very valuable for the examiner: it shows scientific judgement rather than blind
-execution. Two or three sentences. Be honest -- a plan that changed for a good
-reason is a strength, not a weakness.
-\textbf{Questions to answer:} What did I try first that did not work? What made me
-change direction (a result? a paper I read? a supervisor's remark?). Where did the
-idea of borrowing pooling ideas from cancer-pathology MIL papers come from?
-\end{guide}
+% \begin{guide}
+% Very valuable for the examiner: it shows scientific judgement rather than blind
+% execution. Two or three sentences. Be honest -- a plan that changed for a good
+% reason is a strength, not a weakness.
+% \textbf{Questions to answer:} What did I try first that did not work? What made me
+% change direction (a result? a paper I read? a supervisor's remark?). Where did the
+% idea of borrowing pooling ideas from cancer-pathology MIL papers come from?
+% \end{guide}
 
-\todo{Three or four sentences describing the path: baseline reproduction $\rightarrow$
-smaller encoder $\rightarrow$ pooling heads $\rightarrow$ ideas imported from
-whole-slide-image MIL \citep{ilse2018attention, li2021dsmil} $\rightarrow$ multi-seed
-validation.}
+% \todo{Three or four sentences describing the path: baseline reproduction $\rightarrow$
+% smaller encoder $\rightarrow$ pooling heads $\rightarrow$ ideas imported from
+% whole-slide-image MIL \citep{ilse2018attention, li2021dsmil} $\rightarrow$ multi-seed
+% validation.}
 
-% Optional but nice: a small timeline figure of the internship.
-\begin{figure}[h]
-  \centering
-  \figph[0.85]{Timeline of the internship: reading and reproduction, encoder design,
-  pooling design, large-scale sweeps on Grid'5000, analysis and writing. One
-  horizontal bar per phase, weeks on the $x$ axis.}
-  \caption{\todo{Caption: how the \num{months} months were spent.}}
-  \label{fig:timeline}
-\end{figure}
+{At the start, we found different papers to read, like the VQShape \citep{wen2024vqshape}. In their paper, they already train shapelets, and with the help of these shapelets, they explain the prediction. However, we wanted a simple and clear solution, not something too complex. Similarly, we used ideas from the MSDA MIL paper \citep{hashimoto2020msdamil}, like using multi-scale WSI images, and also the DSMIL \citep{li2021dsmil} dual-stream trick. The problem was that both of these work on WSI images to detect cancer using multiple instance learning, and their attention depends on their feature extractor, which did not work well in our domain. WSI images are 40k x 40k pixels and are converted into bags and patches, but our time series datasets have an average of 1000 to 1500 time points, so we have far fewer points. In this case, TCN methods are more suitable than their techniques. This is how our plan evolved, and we are still researching other papers to find the best pooling methods.}
+

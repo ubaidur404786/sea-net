@@ -1,3 +1,4 @@
+% !TEX root = ../main.tex
 % =====================================================================
 % APPENDIX B -- REPRODUCIBILITY AND DETAILS     target: 1 - 1.5 pages
 %
@@ -20,43 +21,74 @@ beyond one sentence per subsection.
 \todo{One sentence: every model in this report is defined by one YAML file, and the
 table below lists the values shared by all of them.}
 
+{Every model in this report is one YAML file under \texttt{configs/models/}
+(\Cref{sec:setup:pipeline}); \Cref{tab:hparams} lists the training recipe and pooling
+defaults that are identical across every config I trained, and separates out the one
+group that is \emph{not} shared -- encoder width and depth, which differ between the
+wide base encoder and the smaller sv4-family variants used for the parameter-count
+comparison in \Cref{tab:cost} -- rather than presenting a single number that would be
+wrong for half the sweep.}
+
 \begin{table}[h]
-\caption{Complete hyperparameter list. \todo{Fill from \texttt{configs/main.yaml} and
-the model configs.}}
+\caption{Hyperparameters shared by every model config, plus the two encoder sizes
+actually used (see the note below the table for why encoder width/depth is not a
+single shared value).}
 \label{tab:hparams}
 \begin{center}
 \small
-\begin{tabular}{lll}
+\begin{tabular}{p{0.30\linewidth} p{0.28\linewidth} p{0.32\linewidth}}
 \toprule
 \textbf{Group} & \textbf{Parameter} & \textbf{Value} \\
 \midrule
-Encoder & width $\dmodel$              & \tbd \\
-        & number of blocks             & \tbd \\
-        & kernel sizes $\mathcal{K}$   & \tbd \\
-        & dilation cap $\delta_{\max}$ & \tbd \\
-        & dropout                      & \tbd \\
+Encoder (wide, e.g.\ \texttt{sv2/seanet.yaml}) & width $\dmodel$        & 128 \\
+        & number of blocks             & 6 \\
+Encoder (narrow, sv4 family, e.g.\ \texttt{seanet\_bottleneck\_topk}) & width $\dmodel$ & 64 \\
+        & number of blocks             & 4 \\
+\emph{Shared by both} & kernel sizes $\mathcal{K}$   & $\{5, 11, 23\}$, summed per block \\
+        & dilation cap $\delta_{\max}$ & 16 \\
+        & dropout                      & 0.2 \\
 \midrule
-Pooling & attention width $\dattn$     & \tbd \\
-        & dropout                      & \tbd \\
-        & positional encoding          & \tbd \\
-        & head-specific ($\kappa$, $\beta_0$, $\tau_0$, $\lambda_0$) & \tbd \\
+Pooling & attention width $\dattn$     & 8 \\
+        & dropout                      & 0.2 \\
+        & positional encoding          & on \\
+        & Top-$k$ fraction $\kappa$ (\Cref{sec:pool:topk}) & 0.1 \\
+        & other head-specific ($\beta_0$, $\tau_0$, $\lambda_0$) & \tbd \\
 \midrule
-Training& optimiser / learning rate    & \tbd \\
-        & batch size                   & \tbd \\
-        & epochs / patience            & \tbd \\
-        & label smoothing              & \tbd \\
-        & focus penalty weight         & \tbd \\
-        & seeds                        & \tbd \\
+Training& optimiser, learning rate    & Adam, $1.25\!\times\!10^{-3}$ \\
+        & weight decay                 & $1.2\!\times\!10^{-4}$ \\
+        & batch size                   & $\mathrm{clamp}(n_{\text{train}}/10, 2, 16)$ \\
+        & epochs, patience             & 400, 60 \\
+        & label smoothing              & 0.13 \\
+        & focus penalty $\lambda_{\text{entropy}}$ (\Cref{eq:loss}) & 0.01 \\
+        & seeds                        & 1 (66-model sweep), 3 for the 3
+          \webtraffic{} models in \Cref{tab:seeds} \\
 \bottomrule
 \end{tabular}
 \end{center}
 \end{table}
+% Source: configs/models/sv2/seanet.yaml (wide encoder, d=128/n_blocks=6, training recipe),
+% configs/models/sv4/seanet_bottleneck.yaml and sv4/seanet_inputgate.yaml (narrow encoder,
+% d=64/n_blocks=4 -- both share this width, only the block type differs), configs/models/sv6/
+% seanet_bottleneck_mschan.yaml (top_frac: 0.1, the only head-specific pooling parameter I could
+% find explicitly set in any config file). Kernels/dilation cap/dropout/training recipe are
+% identical across every config file I opened (sv1, sv2, sv4, sv6) -- copy-pasted deliberately, per
+% each file's own header comment, so results only change encoder-by-encoder or pooling-by-pooling.
+% I could NOT find beta_0 / tau_0 / lambda_0 (the Adaptive class-wise, Softmax and Gated-attention
+% heads' own internal constants) exposed in any YAML -- if they are tunable, they must be hardcoded
+% in seanet/pooling.py, which I did not have open in this session; left \tbd rather than guess.
+% lambda_entropy is a TRAINING recipe weight (multiplies the focus penalty in the loss), not a
+% pooling-head parameter -- listed under Training here to match \Cref{eq:loss} in the main text.
 
 \subsection{Commands}
 \label{app:commands}
 
 \todo{One sentence: the whole study is reproduced by the commands below, run at the
 project root.}
+
+{The whole study -- every model, every dataset, every table and figure in this
+report -- is reproduced by the three commands below, run from the project root
+against one of the config files under \texttt{configs/models/}
+(\Cref{sec:setup:pipeline}); no step needs a hand edit to any code file.}
 
 \begin{verbatim}
 # train one model over WebTraffic + the UCR archive
@@ -72,12 +104,31 @@ python main.py paper
 \todo{One sentence: figures and tables in this report are produced by the last
 command, so no number was typed by hand.}
 
+{Every figure and table in this report is produced by \texttt{python main.py paper}
+directly from the CSVs \texttt{python main.py train}/\texttt{results} already wrote,
+so no number in this report was typed in by hand from a plot or a printed line --
+which is also why the staleness issue flagged repeatedly in \Cref{sec:results} and
+\Cref{app:additional} is fixable by re-running this one command, not by editing any
+table by hand.}
+
 \subsection{Software and hardware environment}
 \label{app:env}
 
+\todo{One sentence: development happened locally, the actual training sweep ran on
+Grid'5000, and the two environments differ.}
+
+{Day-to-day development (writing and unit-testing the encoder and pooling code,
+\Cref{sec:skills}) happened on a local Windows machine with a 6\,GB RTX GPU, used for
+writing code and small smoke tests (\Cref{sec:setup}); the 66-model sweep itself ran
+on Grid'5000 \citep{balouek2013grid5000}, split across two sites so a delay on one did
+not stall the whole study (\Cref{sec:setup:pipeline}), which is why
+\Cref{tab:environment} gives the two environments separately rather than as one row.}
+
 \begin{table}[h]
-\caption{Environment. \todo{Fill in -- the local and the Grid'5000 environments differ,
-so give both.}}
+\caption{Environment. Grid'5000 columns are what actually produced every number in
+this report; a few local-machine and Grid'5000 fields are left \tbd where I do not
+have a way to state them precisely from inside this session (\Cref{app:hparams}'s
+introduction explains why I avoid guessing at numbers I cannot check).}
 \label{tab:environment}
 \begin{center}
 \small
@@ -85,15 +136,36 @@ so give both.}}
 \toprule
  & \textbf{Local (development)} & \textbf{Grid'5000 (training)} \\
 \midrule
-OS              & \tbd & \tbd \\
+OS              & Windows & \tbd (site-managed) \\
 Python          & \tbd & \tbd \\
-PyTorch / CUDA  & \tbd & \tbd \\
-GPU             & \tbd & \tbd \\
-Job scheduler   & --   & \todo{OAR} \\
+Conda env       & --   & \texttt{seanet} (same env on both sites) \\
+PyTorch         & \tbd & 2.0.1 \\
+CUDA            & \tbd & \tbd \\
+GPU              & 1$\times$ RTX (6\,GB), smoke tests only & \tbd \\
+Sites / clusters & --  & Lille (\texttt{chuc}, \texttt{chifflot}); Sophia
+                        (\texttt{esterel40}, \texttt{esterel43}) \\
+Job scheduler   & --   & OAR \\
 \bottomrule
 \end{tabular}
 \end{center}
 \end{table}
+% GPU/OS row for the Local column: Section 7 (02_context.tex) already states this in prose --
+% "a local Windows machine with a 6GB RTX GPU" -- used for writing code and small smoke tests, NOT
+% for the actual training sweep, which is why the Grid'5000 columns are the ones that matter for
+% reproducing any number in this report. Exact RTX model (e.g. 3060 vs 4060) and exact Windows
+% version were not given in that sentence, so I did not invent them.
+% Source: requirements_versioned.txt (torch==2.0.1, plus mlflow==3.14.0, optuna==4.9.0,
+% pandas==2.0.3, numpy==1.24.4, scikit-learn==1.3.0 -- not all in the table above since it only
+% asks for OS/Python/PyTorch/CUDA/GPU/scheduler, but worth keeping in this comment for anyone
+% checking exact package versions); GRID5K_CMD_HELP.md (conda env name "seanet", `-p chuc` default
+% Lille cluster with `chifflot` given as an alternative, `-p "cluster='esterel40'"`/`'esterel43'`
+% for Sophia, OAR via oarsub). I could NOT find a specific GPU model (V100/A100/etc.) anywhere in
+% GRID5K_CMD_HELP.md or the configs I had open -- the guide only says "whatever node names appear
+% [in the GPU list] have GPUs" without naming the card, so I left GPU \tbd on both sides rather than
+% guess; fill it in from the Grid'5000 hardware pages (site-specific, e.g. the Lille or Sophia
+% hardware listing) or from `nvidia-smi` output you may already have saved from a session. Local
+% (Windows) OS/Python/CUDA are genuinely unknowable to me in this session -- fill from your own
+% machine.
 
 \subsection{Code availability}
 \label{app:code}
@@ -101,3 +173,24 @@ Job scheduler   & --   & \todo{OAR} \\
 \todo{Two sentences: where the code lives (repository, branch), how it is organised
 (one module per stage of the pipeline), and the licence / access conditions if there
 are any. Check with my supervisor before publishing a public link.}
+
+{The codebase is organised as one module per stage of the pipeline under
+\texttt{seanet/} -- data loading, the encoder and pooling implementations
+(\Cref{sec:architecture}, \Cref{sec:pooling}), training, and results/paper generation
+(\Cref{sec:setup:pipeline}) -- driven by the config files under \texttt{configs/}
+(\Cref{app:hparams}). It is released under the Apache License 2.0 (see
+\texttt{LICENSE}) and, per \texttt{NOTICE}, is built on top of Amazon's
+\texttt{MILTimeSeriesClassification} codebase (Copyright Amazon.com, Inc.\ or its
+affiliates), which is the original implementation of \millet{}
+\citep{early2024millet}, so any redistribution needs to keep that attribution and the
+licence terms it came with.}
+
+\note{I have deliberately not written a specific repository URL, branch name or public
+release date here, per the original \texttt{\textbackslash todo}'s own instruction to
+check with my supervisor first -- I do not have a way to confirm that decision from
+inside this session, and getting it wrong (e.g.\ publishing a link that was not meant
+to be public yet) is not a mistake I want to make on your behalf. What I \emph{can}
+confirm from the files themselves: the licence is Apache 2.0, and the codebase carries
+Amazon's copyright notice for the upstream MILLET code it extends -- both stated
+above. Once you have confirmed the access decision, add one sentence here with the
+repository location (or state explicitly that the code is not publicly released).}

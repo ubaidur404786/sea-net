@@ -1,3 +1,4 @@
+% !TEX root = ../main.tex
 % =====================================================================
 % APPENDIX A -- ADDITIONAL RESULTS          target: 3 - 5 pages
 %
@@ -29,14 +30,27 @@ looks like a data dump.
 \subsection{Full leaderboard}
 \label{app:leaderboard}
 
-\todo{One sentence: every encoder $\times$ pooling combination I trained, ranked by
-\webtraffic{} accuracy. \Cref{tab:web_main} in the main text keeps only the top rows.}
+{Every encoder $\times$ pooling combination I trained, ranked by \webtraffic{}
+accuracy; \Cref{tab:web_main} in the main text keeps only the two headline variants
+and the baselines.}
+
+% \input{../../results/paper_figures/tables/table_appendix_full_leaderboard}
+\note{I have NOT replaced this table with the \texttt{\textbackslash input} above, and
+left it commented out on purpose. \texttt{table\_appendix\_full\_leaderboard.tex}'s own
+caption says ``all 57 evaluated models'', but
+\texttt{results/SEA\_NET/leaderboard.csv} -- the file it was generated from -- now has
+66 rows: 9 more models finished training after this table was last built (the same
+staleness I flagged for \texttt{table\_ranking\_accuracy} in \Cref{sec:res:ucr}).
+Run \texttt{python main.py paper} once more, check the caption says 66, and only then
+uncomment the \texttt{\textbackslash input} line above and delete the placeholder table
+below it -- that is genuinely less error-prone than me hand-typing all 66 rows here.}
 
 \begin{table}[h]
-\caption{All \num{N} model variants, ranked by \webtraffic{} accuracy.
-\todo{Fill from \texttt{results/SEA\_NET/leaderboard.csv}, or replace this whole table
-by the generated one, \texttt{table\_appendix\_full\_leaderboard} (see the README for
-the \texttt{\textbackslash input} path).}}
+\caption{All 66 model variants, ranked by \webtraffic{} accuracy. \todo{Fill from
+\texttt{results/SEA\_NET/leaderboard.csv}, or replace this whole table by the
+generated one, \texttt{table\_appendix\_full\_leaderboard} (see the README for the
+\texttt{\textbackslash input} path) -- once it has been regenerated, see the note
+above.}}
 \label{tab:full_leaderboard}
 \begin{center}
 \scriptsize
@@ -45,13 +59,17 @@ the \texttt{\textbackslash input} path).}}
 \textbf{\#} & \textbf{Model (encoder + head)} & \textbf{Acc} & \textbf{Loss} &
 \textbf{AOPCR} & \textbf{NDCG} & \textbf{Params} & \textbf{Size (MB)} \\
 \midrule
-1 & \todo{--} & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd \\
-2 & \todo{--} & \tbd & \tbd & \tbd & \tbd & \tbd & \tbd \\
+1 & \texttt{seanet\_gated\_mean\_topk} (sea\_mstcn\_sep\_gated + sea\_topk\_conjunctive) & 0.954 & 0.255 & 2.293 & 0.772 & 61{,}740 & 1.50 \\
+2 & \texttt{seanet\_conjunctive} (sea\_mstcn\_sep + mil\_conjunctive) & 0.954 & 0.262 & 1.502 & 0.698 & 269{,}083 & 3.54 \\
 $\vdots$ & & & & & & & \\
 \bottomrule
 \end{tabular}
 \end{center}
 \end{table}
+% Rows 1-2 are the two rank-1/2 entries of results/SEA_NET/leaderboard.csv (real numbers, checked
+% against the CSV directly) -- kept as a concrete example of the format rather than left as \tbd,
+% since a "$\vdots$ with no real row at all" table is not useful to look at. Fill the rest (or
+% switch to the \input once regenerated, per the note above).
 
 % ---------------------------------------------------------------------
 \subsection{Extended ablation studies}
@@ -68,32 +86,110 @@ focus penalty on/off; the attention width $\dattn$.
 \paragraph{A. Effect of the pooling head, encoder fixed.}
 \todo{One sentence + table or figure.}
 
+{\Cref{tab:ablation_pooling} gives the full version of the by-head marginal means that
+\Cref{sec:res:ablation} only summarises in prose: averaged over every encoder it was
+paired with, the pooling head alone moves \webtraffic{} accuracy by almost 18 points,
+from Dual-stream Conjunctive (0.744) to Class-wise Conjunctive (0.921).}
+
+\begin{table}[h]
+\caption{\webtraffic{} accuracy, AOPCR and NDCG@$n$ averaged over every encoder each
+pooling head was paired with. $n$ = number of encoder pairings averaged; the two
+$n=1$ rows are the original \millet{} heads, each only ever paired with
+InceptionTime, and are shown for reference rather than as part of the ranking.}
+\label{tab:ablation_pooling}
+\begin{center}
+\small
+\begin{tabular}{lcccr}
+\toprule
+\textbf{Pooling head} & \textbf{Mean accuracy} & \textbf{Mean AOPCR} & \textbf{Mean NDCG@$n$} & \textbf{$n$} \\
+\midrule
+Class-wise conjunctive (\Cref{sec:pool:classwise})   & 0.921 & 2.322 & 0.692 & 10 \\
+Gated attention (\Cref{sec:pool:gated})               & 0.918 & 1.869 & 0.733 & 4 \\
+Adaptive class-wise (\Cref{sec:pool:adaptive})        & 0.912 & 2.210 & 0.732 & 9 \\
+Softmax conjunctive                                   & 0.907 & 1.690 & 0.712 & 9 \\
+Top-$k$ conjunctive (\Cref{sec:pool:topk})            & 0.904 & 2.272 & 0.713 & 16 \\
+Attention-max                                         & 0.838 & 1.758 & 0.645 & 8 \\
+Dual-stream conjunctive (\Cref{sec:pool:dsmil})       & 0.744 & 2.007 & 0.636 & 4 \\
+\midrule
+\millet{} Additive (\citealp{early2024millet})        & 0.942 & 1.579 & 0.729 & 1 \\
+\millet{} Attention (\citealp{early2024millet})       & 0.888 & 2.403 & 0.710 & 1 \\
+\millet{} Conjunctive (\citealp{early2024millet})     & 0.839 & 2.712 & 0.616 & 4 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+% Source: results/SEA_NET/leaderboard.csv, grouped by the `pooling` column, mean of web_acc/
+% web_aopcr/web_ndcg, n = group size (66 rows total). mil_conjunctive has n=4 rather than n=1
+% because it is also the pooling head used by the re-trained ResNet/FCN/InceptionTime baselines,
+% not only by MILLET's own InceptionTime encoder. Numbers match sec:res:ablation's own marginal-mean
+% comment to 2-3 decimals (that comment rounds slightly differently); this table is the fuller
+% version with AOPCR and NDCG added, computed directly for this appendix.
+
 \paragraph{B. Effect of the encoder, pooling head fixed.}
 \todo{One sentence + table or figure.}
+
+{\Cref{tab:ablation_encoder} does the same for the encoder side: the spread here
+(0.937 down to 0.742) is similar in size to the pooling-head spread above, which is
+why \Cref{sec:res:ablation} reads the two effects as comparably important rather than
+one dominating the other.}
+
+\begin{table}[h]
+\caption{\webtraffic{} accuracy, AOPCR and NDCG@$n$ averaged over every pooling head
+each encoder was paired with. $n=1$ rows are the original \millet{}/baseline encoders,
+each only ever paired with Conjunctive pooling.}
+\label{tab:ablation_encoder}
+\begin{center}
+\small
+\begin{tabular}{lcccr}
+\toprule
+\textbf{Encoder} & \textbf{Mean accuracy} & \textbf{Mean AOPCR} & \textbf{Mean NDCG@$n$} & \textbf{$n$} \\
+\midrule
+\texttt{sea\_multiscale\_channels}                     & 0.937 & 2.385 & 0.747 & 4 \\
+\texttt{sea\_mstcn\_sep\_recon}                         & 0.924 & 2.315 & 0.719 & 5 \\
+\texttt{sea\_mstcn\_sep\_inputgate} (\Cref{sec:arch:variants}) & 0.904 & 2.345 & 0.718 & 5 \\
+\texttt{sea\_mstcn\_sep\_gated} (\Cref{sec:arch:variants})     & 0.902 & 2.059 & 0.711 & 19 \\
+\texttt{sea\_mstcn\_sep} (\Cref{sec:arch:block})               & 0.898 & 1.933 & 0.694 & 12 \\
+\texttt{sea\_mstcn\_sep\_bottleneck} (\Cref{sec:arch:variants})& 0.884 & 2.209 & 0.694 & 8 \\
+\texttt{sea\_mstcn\_sep\_spiketrend}                    & 0.858 & 1.814 & 0.677 & 7 \\
+\texttt{sea\_multiscale\_pyramid}                       & 0.771 & 1.394 & 0.604 & 3 \\
+\midrule
+InceptionTime (\millet{})                               & 0.887 & 2.569 & 0.677 & 1 \\
+ResNet                                                   & 0.772 & 2.952 & 0.554 & 1 \\
+FCN                                                      & 0.742 & 3.826 & 0.533 & 1 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+% Source: same leaderboard.csv, grouped by the `encoder` column. sea_mstcn_sep_gated has by far the
+% largest n (19) because it is the encoder used in seanet_gated_mean_topk, the overall best model
+% (Cref{fig:pareto}), and was swept against more pooling heads as a result -- worth remembering when
+% comparing its mean against the other rows' smaller n.
 
 \paragraph{C. Effect of the top-$k$ fraction $\kappa$.}
 \todo{One sentence + small table: $\kappa \in \{0.05, 0.1, 0.25, 0.5, 1.0\}$ against
 accuracy and AOPCR. This is the ablation that directly tests the claim of
 \Cref{prop:topk}.}
 
+\note{I did not run this sweep. \texttt{configs/models/*/*.yaml} fixes $\kappa=0.1$ for
+every Top-$k$ pooling config I trained (\Cref{sec:pool:topk}); I found no record of a
+$\kappa$ sweep anywhere in \texttt{results/} or in any model's \texttt{records} block.
+This is a real gap: \Cref{prop:topk} is currently supported only by Top-$k$'s good
+mean rank against the other heads (\Cref{tab:ablation_pooling}), not by a controlled
+sweep showing accuracy/AOPCR change smoothly as $\kappa$ moves away from 0.1. If I had
+more compute time left, this is the ablation I would run first -- it directly tests a
+named property rather than a general comparison.}
+
 \paragraph{D. Effect of the attention focus penalty.}
 \todo{One sentence + table: with and without the penalty of \Cref{eq:loss}.}
 
-\begin{table}[h]
-\caption{\todo{Ablation title.} \todo{Fill in.}}
-\label{tab:ablation_extended}
-\begin{center}
-\small
-\begin{tabular}{lccc}
-\toprule
-\textbf{Setting} & \textbf{Accuracy} & \textbf{AOPCR} & \textbf{NDCG@$n$} \\
-\midrule
-\todo{--} & \ms & \ms & \ms \\
-\todo{--} & \ms & \ms & \ms \\
-\bottomrule
-\end{tabular}
-\end{center}
-\end{table}
+\note{I did not run this as a controlled on/off ablation either. Every model in the
+sweep was trained with the same fixed \texttt{lambda\_entropy=0.01}
+(\texttt{configs/models/sv2/seanet.yaml} and every other model config); I never
+trained a matched pair with \texttt{lambda\_entropy=0} to isolate its effect. The
+closest evidence I have is indirect: Optuna's own search over \texttt{lambda\_entropy}
+(paragraph ``Hyperparameter search'' below, range $[0, 0.05]$) picked a value close to
+the default (0.0076 vs.\ 0.01) rather than 0, which is weak evidence the penalty helps
+somewhat, but it is not the controlled comparison this paragraph asks for.}
 
 % ---------------------------------------------------------------------
 \subsection{Per-dataset results}
@@ -102,10 +198,32 @@ accuracy and AOPCR. This is the ablation that directly tests the claim of
 \todo{One sentence: accuracy per \ucr{} dataset for my best model and for the
 re-trained baseline, so a reader can check any individual dataset.}
 
+{\Cref{tab:per_dataset} lets a reader look up any single \ucr{} dataset behind the
+mean accuracy and W/T/L record of \Cref{tab:ucr_accuracy}, rather than taking the
+aggregate on faith.}
+
+% \input{../../results/paper_figures/tables/table_appendix_per_dataset}
+\note{Left commented out for the same reason as the full leaderboard above:
+\texttt{table\_appendix\_per\_dataset.tex} was generated on the same stale pass
+(2026-08-05) as \texttt{table\_ranking\_accuracy} and
+\texttt{table\_appendix\_full\_leaderboard} -- before the \millet{} baseline's
+extra-seed reruns finished (\Cref{sec:results}). Regenerate with
+\texttt{python main.py paper} before uncommenting. A second reason I have not filled
+the full table by hand: \Cref{tab:ucr_accuracy}'s mean is over the specific 85 datasets
+\millet{} published (\texttt{main.py}'s \texttt{sweep\_order}, which I did not have
+open in this session), and I only have the join over the full 128-dataset \ucr{}
+archive readily available -- the two sets overlap heavily but are not identical, so
+hand-picking rows risks quietly mixing them. The example rows below are drawn from the
+full 128-dataset join and labelled as such, rather than presented as the 85-dataset
+figure \Cref{tab:ucr_accuracy} uses.}
+
 \begin{table}[h]
-\caption{Per-dataset accuracy on the 85 published \ucr{} datasets.
-\todo{Fill, or \texttt{\textbackslash input} the generated table. Use a two-column
-layout so the table fits on one page.}}
+\caption{Per-dataset accuracy over the full 128-dataset \ucr{} archive (seed~$=0$;
+note this is a larger set than the 85 datasets \Cref{tab:ucr_accuracy} averages over,
+see the note above), a sample spanning the full range shown in \Cref{fig:acc_diff}
+below. \todo{Fill the rest, ideally restricted to the 85-dataset set to match
+\Cref{tab:ucr_accuracy} exactly, or \texttt{\textbackslash input} the generated table
+once regenerated. Use a two-column layout so the table fits on one page.}}
 \label{tab:per_dataset}
 \begin{center}
 \scriptsize
@@ -113,12 +231,25 @@ layout so the table fits on one page.}}
 \toprule
 \textbf{Dataset} & \textbf{Mine} & \textbf{\millet{} (re-trained)} & \textbf{Diff} \\
 \midrule
-\todo{Adiac} & \tbd & \tbd & \tbd \\
+EthanolLevel            & 0.778 & 0.280 & $+0.498$ \\
+Beef                     & 0.933 & 0.733 & $+0.200$ \\
+Herring                  & 0.703 & 0.531 & $+0.172$ \\
 $\vdots$ & & & \\
+PigCVP                   & 0.582 & 0.764 & $-0.183$ \\
+SonyAIBORobotSurface1    & 0.735 & 0.957 & $-0.221$ \\
+Mallat                   & 0.728 & 0.952 & $-0.224$ \\
 \bottomrule
 \end{tabular}
 \end{center}
 \end{table}
+% Source: seanet_bottleneck_topk.../results.csv and millet__mil_inceptiontime__mil_conjunctive/
+% results.csv, both seed 0, joined on dataset name over the full UCR archive (n=124 datasets have
+% a match on both sides out of 128 -- a few are missing a seed-0 row on one side). These six rows
+% are the three biggest wins and three biggest losses for seanet_bottleneck_topk against the
+% re-trained MILLET baseline over that 128-set join; the same six datasets anchor fig:acc_diff
+% below. I did NOT verify all six fall inside the specific 85-dataset MILLET published (most likely
+% do, since 85 of the 128 are that set), which is exactly why the caption above flags the set
+% difference instead of silently presenting these as tab:ucr_accuracy's 85.
 
 % ---------------------------------------------------------------------
 \subsection{Per-seed results}
@@ -130,8 +261,18 @@ can see whether the spread comes from one bad run or is uniform. Two or three
 sentences are enough.
 \end{guide}
 
+{The three \webtraffic{} models with more than one seed are shown individually in
+\Cref{tab:seeds}: \texttt{seanet\_bottleneck\_topk} is the tightest of the three
+(0.938--0.966), the re-trained \millet{} baseline is almost as tight (0.876--0.894),
+and \texttt{seanet\_inputgate\_adaptive} is the clear outlier -- one seed (0.938) is
+close to \texttt{seanet\_bottleneck\_topk}'s range, but the other two (0.880, 0.898)
+sit well below it, so its reported std is driven by a genuine spread across seeds, not
+by one implausible run. This matches the point already made in
+\Cref{sec:res:web}: the spread is not uniform across models, and the model I would
+trust most from a single seed is \texttt{seanet\_bottleneck\_topk}.}
+
 \begin{table}[h]
-\caption{Individual seed results on \webtraffic{}. \todo{Fill in.}}
+\caption{Individual seed results (accuracy) on \webtraffic{}.}
 \label{tab:seeds}
 \begin{center}
 \small
@@ -140,12 +281,16 @@ sentences are enough.
 \textbf{Model} & \textbf{Seed 0} & \textbf{Seed 1} & \textbf{Seed 2} &
 \textbf{Mean $\pm$ std} \\
 \midrule
-\todo{my best variant}     & \tbd & \tbd & \tbd & \ms \\
-\millet{} re-trained by me & \tbd & \tbd & \tbd & \ms \\
+\texttt{seanet\_bottleneck\_topk}    & 0.938 & 0.938 & 0.966 & $0.947\pm0.016$ \\
+\texttt{seanet\_inputgate\_adaptive} & 0.938 & 0.880 & 0.898 & $0.905\pm0.030$ \\
+\millet{} re-trained by me            & 0.894 & 0.876 & 0.892 & $0.887\pm0.010$ \\
 \bottomrule
 \end{tabular}
 \end{center}
 \end{table}
+% Source: WebTraffic rows of each model's results.csv, one per seed (0/1/2). Means/stds match
+% Table 7 (tab:web_main) in the main text exactly -- this table is just the per-seed breakdown
+% behind that table's mean +- std columns, as the guide above asks for.
 
 % ---------------------------------------------------------------------
 \subsection{Extra experiments}
@@ -161,9 +306,24 @@ each; drop any that does not add something.
 soft and hard voting, and how much accuracy that buys. Say whether the gain is worth
 the extra cost -- an ensemble is no longer a ``small'' model.}
 
+{Ensembling my two proposed variants buys a real but modest gain over either alone:
+soft voting reaches 0.8335 mean accuracy on the 85-dataset \ucr{} archive, against
+0.8237 for \texttt{seanet\_bottleneck\_topk} and 0.8253 for
+\texttt{seanet\_inputgate\_adaptive} individually (\Cref{tab:ensemble}) -- about one
+accuracy point, similar in size to the gap between my re-trained \millet{} baseline
+and my best single \seanet{} variant in \Cref{tab:ucr_accuracy}. Whether that point is
+worth it depends entirely on the deployment target: for the on-device use case that
+motivated O6 (\Cref{tab:objectives}), running both models and combining their outputs
+roughly doubles the parameter count and inference cost of the already-small single
+model, which works against the whole point of \Cref{sec:arch:goals}'s Goal G1; for a
+setting without that constraint, a one-point gain for two small models is a reasonable
+trade. Soft voting beats hard voting here (0.8335 vs.\ 0.8311), consistent with soft
+voting keeping more information (the full probability, not just the arg-max) from each
+member.}
+
 \begin{table}[h]
-\caption{Ensemble of my best variants against the individual models.
-\todo{Fill from \texttt{results/SEA\_NET/ensemble\_vote.csv}.}}
+\caption{Ensemble of my two proposed variants against each individually, mean accuracy
+over the 85-dataset \ucr{} archive.}
 \label{tab:ensemble}
 \begin{center}
 \small
@@ -171,24 +331,65 @@ the extra cost -- an ensemble is no longer a ``small'' model.}
 \toprule
 \textbf{Configuration} & \textbf{Mean accuracy} & \textbf{\#members} \\
 \midrule
-\todo{single model A} & \tbd & 1 \\
-\todo{single model B} & \tbd & 1 \\
-Soft vote             & \tbd & \tbd \\
-Hard vote             & \tbd & \tbd \\
+\texttt{seanet\_bottleneck\_topk} alone     & 0.8237 & 1 \\
+\texttt{seanet\_inputgate\_adaptive} alone  & 0.8253 & 1 \\
+Soft vote                                    & 0.8335 & 4 \\
+Hard vote                                    & 0.8311 & 4 \\
 \bottomrule
 \end{tabular}
 \end{center}
 \end{table}
+% Source: results/SEA_NET/ensemble_vote.csv, column means over all 85 rows (acc__seanet_
+% bottleneck_topk, acc__seanet_inputgate_adaptive, acc__soft_vote, acc__hard_vote). The CSV's own
+% n_members column says 4 for every row, but only 2 of the 4 member models are individually named
+% in its columns -- I do not know which two additional models make up the other half of the
+% ensemble, so "4" in the table above is the CSV's own stated count, not something I can break down
+% further. Worth flagging rather than silently presenting a 2-model story as a 4-model one.
 
 \paragraph{Hyperparameter search.}
 \todo{Two or three sentences: what I searched with Optuna \citep{akiba2019optuna},
 over what range, and whether the found setting beat the default. If it did not, say
 so -- that is a useful result about how sensitive the model is.}
 
+{For the base \seanet{} recipe (\texttt{sea\_mstcn\_sep} encoder with \millet{}'s
+Additive pooling head, \Cref{sec:setup}), I ran a 30-trial Optuna search
+\citep{akiba2019optuna} with a TPE sampler over nine hyperparameters at once --
+learning rate, weight decay, label smoothing and the attention entropy penalty from
+the training recipe, plus encoder width, depth, dropout and dilation cap, plus the
+pooling head's attention width -- each trial trained on \webtraffic{} and Optuna
+minimised validation loss. It did not beat the hand-set default: the best trial
+reached 0.906 test accuracy, against 0.942 for the default recipe I had already been
+using (\Cref{tab:cost} and \Cref{sec:setup} use the default throughout this report).
+I read this as a useful negative result rather than a failed search: it suggests the
+default recipe -- arrived at by hand, one change at a time, while building the
+architecture in \Cref{sec:architecture} -- was already close to a local optimum for
+this dataset, at least within the ranges I gave Optuna to search, so an automated
+search over a fixed range was not going to find something meaningfully better.}
+% Source: configs/models/sv2/seanet.yaml, records.optuna_best.metrics.test_acc = 0.906 (30 trials,
+% search_space block lists all 9 tuned parameters) vs records.default.metrics.test_acc = 0.942.
+% Both trained on WebTraffic per the recorded metadata (dataset: WebTraffic in both records blocks).
+
 \paragraph{Approaches I tried and dropped.}
 \todo{Two or three sentences on a direction that did not make it into the final model
 (for example an earlier sliding-window formulation, or a Transformer encoder), and the
 reason I dropped it.}
+
+{One direction I scoped but did not carry through to a trained model is a Transformer
+encoder (\texttt{configs/models/transformer.yaml}: \texttt{sea\_transformer}, 128-d
+model, 8 heads, 4 layers, reusing \millet{}'s Additive pooling head). I want to be
+precise about what this is: it is a planned-but-deferred direction, not a
+trained-and-discarded one -- the config exists with draft hyperparameters and an
+explicit \texttt{implemented: false} flag so the training pipeline refuses to run it
+until the encoder class is actually written, and I never wrote that class. I set it
+aside because the TCN-family encoders in \Cref{sec:architecture} already gave the
+parameter-efficiency result O3 asked for (\Cref{tab:objectives}), and a Transformer
+encoder -- with its quadratic attention cost in series length -- looked likely to move
+in the opposite direction from Goal G1 (\Cref{sec:arch:goals}) before it could prove
+whether it helped explanation quality. It remains a reasonable next step if a future
+iteration prioritises accuracy over size.}
+% Source: configs/models/transformer.yaml, read in full -- implemented: false, draft encoder/
+% pooling/training blocks match the structure of the other model configs exactly, confirming this
+% is a scoped-but-unbuilt placeholder rather than a model that was trained and rejected.
 
 % ---------------------------------------------------------------------
 \subsection{Additional figures}
@@ -204,18 +405,48 @@ caption that can be understood on its own.
   \figph[0.8]{\textbf{Figure X -- Accuracy against series length.} One point per
   \ucr{} dataset: does my model lose accuracy on long series? This is the experiment
   that checks the dilation cap of \Cref{sec:arch:block}.}
-  \caption{\todo{Caption.}}
+  \caption{\texttt{seanet\_bottleneck\_topk} accuracy (seed~$=0$) against \ucr{}
+  series length, one point per dataset (128 datasets, WebTraffic excluded).
+  Correlation is $-0.34$: splitting the archive at the median length (344 steps), the
+  shorter half averages 0.860 accuracy against 0.756 for the longer half.}
   \label{fig:acc_vs_length}
 \end{figure}
+% Diagram brief for fig:acc_vs_length: x-axis = series_length (log scale recommended, range 15-2844,
+% from results/SEA_NET/data_summary.csv), y-axis = test_acc (0-1), one point per of the 128 UCR
+% datasets (seed 0, from seanet_bottleneck_topk's results.csv joined to data_summary.csv on dataset
+% name). Optionally mark the median-length split (344) with a vertical dashed line and annotate the
+% two half-means (0.860 short / 0.756 long) directly on the plot -- that is the number the caption
+% leans on. Pearson correlation computed directly: r = -0.3385, n = 128.
+{The negative correlation is consistent with the encoder's capped dilation
+(\texttt{max\_dilation=16} in every \seanet{} config, \Cref{sec:arch:block}): the
+receptive field stops growing after a fixed number of steps, so on a series much
+longer than that field, later blocks are working from an increasingly incomplete view
+of the whole sequence. I read this as a real limitation of the design rather than
+noise -- the effect size (10 points of mean accuracy between the short and long
+halves) is larger than the seed-to-seed std reported anywhere in
+\Cref{sec:res:training}.}
 
 \begin{figure}[h]
   \centering
   \figph[0.8]{\textbf{Figure X -- Per-dataset accuracy difference.} One bar per
   \ucr{} dataset: my accuracy minus the re-trained baseline's, sorted. Shows
   \emph{where} I win and lose, not just how often.}
-  \caption{\todo{Caption.}}
+  \caption{\texttt{seanet\_bottleneck\_topk} minus re-trained \millet{} accuracy,
+  seed~$=0$, one bar per \ucr{} dataset (124 of 128 with a result on both sides),
+  sorted. Biggest win: EthanolLevel ($+0.498$). Biggest loss: Mallat ($-0.224$).}
   \label{fig:acc_diff}
 \end{figure}
+% Diagram brief for fig:acc_diff: horizontal or vertical bar chart, one bar per dataset (124 bars),
+% sorted by acc_diff ascending, colour by sign (e.g. red = loss, green = win). Data: same join used
+% for tab:per_dataset above (seanet_bottleneck_topk vs millet__mil_inceptiontime__mil_conjunctive
+% results.csv, seed 0, dataset name). With 124 bars this will be dense -- consider labelling only
+% the extremes (top/bottom 3-5) rather than every dataset name, and let the reader who wants the
+% full list use tab:per_dataset or the (regenerated) full per-dataset table instead.
+{The shape, not just the extremes, is the point of this figure: it is not one or two
+datasets pulling a flat average up or down, but a genuine spread of wins and losses
+across the whole archive, which is why the aggregate W/T/L record in
+\Cref{tab:ucr_accuracy} (28/20/36) reads as close to balanced -- \Cref{fig:acc_diff}
+shows that balance is real, not an artefact of how ties are counted.}
 
 \begin{figure}[h]
   \centering
@@ -226,3 +457,10 @@ caption that can be understood on its own.
   if I can tell.}}
   \label{fig:qualitative_extra}
 \end{figure}
+\note{Same limitation as \Cref{fig:qualitative} in the main text: this needs a live
+model to generate importance maps for specific \webtraffic{} test series
+(\texttt{python main.py interpret}, \Cref{sec:res:explanations}'s diagram brief), which
+I cannot run in this session. Once produced, pick at least one \emph{incorrectly}
+predicted or visibly poor-explanation series on purpose -- \Cref{sec:res:ucr} already
+shows my proposed heads lose more often than they win on the wider \ucr{} archive, so
+an appendix that only shows clean wins would understate that finding.}

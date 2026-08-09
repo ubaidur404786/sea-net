@@ -63,7 +63,7 @@ Section files, in report order:
 | file | section | state |
 |---|---|---|
 | `00_abstract.tex` | Abstract | write last |
-| `01_introduction.tex` | Introduction | has the teaser figure wired up |
+| `01_introduction.tex` | Introduction | drafted: motivation + teaser + 4 contributions + structure. One `\todo` left (the MLPerf Tiny 38.6 K / 92 % figure needs its source) |
 | `02_context.tex` | Context | short |
 | `03_objectives.tex` | What I had to do | |
 | `04_background.tex` | Background (MIL, AOPCR) | |
@@ -93,6 +93,13 @@ pdflatex main
 
 Four passes, because LaTeX only learns page and citation numbers on the first
 pass. `??` or `[?]` in the PDF just means "build again".
+
+**When Ctrl+S does not refresh `main.pdf`, read
+`ICLR_2025_Report/Seanet/LATEX_GUIDE.md`** — it has the checklist, how to read a
+LaTeX error, and the "root file" trap (VS Code used to compile
+`ICLR_2025_Report/Template/` by mistake, so `main.pdf` never changed). Every
+file in `sections/` now starts with `% !TEX root = ../main.tex`; keep that line
+on any new section file.
 
 ### Two drafting switches in `preamble.tex`
 

@@ -1,3 +1,4 @@
+% !TEX root = ../main.tex
 % =====================================================================
 % 4. BACKGROUND                     target: 3 - 3.5 pages
 %
@@ -43,11 +44,41 @@ predicting one label $y \in \{1, \dots, \nclz\}$ for the whole series.
 picture given by the review of \citet{fawaz2019review}. One sentence each. Say that
 all three end with global average pooling, which is exactly the step that destroys
 the per-time-step information.}
+{Three deep networks are the standard comparison point in the TSC literature. The
+Fully Convolutional Network (FCN) and the Residual Network (ResNet) of
+\citet{wang2017fcn} were the first strong deep baselines: they replace hand-picked
+features with a stack of 1-D convolutions, and ResNet adds skip connections so a
+deeper stack still trains well. InceptionTime \citep{fawaz2020inceptiontime} goes
+further and runs several convolution kernel sizes in parallel inside every block, so
+the model does not need to guess one ``right'' kernel size in advance; the review of
+\citet{fawaz2019review} covers these and many other deep TSC models and finds that
+this general recipe wins on most public benchmarks. All three networks share one
+property that matters for this report: they end with global average pooling, which
+averages the embedding of every time step into a single vector before the final
+classifier. This step throws away exactly the information needed to say
+\emph{which} time step mattered, which is why none of these three models can explain
+its own prediction.}
 
 \todo{One short paragraph on dilated / temporal convolutional networks
 \citep{bai2018tcn} and depthwise-separable convolutions
 \citep{chollet2017xception, howard2017mobilenets}, because my encoder is built from
 them. Keep it to what the reader needs later.}
+{A time series differs from an image or a piece of text in one simple way: it has a
+single time axis, and what happens at one time step usually depends the most on what
+happened just before and after it, not on points far away. A convolution filter is a
+natural fit for this, because it only looks at a small, fixed-size window around each
+point; this window is called the \emph{receptive field}. Stacking more convolution
+layers grows the receptive field, but a plain stack needs many layers to see far back
+in a long series. Temporal Convolutional Networks (TCNs) \citep{bai2018tcn} solve this
+with \emph{dilated} convolutions: the filter skips over some points, so the receptive
+field grows quickly with each extra layer instead of only by a fixed amount, without
+adding much compute. My encoder in \Cref{sec:architecture} is built on this idea. It
+also uses depthwise-separable convolutions \citep{chollet2017xception,
+howard2017mobilenets}, first used to shrink image models for mobile phones: instead of
+one convolution that mixes both time and channels at once, the work is split into a
+cheap step that filters each channel on its own, followed by a cheap $1\times1$ step
+that mixes the channels, which needs far fewer parameters for almost the same
+result.}
 
 % ---------------------------------------------------------------------
 \subsection{Multiple instance learning}
@@ -66,16 +97,39 @@ exist (mean, max, attention) and what are they good at?
 \citep{dietterich1997mil}, a \emph{bag} carries the label and the \emph{instances}
 inside it do not. Applied to a time series, the bag is the whole series and each
 time step is one instance.
+{A simple everyday picture helps here: think of a key ring with many keys, where the
+ring opens the door if \emph{at least one} key on it fits the lock. You are only told
+whether the ring works, never which key was the one that fit -- this is exactly like a
+bag label being known while the instance labels stay hidden. This picture also
+explains why MIL suits time series classification so well: a series is usually
+labelled as a whole, while only a handful of time steps actually carry the evidence
+for that label.}
 
 \todo{One paragraph on attention-based MIL \citep{ilse2018attention}: the network
 learns a weight for each instance, and those weights are readable as importance.}
+{A pooling function is the rule that turns the $\nsteps$ instance embeddings of a bag
+into one bag embedding. The two simplest rules, mean pooling and max pooling, are
+both too rigid: mean pooling treats every time step as equally important, and max
+pooling keeps only the single strongest one and ignores the rest. Attention-based MIL
+\citep{ilse2018attention} fixes this by \emph{learning} a weight for every instance
+instead of fixing the rule in advance. A small neural network looks at each instance
+embedding and outputs a number that says how much that instance should count towards
+the bag prediction; the bag embedding is then a weighted average using these learned
+weights. Because the network produces the weights itself, they can be read directly as
+an importance score for every instance -- this is exactly the property that
+\millet{} and every pooling head in this report reuse to build an explanation for
+free.}
 
 \begin{figure}[t]
   \centering
   \figph[0.85]{The MIL view of a time series: the series is a bag, each time step is
   an instance, the encoder embeds every instance, and the pooling head turns the
   instance scores into one bag prediction plus one importance value per time step.}
-  \caption{\todo{Caption explaining bag / instance / pooling in one sentence each.}}
+  \caption{\todo{Caption explaining bag / instance / pooling in one sentence each.} The
+  whole time series is the bag, each time step is one instance, the encoder turns
+  every instance into an embedding, and the pooling head combines these embeddings
+  into one class prediction while keeping one importance value per time step as the
+  explanation.}
   \label{fig:mil_view}
 \end{figure}
 
@@ -128,6 +182,14 @@ per-time-step classifier:
 to this time step'', the classifier $\instpred_j$ says ``what does this time step
 argue for'', and the bag score is simply their average over time. Because the label is
 \emph{built} from $\interp$, the explanation cannot disagree with the prediction.}
+{In words, the gate $a_j$ in \Cref{eq:conj_gate} answers ``how much should the model
+listen to time step $j$'', while the classifier $\instpred_j$ in \Cref{eq:conj_inst}
+answers ``what does time step $j$ vote for''. \Cref{eq:conj_bag} then builds the bag
+score $\bagpred^{\,k}$ as the average, over every time step, of that vote weighted by
+how much attention the time step received. Because the interpretation $\interp_{k,j}$
+uses the exact same numbers that build $\bagpred^{\,k}$, the explanation can never
+disagree with the prediction: it is not computed afterwards by a separate step, it is
+read directly off the sum that produced the class score.}
 
 \paragraph{Weak points I build on.}
 \begin{guide}
@@ -161,31 +223,84 @@ Is a higher AOPCR always better?
 \todo{Plain-English sentence first: remove the time steps the model called most
 important, one by one, and watch how fast the model's own confidence drops; compare
 that with removing random time steps.}
+{A picture alone cannot prove that a model's explanation is correct, because a
+heatmap can look convincing even when the model ignored it while deciding. AOPC
+(Area Over the Perturbation Curve) \citep{samek2017aopc} tests this directly: rank
+the time steps from most to least important according to the model's own
+interpretation $\interp_{k,\cdot}$, then mask them one at a time, most important
+first, and watch how fast the model's confidence in its own prediction falls. A
+faithful explanation should cause a fast drop, because removing the ``important''
+points should really hurt the model. \millet{} \citep{early2024millet} adds one
+control to this idea to obtain AOPCR: the same masking is repeated with a random
+order instead of the model's ranking, and the score reports how much better the real
+ranking does than chance.}
+
+Write $\bagpred^{k}(\bag)$ for the model's confidence in class $k$ when it is given
+the series $\bag$, and let $O^k$ be the ordering of the time steps
+$1,\dots,\nsteps$ sorted from the most to the least important according to
+$\interp_{k,\cdot}$ (Most-Relevant-First). For $j = 1,\dots,\nsteps-1$, let
+$\bag^{O^k}_{j}$ be the same series with the $j$ most important time steps of that
+ordering masked out. AOPC compares the confidence on the clean series against the
+confidence as more and more top-ranked steps are removed,
 \begin{equation}
-  \text{AOPCR} \;=\; \todo{write the formula in \millet{}'s notation},
+  \text{AOPC}(\bag, O^k) \;=\; \frac{1}{\nsteps-1}\sum_{j=1}^{\nsteps-1}
+  \Big[\bagpred^{k}(\bag) - \bagpred^{k}\big(\bag^{O^k}_{j}\big)\Big] ,
+  \label{eq:aopc}
+\end{equation}
+and AOPCR repeats \Cref{eq:aopc} with three random orderings $R^{(1)}, R^{(2)},
+R^{(3)}$ instead of $O^k$, then reports how much the real ranking beats the average
+random one:
+\begin{equation}
+  \text{AOPCR}(\bag, O^k) \;=\; \frac{1}{3}\sum_{r=1}^{3}
+  \Big[\text{AOPC}(\bag, O^k) - \text{AOPC}\big(\bag, R^{(r)}\big)\Big] .
   \label{eq:aopcr}
 \end{equation}
 \todo{One sentence: a higher value means the ranking really points at the evidence.
 One sentence of warning: AOPCR is not normalised, so its scale follows the scale of
 the logits -- values are comparable \emph{between my models}, but not against numbers
 printed in another paper trained with a different recipe.}
+{A higher AOPCR means the model's own confidence drops faster when the ranked
+evidence is removed than when random points are removed, so the ranking really
+points at real evidence and not at noise. One warning is needed here: AOPCR is not
+normalised to a fixed range, because it is built directly from the model's raw
+confidence, so its scale follows the scale of that model's logits. This means AOPCR
+values are safe to compare \emph{between my own models}, which are all trained the
+same way, but not against a raw AOPCR number printed in another paper that used a
+different training recipe.}
 
 \paragraph{NDCG@$n$.}
 \todo{Plain-English sentence: on \webtraffic{} we know exactly which time steps were
 modified, so we can check whether the model ranked those time steps at the top.
 NDCG \citep{jarvelin2002ndcg} is the standard score for ``is the true item near the
 top of my ranked list''; 1.0 is perfect.}
+{\webtraffic{} is special because, for every series, we know in advance exactly which
+time steps were artificially changed to create the event that the model must
+classify; none of the other datasets used in this report have this per-time-step
+ground truth, so this check is only possible on \webtraffic{}. NDCG@$n$
+\citep{jarvelin2002ndcg} is the standard information-retrieval score for exactly this
+situation: given a ranked list, it asks whether the items that truly matter appear
+near the top of that list.}
 \begin{equation}
-  \text{NDCG@}n \;=\; \todo{formula},
+  \text{NDCG@}n(O^k) \;=\; \frac{1}{\text{IDCG@}n}\sum_{j=1}^{n}
+  \frac{\text{rel}_j}{\log_2(j+1)} ,
   \label{eq:ndcg}
 \end{equation}
+where $\text{rel}_j \in \{0,1\}$ is $1$ if the time step ranked $j$-th by $O^k$ (the
+$j$-th most important step according to $\interp_{k,\cdot}$) is truly one of the
+modified time steps, and $0$ otherwise; $\text{IDCG@}n$ is the same sum computed on
+the best possible ranking, so that $\text{NDCG@}n \in [0,1]$, with $1.0$ meaning a
+perfect ranking.
 
 \begin{figure}[h]
   \centering
   \figph[0.85]{How AOPCR is computed: the perturbation curve of the model's own
   confidence as the highest-ranked time steps are masked, next to the curve obtained
   by masking random time steps. The shaded area between the two curves is the score.}
-  \caption{\todo{Caption: reading the AOPCR curve.}}
+  \caption{\todo{Caption: reading the AOPCR curve.} The x-axis is the number of
+  top-ranked time steps removed; the y-axis is the model's confidence in its own
+  prediction. The gap between the ``ranked'' curve and the ``random'' curve, shaded in
+  the figure, is the AOPCR score: a wide gap means the ranking found the real
+  evidence.}
   \label{fig:aopcr_curve}
 \end{figure}
 
@@ -206,3 +321,18 @@ heavily used on whole-slide images, where a slide is a bag and a patch is an ins
 \citep{ilse2018attention, hashimoto2020msdamil, li2021dsmil}; two of my pooling heads
 adapt ideas from that literature to time series. End with one sentence positioning my
 work.}
+{Two broad families of methods try to explain a model's decision. Post-hoc
+explainers, such as LIME \citep{ribeiro2016lime}, SHAP \citep{lundberg2017shap} and
+Integrated Gradients \citep{sundararajan2017ig}, are applied \emph{after} a model is
+trained and fixed; because they build a separate, approximate explanation, that
+explanation can disagree with what the model actually computed. \citet{rudin2019stop}
+argues that, for high-stakes decisions, it is safer to use a model that is
+interpretable \emph{by design}, so the explanation and the prediction are guaranteed
+to match -- this is exactly the position that \millet{} and this report take.
+Multiple instance learning is also heavily used outside time series, most of all on
+whole-slide pathology images, where one slide is a bag and one small image patch is
+an instance \citep{ilse2018attention, hashimoto2020msdamil, li2021dsmil}; two of my
+pooling heads in \Cref{sec:pooling} adapt ideas from that literature to time series.
+This report sits between these two lines of work: it keeps \millet{}'s built-in,
+always-faithful explanation, while borrowing pooling ideas from the pathology-image
+MIL literature to fix the three weaknesses of the Conjunctive baseline.}
