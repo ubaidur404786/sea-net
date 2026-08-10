@@ -27,7 +27,7 @@
 % backbones, their pooling heads, their metrics) and that reproducing it was step
 % zero, not a contribution.}
 
-{At the start, I read the papers suggested by my supervisor, such as the \millet{} paper \citep{early2024millet}, "SHEDDING LIGHT ON TIME SERIES CLASSIFICATION USING INTERPRETABILITY GATED NETWORKS", "Abstracted Shapes as Tokens: A Generalizable and Interpretable Model for Time-series Classification", and others. I also read the code base of the paper, the papers related to MIL pooling, such as \citep{ilse2018attention, li2021dsmil}, and the papers related to the TCN encoder, such as \citep{bai2018}. An interesting point was that when we used the same trained model, we got different results than those reported in their paper. When we ran the exact same model on the same dataset, we also got different results. However, in this case, the \millet{} model was still the best baseline.}
+{At the start, I read the papers suggested by my supervisor, such as the \millet{} paper \citep{early2024millet}, "SHEDDING LIGHT ON TIME SERIES CLASSIFICATION USING INTERPRETABILITY GATED NETWORKS", "Abstracted Shapes as Tokens: A Generalizable and Interpretable Model for Time-series Classification", and others. I also read the code base of the paper, the papers related to MIL pooling, such as \citep{ilse2018attention, li2021dsmil}, and the papers related to the TCN encoder, such as \citep{bai2018tcn}. An interesting point was that when we used the same trained model, we got different results than those reported in their paper. When we ran the exact same model on the same dataset, we also got different results. However, in this case, the \millet{} model was still the best baseline.}
 
 \begin{priorwork}
 % \todo{One or two sentences naming precisely what I reused without change: the
@@ -70,7 +70,7 @@
 \midrule
 
 O1. {Reproduce all the baselines} & {Compare their architecture and results, and select one for interpretation} & Yes, we selected the \millet{} paper as the baseline \\
-O2. {Match published results / Reproduce \millet{} results} & {Rerun the same \millet{} model; compare our 89\% accuracy to the published 0.940 for Conjunctive InceptionTime} & We emailed them that using their exact same weights, we get 0.922 accuracy in evaluation. When we retrain the same architecture, we get 89\%, but they report 0.940 in the paper. We are still waiting for their reply. \\
+O2. {Match published results / Reproduce \millet{} results} & {Rerun the same \millet{} model and compare our accuracy to the published numbers} & Partly. Using their exact weights we get 0.922 in evaluation, but retraining the same architecture with our recipe gives 0.887 on \webtraffic{}. Running \emph{their} recipe on our code gives 0.920, so much of the gap is the recipe, not the architecture (\Cref{sec:disc:reading}). \\
 O3. {Design a smaller encoder} & {$\geq$ 50\,\% fewer parameters at
 equal accuracy} & Yes, we got a model 10 times smaller \\
 O4. {Improve explanation quality} & {e.g. higher AOPCR and NDCG@$n$ on
@@ -96,9 +96,9 @@ O6. {Test on a tiny device} & {Test and check the device performance on the late
 
 \begin{itemize}\itemsep2pt
 %   \item {Time: \num{months} months of internship.}
-  \item {I have only \num{4} months of internship time.}
+  \item {I have only 4 months of internship time.}
   \item {Compute: shared GPU nodes with a job time limit; a full sweep over 128
-        datasets takes \num{5} hours per model.}
+        datasets takes about 5 hours per model.}
   \item {We need to wait for the GPU nodes to become free, and each job has a time limit, so we need to wait for the next job to start.}
   \item {We use the \webtraffic{} dataset to first compare accuracy. It has two types of labels: time series labels and time point labels, which let us evaluate both the model's class prediction and its explanation accuracy. Keep in mind that NDCG can only be used when we have time point labels.}
   

@@ -1,47 +1,41 @@
 % !TEX root = ../main.tex
 % =====================================================================
-% 6. MY PROPOSED MIL POOLING HEADS          target: 4 - 4.5 pages
+% 6. MY PROPOSED MIL POOLING HEADS
 %
 % The mathematical core of the report. The notation deliberately follows
-% the MILLET paper (bag / instance / attention / bag logits), so a reader
-% who knows that paper can compare my heads with theirs line by line.
+% the MILLET paper, so a reader who knows that paper can compare my heads
+% with theirs line by line.
 %
-% Rules I follow in this section:
-%   - one head = one short motivation + one equation block + one property
+% Rules I follow here:
+%   - one head = one problem + one equation block + one property
 %   - every head must reduce to the Conjunctive baseline for some value
 %     of its parameters, and I state that as a Property
-%   - no results here; results are in section 8
+%   - no results here; the results are in Section 8
 % =====================================================================
 
 \section{Proposed MIL Pooling Heads}
 \label{sec:pooling}
 
 \begin{contribution}
-The seven pooling heads in this section were designed and implemented by me. Five of
-them (\Cref{sec:pool:classwise}--\Cref{sec:pool:attnmax}) come from my own analysis of
-the three weaknesses of Conjunctive pooling listed in \Cref{sec:bg:millet}. The last
-two (\Cref{sec:pool:gated}--\Cref{sec:pool:dsmil}) adapt ideas published for
-whole-slide image classification \citep{ilse2018attention, li2021dsmil} to the time
-series setting; the adaptation, the per-class formulation and the implementation are
-mine.
+The seven pooling heads in this section were designed and implemented by me. Five of them
+(\Cref{sec:pool:classwise}--\Cref{sec:pool:attnmax}) come from my own analysis of the three
+weaknesses of Conjunctive pooling listed in \Cref{sec:bg:millet}. The last two
+(\Cref{sec:pool:gated}--\Cref{sec:pool:dsmil}) adapt ideas published for whole-slide image
+classification \citep{ilse2018attention, li2021dsmil} to time series; the adaptation, the per-class
+formulation and the implementation are mine.
 \end{contribution}
 
-\begin{guide}
-Order the subsections so that they mirror the weakness list of \Cref{sec:bg:millet}
-(class-agnostic gate $\rightarrow$ unnormalised weights $\rightarrow$ fixed mean).
-Before the maths, always give one plain sentence: ``the problem is X, the fix is Y''.
-\textbf{Questions to answer for every head:} What can it express that Conjunctive
-cannot? What does it cost (extra parameters, extra compute)? What did I expect it to
-improve -- accuracy, AOPCR, or both?
-\end{guide}
+The subsections follow the same order as the weakness list of \Cref{sec:bg:millet}: first the
+class-agnostic gate, then the unnormalised weights, then the fixed mean. Before the maths, each
+head gets one plain sentence saying what the problem is and what the fix is.
 
 % ---------------------------------------------------------------------
 \subsection{Notation and the common template}
 \label{sec:pool:notation}
 
 \begin{table}[h]
-\caption{Notation used throughout this section. It follows \citet{early2024millet} so
-that my heads and theirs can be read side by side.}
+\caption{Notation used throughout this section. It follows \citet{early2024millet} so that my heads
+and theirs can be read side by side.}
 \label{tab:notation}
 \begin{center}
 \small
@@ -64,47 +58,38 @@ $\dattn$                                 & width of the attention hidden layer \
 \end{center}
 \end{table}
 
-Every head I propose keeps the same two-part template as Conjunctive pooling: an
-attention branch that decides \emph{where} to look, and a per-time-step classifier
-that decides \emph{what} each place argues for,
+Every head I propose keeps the same two-part template as Conjunctive pooling: an attention branch
+that decides \emph{where} to look, and a per-time-step classifier that decides \emph{what} each
+place argues for,
 \begin{equation}
   \instpred_j = W_c \emb_j + \mathbf{b}_c \in \R^{\nclz},
   \qquad
   \mathbf{a}_j = \mathcal{A}(\emb_j) ,
   \label{eq:common_template}
 \end{equation}
-and they differ only in the shape of $\mathcal{A}$ and in how the $\nsteps$
-per-time-step contributions are aggregated into $\bagpred$.
+and they differ only in the shape of $\mathcal{A}$ and in how the $\nsteps$ per-time-step
+contributions are combined into $\bagpred$.
 
-\begin{guide}
-\todo{Optional but strong: add one short paragraph explaining why the interpretation
-$\interp$ must be exactly the quantity the bag logit is built from. That is the
-property that makes the explanation faithful, and it is the reason I never compute
-$\interp$ with a separate branch.}
-\end{guide}
-{This is worth stating explicitly, because it is the reason the explanation can be
-trusted: for every head in this section, $\interp$ is not computed by a separate branch
-after the fact -- it is exactly the per-time-step, per-class quantity that $\bagpred$ is
-built by summing or averaging (for example, \Cref{eq:cw_bag} sets $\interp_{k,j}=g_j^k$,
-the very term summed to build $\bagpred^{\,k}$). This matches what
-\texttt{seanet/pooling.py} actually returns: every \texttt{forward()} method builds
-\texttt{bag\_logits} and \texttt{interpretation} from the same intermediate tensor
-(\texttt{g} or \texttt{contrib}), never from two independent computations. If the two
-were computed separately, nothing would stop them from disagreeing, and the explanation
-would lose exactly the property \Cref{sec:bg:related} says post-hoc explainers lack.}
+One property is worth stating on its own, because it is the reason the explanation can be trusted.
+For every head in this section, $\interp$ is \emph{not} computed by a separate branch after the
+fact. It is exactly the per-time-step, per-class quantity that $\bagpred$ is built from by summing
+or averaging -- for example \Cref{eq:cw_bag} sets $\interp_{k,j} = g_j^k$, the very term summed to
+build $\bagpred^{\,k}$. This is also what the code does: every \texttt{forward()} in
+\texttt{seanet/pooling.py} builds \texttt{bag\_logits} and \texttt{interpretation} from the same
+intermediate tensor, never from two independent computations. If the two were computed separately,
+nothing would stop them from disagreeing, and the explanation would lose exactly the property that
+post-hoc explainers lack (\Cref{sec:bg:related}).
 
 % ---------------------------------------------------------------------
 \subsection{Class-wise conjunctive pooling}
 \label{sec:pool:classwise}
 
-\textbf{Problem.} \todo{One sentence: the gate in \Cref{eq:conj_gate} is a single
-number per time step, shared by all classes.}
-{Because $a_j$ in \Cref{eq:conj_gate} is one number shared by every class, a time step
-that supports class A cannot, at the same time, argue against class B -- one gate value
-has to serve all $\nclz$ classes at once.}
+\textbf{Problem.} The gate $a_j$ in \Cref{eq:conj_gate} is one number shared by every class. So a
+time step that supports class A cannot, at the same time, argue against class B -- one value has to
+serve all $\nclz$ classes.
 
-\textbf{Fix.} One gate per class, produced by the same small attention MLP with
-$\nclz$ outputs instead of one:
+\textbf{Fix.} One gate per class, produced by the same small attention MLP with $\nclz$ outputs
+instead of one:
 \begin{align}
   \mathbf{a}_j &= \sig\!\left(W_2 \tanh(W_1 \emb_j)\right) \in [0,1]^{\nclz},
   \qquad W_1 \in \R^{\dattn \times \dmodel},\; W_2 \in \R^{\nclz \times \dattn},
@@ -119,28 +104,24 @@ $\nclz$ outputs instead of one:
 
 \begin{property}[Strict generalisation]
 \label{prop:cw}
-If $a_j^k = a_j$ for every class $k$, \Cref{eq:cw_bag} reduces exactly to Conjunctive
-pooling \Cref{eq:conj_bag}; if $a_j^k \to 1$ it reduces to instance pooling.
+If $a_j^k = a_j$ for every class $k$, \Cref{eq:cw_bag} reduces exactly to Conjunctive pooling
+\Cref{eq:conj_bag}; if $a_j^k \to 1$ it reduces to instance pooling.
 \end{property}
-\todo{One sentence on why this matters: the head can only \emph{add} capacity on top
-of the baseline, so a well-trained model should never do worse.}
-{This matters because \Cref{prop:cw} means the head only ever \emph{adds} capacity: at
-worst it can copy the Conjunctive baseline exactly (by collapsing every $a_j^k$ to the
-same value), so a well-trained model has no reason to score below it.}
+
+This matters because the head can only \emph{add} capacity. At worst it copies the Conjunctive
+baseline exactly, by collapsing every $a_j^k$ to the same value, so a well-trained model has no
+reason to score below it.
 
 % ---------------------------------------------------------------------
 \subsection{Softmax conjunctive pooling with learnable temperature}
 \label{sec:pool:softmax}
 
-\textbf{Problem.} \todo{One sentence: sigmoid gates are unnormalised, and dividing by
-$\nsteps$ makes the bag score depend on the length of the series.}
-{Dividing the sigmoid gate's sum by $\nsteps$ in \Cref{eq:conj_bag} means the bag score's
-scale shifts with the length of the series: two series with identical evidence but
-different lengths $\nsteps$ do not get the same score, which is a problem across
-datasets whose series length varies.}
+\textbf{Problem.} Dividing the sigmoid gate's sum by $\nsteps$ in \Cref{eq:conj_bag} makes the bag
+score's scale depend on the length of the series. Two series with identical evidence but different
+lengths do not get the same score, which is a problem across datasets whose lengths vary a lot.
 
-\textbf{Fix.} Turn the attention into a real probability distribution over time, with
-a learnable temperature $\tau$:
+\textbf{Fix.} Turn the attention into a real probability distribution over time, with a learnable
+temperature $\tau$:
 \begin{align}
   s_j^k     &= \left(W_2 \tanh(W_1 \emb_j)\right)_k \in \R,
   \label{eq:sm_score}\\
@@ -153,29 +134,26 @@ a learnable temperature $\tau$:
   \interp_{k,j} = \alpha_j^k \, \instpred_j^{\,k}.
   \label{eq:sm_bag}
 \end{align}
-The temperature is stored as $\tau = \exp(\rho)$ with $\rho$ learnable, so it stays
-strictly positive during training.
+The temperature is stored as $\tau = \exp(\rho)$ with $\rho$ learnable, so it stays strictly
+positive during training.
 
 \begin{property}[Interpolation between mean and max]
 \label{prop:sm}
-As $\tau \to \infty$, $\alpha_j^k \to 1/\nsteps$ and \Cref{eq:sm_bag} becomes a plain
-mean over time; as $\tau \to 0$ it selects the single highest-scoring time step.
-Because the weights sum to one, the bag score does not depend on $\nsteps$.
+As $\tau \to \infty$, $\alpha_j^k \to 1/\nsteps$ and \Cref{eq:sm_bag} becomes a plain mean over
+time; as $\tau \to 0$ it selects the single highest-scoring time step. Because the weights sum to
+one, the bag score does not depend on $\nsteps$.
 \end{property}
 
 % ---------------------------------------------------------------------
 \subsection{Adaptive class-wise pooling}
 \label{sec:pool:adaptive}
 
-\textbf{Problem.} \todo{One sentence: some datasets hide the evidence in one short
-event, others spread it over the whole series; a fixed mean cannot serve both.}
-{On some datasets the evidence is a single short event -- a spike that a max-like
-aggregator should highlight -- while on others it is spread across most of the series,
-where an average is the safer choice; the fixed mean in \Cref{eq:conj_bag} can only ever
-be right for one of these two cases.}
+\textbf{Problem.} On some datasets the evidence is one short event, where a max-like aggregator
+should win. On others it is spread over most of the series, where an average is safer. The fixed
+mean in \Cref{eq:conj_bag} can only ever be right for one of the two.
 
-\textbf{Fix.} Keep the per-class gates of \Cref{eq:cw_gate}, then aggregate with a
-learnable sharpness $\beta_k \geq 0$ per class (a numerically stable soft-argmax):
+\textbf{Fix.} Keep the per-class gates of \Cref{eq:cw_gate}, then aggregate with a learnable
+sharpness $\beta_k \geq 0$ per class -- a numerically stable soft-argmax:
 \begin{align}
   g_j^k &= a_j^k \, \instpred_j^{\,k},
   \qquad \beta_k = \softplus(\theta_k) \geq 0,
@@ -190,30 +168,24 @@ learnable sharpness $\beta_k \geq 0$ per class (a numerically stable soft-argmax
 
 \begin{property}[Learned mean--max aggregator]
 \label{prop:ad}
-$\beta_k \to 0$ gives $w_j^k \to 1/\nsteps$, i.e.\ class-wise conjunctive pooling;
-$\beta_k \to \infty$ gives $\bagpred^{\,k} \to \max_j g_j^k$. Since $\bagpred^{\,k}$
-is always a convex combination of the values $g_j^k$, it stays inside their range,
-which keeps training stable.
+$\beta_k \to 0$ gives $w_j^k \to 1/\nsteps$, that is, class-wise conjunctive pooling;
+$\beta_k \to \infty$ gives $\bagpred^{\,k} \to \max_j g_j^k$. Since $\bagpred^{\,k}$ is always a
+convex combination of the values $g_j^k$, it stays inside their range, which keeps training stable.
 \end{property}
-\todo{One sentence: $\beta_k$ starts small so training begins near the safe mean, and
-the model sharpens it only where that helps.}
-{$\beta_k$ starts small (\texttt{init\_beta} in \texttt{configs/models/sv2/seanet.yaml},
-default $0.3$) so training begins close to the safe class-wise mean, and the optimiser
-sharpens $\beta_k$ towards a max-like aggregator only for the classes where that
-actually reduces the loss.}
+
+$\beta_k$ starts small (\texttt{init\_beta}, default $0.3$) so training begins close to the safe
+class-wise mean, and the optimiser sharpens it towards a max-like aggregator only for the classes
+where that actually reduces the loss.
 
 % ---------------------------------------------------------------------
 \subsection{Top-$k$ conjunctive pooling}
 \label{sec:pool:topk}
 
-\textbf{Problem.} \todo{One sentence: on a long series most time steps are background,
-and averaging over all of them dilutes a handful of decisive points.}
-{On a series with hundreds of time steps, most of them are just background: averaging
-\Cref{eq:cw_bag} over all $\nsteps$ of them lets a handful of genuinely decisive points
-get diluted by everything around them.}
+\textbf{Problem.} On a series with hundreds of time steps, most of them are background. Averaging
+over all of them lets a handful of genuinely decisive points get diluted by everything around them.
 
-\textbf{Fix.} Average only the $k$ strongest contributions of each class, with
-$k$ a fixed fraction $\kappa$ of the length:
+\textbf{Fix.} Average only the $k$ strongest contributions of each class, with $k$ a fixed fraction
+$\kappa$ of the length:
 \begin{align}
   k &= \max\big(1, \lceil \kappa \nsteps \rceil\big), \qquad \kappa \in (0,1],
   \label{eq:topk_k}\\
@@ -228,26 +200,22 @@ $k$ a fixed fraction $\kappa$ of the length:
 
 \begin{property}[Strict generalisation]
 \label{prop:topk}
-$\kappa = 1$ recovers class-wise conjunctive pooling exactly. For $\kappa < 1$ the
-gradient reaches only the selected time steps, which concentrates the evidence.
+$\kappa = 1$ recovers class-wise conjunctive pooling exactly. For $\kappa < 1$ the gradient reaches
+only the selected time steps, which concentrates the evidence.
 \end{property}
-\todo{One sentence on the expected effect on AOPCR: if the decision really rests on
-few time steps, masking them should hurt the model more, so AOPCR should rise.}
-{If the decision genuinely rests on the $k$ selected time steps, masking exactly those
-points should hurt the model's confidence far more than masking $k$ random ones, so this
-head is expected to raise AOPCR specifically, more than it is expected to raise raw
-accuracy.}
+
+My expectation was that this head would help the \emph{explanation} more than the accuracy: if the
+decision really rests on the $k$ selected time steps, masking exactly those points should hurt the
+model much more than masking $k$ random ones. \Cref{tab:ablation_topk} tests
+Property~\ref{prop:topk} directly by sweeping $\kappa$, and it is the head in my best model.
 
 % ---------------------------------------------------------------------
 \subsection{Attention-max pooling}
 \label{sec:pool:attnmax}
 
-\textbf{Problem.} \todo{One sentence: same problem as above, but I wanted a simpler,
-``hard'' version to check whether the smooth soft-argmax is really needed.}
-{\Cref{sec:pool:adaptive} already fixes the fixed-mean problem, but its soft-argmax
-mixes every time step a little; here I wanted the simplest possible ``hard''
-alternative -- an explicit mean/max blend -- to check whether the smoother, learned
-aggregator of \Cref{sec:pool:adaptive} is actually earning its extra complexity.}
+\textbf{Problem.} \Cref{sec:pool:adaptive} already fixes the fixed-mean problem, but its soft-argmax
+still mixes in every time step a little. I wanted the simplest possible ``hard'' alternative, to
+check whether the smoother learned aggregator is really earning its extra complexity.
 
 \textbf{Fix.} A learnable per-class blend of the mean and the max:
 \begin{equation}
@@ -259,33 +227,29 @@ aggregator of \Cref{sec:pool:adaptive} is actually earning its extra complexity.
 
 \begin{property}
 \label{prop:attnmax}
-$\lambda_k \to 0$ recovers class-wise conjunctive pooling; $\lambda_k \to 1$ gives max
-pooling. Each class learns on its own whether its evidence is a trend or a spike.
+$\lambda_k \to 0$ recovers class-wise conjunctive pooling; $\lambda_k \to 1$ gives max pooling. Each
+class learns on its own whether its evidence is a trend or a spike.
 \end{property}
-\todo{One sentence: this head exists to isolate one factor -- soft versus hard
-selection -- which is what makes the comparison with
-\Cref{sec:pool:adaptive} informative.}
-{This head exists to isolate one factor: soft (weighted-average) versus hard (arg-max)
-selection of the evidence. Because \Cref{eq:attnmax} and \Cref{eq:ad_bag} share the same
-per-class gate and differ only in how they turn it into one number, comparing the two in
-\Cref{sec:results} says whether a smooth soft-argmax is worth its extra complexity over
-a plain, learned mean/max blend.}
+
+This head exists to isolate one factor: soft against hard selection. \Cref{eq:attnmax} and
+\Cref{eq:ad_bag} share the same per-class gate and differ only in how they turn it into one number,
+so comparing them in \Cref{sec:results} says whether the smooth soft-argmax is worth its extra
+complexity.
 
 % ---------------------------------------------------------------------
 \subsection{Per-class gated attention}
 \label{sec:pool:gated}
 
 \begin{priorwork}
-The gated attention mechanism itself is due to \citet{ilse2018attention} and is used
-in the multi-scale MIL pipeline of \citet{hashimoto2020msdamil} for cancer subtype
-classification. In those papers a bag is a whole-slide image and an instance is an
-image patch.
+The gated attention mechanism itself is due to \citet{ilse2018attention} and is used in the
+multi-scale MIL pipeline of \citet{hashimoto2020msdamil} for cancer subtype classification. In those
+papers a bag is a whole-slide image and an instance is an image patch.
 \end{priorwork}
 
 \begin{contribution}
-\todo{One sentence: I transferred it to time series (bag = series, instance = time
-step) and made the attention \emph{per class}, which the original formulation is not,
-so that it produces a class-specific interpretation like my other heads.}
+I transferred it to time series (bag = series, instance = time step) and made the attention
+\emph{per class}, which the original formulation is not, so that it produces a class-specific
+interpretation like my other heads.
 \end{contribution}
 
 \begin{align}
@@ -301,46 +265,43 @@ so that it produces a class-specific interpretation like my other heads.}
   \interp_{k,j} = \alpha_j^k \, \instpred_j^{\,k}.
   \label{eq:ga_bag}
 \end{align}
-\todo{Two sentences in words: the $\tanh$ branch proposes attention features and the
-$\sig$ branch decides which of them to let through, so the gate is more selective than
-$\tanh$ alone.}
-{In words, the $\tanh$ branch of \Cref{eq:ga_features} proposes a set of candidate
-attention features, while the $\sig$ branch looks at the same embedding and decides
-which of those features to let through -- multiplying the two means a feature is only
-used where the sigmoid branch says it is trustworthy. This makes the gate more selective
-than a plain $\tanh$-only branch (\Cref{eq:conj_gate}), at the cost of one extra
-$\dmodel \to \dattn$ layer (\texttt{seanet/pooling.py}, \texttt{GatedAttentionPooling},
-the \texttt{attn\_gate} branch $U$). Unlike every other head in this section, this one
-has no blend parameter that can be driven to zero, so it does \emph{not} reduce exactly
-to Conjunctive pooling for any setting of its weights -- see \Cref{tab:pooling_summary}.}
+
+In words, the $\tanh$ branch of \Cref{eq:ga_features} proposes a set of candidate attention
+features, while the $\sig$ branch looks at the same embedding and decides which of them to let
+through. Multiplying the two means a feature is only used where the sigmoid branch says it is
+trustworthy, which makes the gate more selective than a plain $\tanh$-only branch, at the cost of
+one extra $\dmodel \to \dattn$ layer.
+
+There is one structural difference I want to flag now, because it comes back in the results. Unlike
+every other head in this section, this one has no blend parameter that can be driven to zero, so it
+does \emph{not} reduce exactly to Conjunctive pooling for any setting of its weights. It has no
+safety net.
 
 % ---------------------------------------------------------------------
 \subsection{Dual-stream conjunctive pooling}
 \label{sec:pool:dsmil}
 
 \begin{priorwork}
-The two-stream idea is due to \citet{li2021dsmil} (DSMIL), again for whole-slide
-images: one stream aggregates everything, a second stream focuses on the single most
-critical instance and on the instances that resemble it.
+The two-stream idea is due to \citet{li2021dsmil} (DSMIL), again for whole-slide images: one stream
+aggregates everything, a second stream focuses on the single most critical instance and on the
+instances that resemble it.
 \end{priorwork}
 
 \begin{contribution}
-\todo{One or two sentences: I dropped their contrastive pre-training, made the
-critical instance and the query per class, and wrapped the two streams in a learnable
-blend that \emph{starts} at the Conjunctive baseline, so the head can only match or
-improve on it. My goal with this head was specifically the AOPCR gap.}
+I dropped their contrastive pre-training, made the critical instance and the query per class, and
+wrapped the two streams in a learnable blend that \emph{starts} at the Conjunctive baseline, so in
+theory the head can only match or improve on it. My goal with this head was specifically the AOPCR
+gap.
 \end{contribution}
 
-\textbf{Stream A (safe baseline).} The class-wise conjunctive mean of
-\Cref{eq:cw_bag}:
+\textbf{Stream A (safe baseline).} The class-wise conjunctive mean of \Cref{eq:cw_bag}:
 \begin{equation}
   \bagpred^{\,k}_{\text{mean}} = \frac{1}{\nsteps}\sum_{j=1}^{\nsteps} g_j^k .
   \label{eq:ds_streamA}
 \end{equation}
 
-\textbf{Stream B (critical time step).} For each class, find the most supporting time
-step, embed a small query for every time step, and re-weight by similarity to that
-critical query:
+\textbf{Stream B (critical time step).} For each class, find the most supporting time step, embed a
+small query for every time step, and re-weight by similarity to that critical query:
 \begin{align}
   m_k &= \argmax_{j} \; g_j^k ,
   \qquad
@@ -363,61 +324,59 @@ critical query:
 
 \begin{property}[Safe by construction]
 \label{prop:ds}
-$\lambda \to 0$ recovers class-wise conjunctive pooling. The interpretation in
-\Cref{eq:ds_blend} uses the same blend as the logit, so the explanation always matches
-the decision. The attention is measured only against the single critical time step, so
-the cost is $\mathcal{O}(\nsteps \dattn \nclz)$ and not $\mathcal{O}(\nsteps^2)$.
+$\lambda \to 0$ recovers class-wise conjunctive pooling. The interpretation in \Cref{eq:ds_blend}
+uses the same blend as the logit, so the explanation always matches the decision. The attention is
+measured only against the single critical time step, so the cost is
+$\mathcal{O}(\nsteps \dattn \nclz)$ and not $\mathcal{O}(\nsteps^2)$.
 \end{property}
 
-% ----- THE PROPOSED POOLING DIAGRAM GOES HERE ------------------------
+Property~\ref{prop:ds} says this head should never be worse than the baseline. \Cref{sec:disc:negative}
+shows that it is, in fact, the worst head I tried, and explains why a safety net that nothing pushes
+the model towards is not a safety net at all.
+
 % ----- DIAGRAM BRIEF for fig:pooling_arch (draw this in your own tool) -------------------
 % Source of truth: seanet/pooling.py (ClasswiseConjunctivePooling, SoftmaxConjunctivePooling,
 % AdaptiveClasswisePooling, TopKConjunctivePooling, AttentionMaxPooling, GatedAttentionPooling,
-% DualStreamConjunctivePooling) and Eq. (common template) in Section 6.1.
+% DualStreamConjunctivePooling) and Eq. (common template) above.
 %
 % LEFT side (shared by every head), top to bottom:
-%   1. Per-time-step embeddings z_j          (B, T, d)   <- input to every head below
+%   1. Per-time-step embeddings z_j          (B, T, d)
 %   2. TWO branches read z_j in parallel:
-%        (a) attention branch A(z_j)          -> one gate value per time step [shape varies by head]
-%        (b) classifier  p_j = W_c z_j + b_c   -> (B, T, C)   [IDENTICAL in every head]
-%   3. Aggregation box: combines (a) and (b) into bag_logits (B, C) AND interpretation (B, C, T)
+%        (a) attention branch A(z_j) -> gate values [shape varies by head]
+%        (b) classifier  p_j = W_c z_j + b_c -> (B, T, C)   [IDENTICAL in every head]
+%   3. Aggregation box -> bag_logits (B, C) AND interpretation (B, C, T)
 %      -- this box is the ONLY thing that changes between heads.
 %
-% RIGHT side: seven small boxes, one per head, each showing ONLY its aggregation rule (the
-% shared left-hand side above is implied). One-line label + equation to put under each box:
-%   - Conjunctive (baseline; draw in a different colour/outline -- reused, not mine)
-%       a_j scalar, shared by all classes -> mean over time            [Eq. (conj_bag), Sec. 4.3]
-%   - Class-wise            a_j^k per class -> mean over time           [Eq. (cw_bag)]
-%   - Softmax + temperature a_j^k -> softmax over time / tau            [Eq. (sm_bag)]
-%   - Adaptive class-wise   a_j^k -> soft-argmax with learned beta_k    [Eq. (ad_bag)]
-%   - Top-k                 a_j^k -> mean of the top k over time        [Eq. (topk_bag)]
-%   - Attention-max         a_j^k -> learned blend of mean and max      [Eq. (attnmax)]
-%   - Gated attention       tanh*sigmoid features -> softmax over time  [Eq. (ga_bag)]
-%   - Dual-stream           two streams blended, lambda near 0 at init  [Eq. (ds_blend)]
+% RIGHT side: eight small boxes, each showing ONLY its aggregation rule:
+%   - Conjunctive (baseline; different colour -- reused, not mine): a_j shared -> mean over time
+%   - Class-wise            a_j^k per class -> mean over time           [Eq. cw_bag]
+%   - Softmax + temperature a_j^k -> softmax over time / tau            [Eq. sm_bag]
+%   - Adaptive class-wise   a_j^k -> soft-argmax with learned beta_k    [Eq. ad_bag]
+%   - Top-k                 a_j^k -> mean of the top k over time        [Eq. topk_bag]
+%   - Attention-max         a_j^k -> learned blend of mean and max      [Eq. attnmax]
+%   - Gated attention       tanh*sigmoid features -> softmax over time  [Eq. ga_bag]
+%   - Dual-stream           two streams blended, lambda near 0 at init  [Eq. ds_blend]
 %
-% Draw a short arrow from the Conjunctive box to EVERY other box EXCEPT Gated attention --
-% it is the one head that does NOT reduce back to Conjunctive for any parameter setting
-% (see Section 6.7's closing paragraph and Table 4).
+% Draw a short arrow from the Conjunctive box to EVERY other box EXCEPT Gated attention -- it is
+% the one head that does NOT reduce back to Conjunctive for any parameter setting.
 %
-% Suggested colours: Conjunctive = grey (reused, not mine); Class-wise / Softmax / Adaptive /
-% Top-k / Attention-max = your accent colour (my own analysis, Sec. 6.2-6.6); Gated attention
-% and Dual-stream = a second accent (adapted from the WSI MIL papers, Sec. 6.7-6.8).
+% Colours: Conjunctive = grey (reused); Class-wise / Softmax / Adaptive / Top-k / Attention-max =
+% accent colour (my own analysis); Gated attention + Dual-stream = a second accent (adapted from
+% the WSI MIL papers).
 % -------------------------------------------------------------------------------------------
 \begin{figure}[t]
   \centering
-  \figph{\textbf{Figure X -- Proposed pooling architecture.} One picture with the
-  shared template on the left (embeddings $\rightarrow$ attention branch +
-  per-time-step classifier) and the seven aggregation variants on the right, each
-  drawn as a small box: shared gate (baseline), per-class gate, softmax over time,
-  soft-argmax with $\beta$, top-$k$ selection, mean/max blend, gated attention,
-  dual-stream. Arrows show where each one departs from the baseline.}
-  \caption{\todo{Caption: all heads share the same skeleton; only the aggregation
-  changes. Say which box is the \millet{} baseline and which boxes are mine.} The
-  Conjunctive box (grey) is the \millet{} baseline; every other box is mine. Five
-  (\Cref{sec:pool:classwise}--\Cref{sec:pool:attnmax}) share the left-hand template
-  exactly and only change how the per-time-step evidence $g_j^k$ is aggregated over
-  time; the last two (\Cref{sec:pool:gated}--\Cref{sec:pool:dsmil}) additionally change
-  how the attention itself is computed, adapting ideas from whole-slide-image MIL.}
+  \figph{\textbf{Proposed pooling architecture.} The shared template on the left (embeddings
+  $\rightarrow$ attention branch + per-time-step classifier) and the eight aggregation variants on
+  the right, each drawn as a small box: shared gate (baseline), per-class gate, softmax over time,
+  soft-argmax with $\beta$, top-$k$ selection, mean/max blend, gated attention, dual-stream. Arrows
+  show where each one departs from the baseline.}
+  \caption{All the pooling heads share the same skeleton; only the aggregation changes. The
+  Conjunctive box is the \millet{} baseline and every other box is mine. Five of them
+  (\Cref{sec:pool:classwise}--\Cref{sec:pool:attnmax}) share the left-hand template exactly and only
+  change how the per-time-step evidence $g_j^k$ is combined over time. The last two
+  (\Cref{sec:pool:gated}--\Cref{sec:pool:dsmil}) also change how the attention itself is computed,
+  adapting ideas from whole-slide-image MIL.}
   \label{fig:pooling_arch}
 \end{figure}
 
@@ -426,13 +385,13 @@ the cost is $\mathcal{O}(\nsteps \dattn \nclz)$ and not $\mathcal{O}(\nsteps^2)$
 \label{sec:pool:summary}
 
 \begin{table}[t]
-\caption{My pooling heads at a glance. Every head reduces to the Conjunctive baseline
-for the parameter value in the last column, so none of them can lose capacity.
-\todo{Check the extra-parameter column against the code.}}
+\caption{My pooling heads at a glance. Every head except Gated attention reduces to the Conjunctive
+baseline for the parameter value in the last column, so in theory none of them can lose capacity.
+The extra-parameter column counts the weights added on top of the baseline's single-output gate.}
 \label{tab:pooling_summary}
 \begin{center}
 \small
-\begin{tabular}{p{0.20\linewidth} p{0.26\linewidth} p{0.24\linewidth} p{0.18\linewidth}}
+\begin{tabular}{p{0.20\linewidth} p{0.24\linewidth} p{0.26\linewidth} p{0.18\linewidth}}
 \toprule
 \textbf{Head} & \textbf{Weakness it fixes} & \textbf{Extra parameters} &
 \textbf{Reduces to baseline when} \\
@@ -443,56 +402,35 @@ Softmax + temperature  & unnormalised weights     & $(\nclz-1)(\dattn+1) + 1$ & 
 Adaptive class-wise    & fixed mean               & $(\nclz-1)(\dattn+1) + \nclz$ & $\beta_k \to 0$ \\
 Top-$k$                & evidence dilution        & $(\nclz-1)(\dattn+1)$ & $\kappa = 1$ \\
 Attention-max          & evidence dilution (hard) & $(\nclz-1)(\dattn+1) + \nclz$ & $\lambda_k \to 0$ \\
-Gated attention        & weak gate                & $\dattn\dmodel + \dattn\nclz + \nclz - 1$ & \todo{--} no exact reduction (see \Cref{sec:pool:gated}) \\
+Gated attention        & weak gate                & $\dattn\dmodel + \dattn\nclz + \nclz - 1$ & never (\Cref{sec:pool:gated}) \\
 Dual-stream            & scattered evidence       & $(\nclz-1)(\dattn+1) + \dattn\dmodel + \dattn + 1$ & $\lambda \to 0$ \\
 \bottomrule
 \end{tabular}
 \end{center}
-% Extra-parameter formulas derived directly from seanet/pooling.py: every head except Gated
-% attention and Dual-stream reuses the SAME small attention MLP shape as ClasswiseConjunctivePooling
-% (Linear(d_in,d_attn) -> Tanh -> Linear(d_attn,n_clz)), so their extra cost over the Conjunctive
-% baseline's single-output gate is just the wider last layer, (n_clz-1)(d_attn+1), plus whatever
-% extra learnable scalar(s) the head adds (temperature: +1; per-class beta or lambda: +n_clz;
-% top-k's top_frac is a fixed hyperparameter, not a learned weight, so it adds 0). Gated attention
-% is the one head that is NOT just a wider output layer -- it adds a whole second d_in->d_attn
-% branch (attn_gate, the sigmoid gate U), which is why its extra-parameter cost has a d_attn*d_in
-% term the others do not. Dual-stream adds ClasswiseConjunctivePooling's usual extra PLUS one more
-% d_in->d_attn query layer (W_q) and one scalar blend. Sanity-check these against
-% `python main.py params` before printing exact numbers for a specific d_attn/n_clz.
 \end{table}
+% Extra-parameter formulas derived from seanet/pooling.py. Every head except Gated attention and
+% Dual-stream reuses the SAME small attention MLP shape as ClasswiseConjunctivePooling
+% (Linear(d_in, d_attn) -> Tanh -> Linear(d_attn, n_clz)), so their extra cost over the baseline's
+% single-output gate is just the wider last layer, (n_clz-1)(d_attn+1), plus whatever extra learnable
+% scalar the head adds (temperature +1; per-class beta or lambda +n_clz; top-k's top_frac is a fixed
+% hyperparameter, not a weight, so it adds 0). Gated attention adds a whole second d_in->d_attn
+% branch (the sigmoid gate U), which is why it has a d_attn*d_in term the others do not. Dual-stream
+% adds one more d_in->d_attn query layer (W_q) plus one scalar blend.
 
-\begin{guide}
-\textbf{TODO -- extra mathematics that could be added later, if space allows:}
-\begin{itemize}\itemsep2pt
-  \item A short proof of each Property (they are two lines each).
-  \item The gradient of \Cref{eq:ad_bag} with respect to $\beta_k$, to explain why the
-        head starts near the mean and sharpens only when it pays off.
-  \item A note on the complexity of each head, in terms of $\nsteps$, $\dmodel$,
-        $\dattn$ and $\nclz$.
-  \item The attention-entropy penalty added to the training loss, written as an
-        equation, and its weight $\lambda_{\text{focus}}$.
-\end{itemize}
-\end{guide}
-
-\todo{Optional: write the training objective here, cross-entropy plus the attention
-focus penalty, in one equation.}
-{Every model in this report is trained with the same loss: label-smoothed
-cross-entropy on the class prediction, plus a small penalty that rewards a
-\emph{focused} attention (one that puts its weight on a few time steps rather than
-spreading it over the whole series). The penalty is the entropy of the attention
-returned by the pooling head (every head in this section exposes one, averaged over
-classes into the $\bar a_j$ below); a peaked distribution has low entropy and a flat
-one has high entropy, so minimising the loss pushes the attention to be peaked
-(\texttt{seanet/train.py}, \texttt{attention\_entropy}).}
+\paragraph{The training objective.}
+Every model in this report is trained with the same loss: label-smoothed cross-entropy on the class
+prediction, plus a small penalty that rewards a \emph{focused} attention -- one that puts its weight
+on a few time steps instead of spreading it over the whole series. The penalty is the entropy of the
+attention returned by the pooling head. A peaked distribution has low entropy and a flat one has
+high entropy, so minimising the loss pushes the attention to be peaked:
 \begin{equation}
   \mathcal{L} = \underbrace{\mathrm{CE}(\bagpred, y)}_{\text{classification}}
               + \lambda_{\text{focus}} \cdot
                 \underbrace{\Big({-}\sum_{j=1}^{\nsteps} \bar a_j \log(\bar a_j + \epsilon)\Big)}_{\text{attention entropy}} .
   \label{eq:loss}
 \end{equation}
-{Here $\bar a_j$ is the ``attn'' tensor each pooling head returns (the attention
-averaged over classes, e.g.\ $\bar a_j = \frac{1}{\nclz}\sum_k a_j^k$ for the class-wise
-family), $\epsilon$ avoids $\log 0$, and $\lambda_{\text{focus}}$ is \texttt{lambda\_entropy}
-in the config -- default $0.01$, set to $0$ for the \millet{} baseline since the focus
-penalty is a \seanet{} idea, not part of \millet{} (\texttt{configs/models/sv2/seanet.yaml},
-\texttt{configs/models/sv1/millet.yaml}).}
+Here $\bar a_j$ is the attention each pooling head returns, averaged over classes (so
+$\bar a_j = \frac{1}{\nclz}\sum_k a_j^k$ for the class-wise family), $\epsilon$ avoids $\log 0$, and
+$\lambda_{\text{focus}}$ is \texttt{lambda\_entropy} in the config. Its default is $0.01$, and it is
+set to $0$ for the \millet{} baseline, since the focus penalty is a \seanet{} idea and not part of
+\millet{}. \Cref{tab:ablation_focus} measures what it actually buys.

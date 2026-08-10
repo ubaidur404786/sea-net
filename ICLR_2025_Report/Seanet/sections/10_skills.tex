@@ -1,157 +1,123 @@
 % !TEX root = ../main.tex
 % =====================================================================
-% 10. SKILLS ACQUIRED               target: 1 - 1.5 pages
+% 10. SKILLS ACQUIRED
 %
-% The examiner asked the report to cover "the work completed,
-% achievements, and skills acquired". Sections 5-9 cover the first two;
-% this short section covers the third.
-%
-% Keep it concrete. "I learned PyTorch" says nothing. "I learned to
-% write a model as an encoder/pooling pair so that any combination can
-% be trained from a config file" says something.
+% Sections 5-9 cover the work and the achievements. This short section
+% covers the third thing the examiner asked for: the skills.
+% Rule I follow: name the skill AND the moment in the project where I
+% used it. "I learned PyTorch" says nothing on its own.
 % =====================================================================
 
 \section{Skills Acquired}
 \label{sec:skills}
 
-\begin{guide}
-Three subsections: scientific, technical, professional. Two to four bullets each. For
-every bullet, name the skill \emph{and} the moment in the project where I used it.
-Write in the first person and in the past tense.
-\textbf{Questions to answer:} What can I do now that I could not do in the first week?
-Which mistake taught me the most? What would I do differently if I started this
-project again tomorrow?
-\end{guide}
-
 \subsection{Scientific skills}
 
-\begin{itemize}\itemsep3pt
-  \item \todo{Reading a research paper well enough to re-implement it and to find its
-        weak points -- \Cref{sec:bg:millet}.}
-        {I learned to read a paper closely enough to rebuild it, not just summarise
-        it: reproducing \millet{}'s Conjunctive pooling and its AOPCR/NDCG@$n$
-        metrics (\Cref{sec:bg:millet}) meant going past the equations in the paper to
-        their actual code, and noticing where my honest re-implementation still did
-        not land on their published number (\Cref{sec:disc:reading}) -- a gap I could
-        only explain once I understood the method well enough to know which knob
-        (recipe, not architecture) was the likely cause.}
-  \item \todo{Designing a controlled comparison: change one thing at a time, keep the
-        recipe fixed, re-train the baselines instead of quoting them.}
-        {I learned why quoting a competing method's published number is not enough:
-        I re-trained FCN, ResNet and InceptionTime myself with \seanet{}'s exact
-        recipe (\Cref{sec:setup:baselines}) so that any difference in
-        \Cref{sec:results} could only come from the architecture, not from two
-        papers using two different numbers of epochs.}
-  \item \todo{Reading a metric critically instead of trusting it (the AOPCR scale
-        issue, \Cref{sec:disc:reading}).}
-        {I learned not to trust a metric's absolute value just because it is defined
-        by a formula: finding that my own re-trained \millet{} model's AOPCR sits at
-        a completely different scale from the published one, even though it is the
-        identical architecture (\Cref{sec:disc:reading}), taught me to check a
-        metric's assumptions (here, that AOPCR is unnormalised) before comparing two
-        numbers that use it.}
-  \item \todo{Transferring a method between fields: MIL pooling from
-        whole-slide-image pathology to time series.}
-        {I learned to adapt an idea from a different field rather than copy it
-        wholesale: Gated attention and Dual-stream pooling both come from
-        whole-slide-image cancer pathology (\Cref{sec:pool:gated},
-        \Cref{sec:pool:dsmil}), and getting them to work on time series meant
-        re-deriving which parts of the original mechanism depended on the WSI
-        setting (a feature extractor over image patches) and which parts were
-        general MIL ideas that transfer directly.}
+\begin{itemize}\itemsep4pt
+  \item \textbf{Reading a paper closely enough to rebuild it.} Reproducing \millet{}'s Conjunctive
+        pooling and its AOPCR and NDCG@$n$ metrics (\Cref{sec:bg:millet}) meant going past the
+        equations in the paper and into their actual code. It also meant noticing where my honest
+        re-implementation still did not land on their published number, and being able to say which
+        knob was the likely cause -- the recipe, not the architecture (\Cref{sec:disc:reading}).
+
+  \item \textbf{Designing a controlled comparison.} I learned why quoting a competing method's
+        published number is not enough. I re-trained FCN, ResNet and InceptionTime myself with
+        \seanet{}'s exact recipe (\Cref{sec:setup:baselines}), so that any difference in
+        \Cref{sec:results} could only come from the architecture and not from two papers using two
+        different epoch budgets. The same habit produced the sv7 ablations in \Cref{app:ablations},
+        where I change exactly one line of a config and nothing else.
+
+  \item \textbf{Reading a metric critically instead of trusting it.} Finding that the same
+        architecture scores AOPCR 2.57 under my recipe and 13.27 under \millet{}'s
+        (\Cref{sec:disc:reading}) taught me to check a metric's assumptions before comparing two
+        numbers that use it. AOPCR is unnormalised, and once I understood that, a confusing result
+        turned into a measurable one.
+
+  \item \textbf{Transferring a method between fields.} Gated attention and Dual-stream pooling both
+        come from whole-slide-image cancer pathology (\Cref{sec:pool:gated},
+        \Cref{sec:pool:dsmil}). Getting them onto time series meant working out which parts of the
+        original mechanism depended on the image setting and which parts were general MIL ideas.
+        Both of them then underperformed (\Cref{sec:disc:negative}), which taught me something too:
+        a good idea from another field is a hypothesis, not a shortcut.
 \end{itemize}
 
 \subsection{Technical skills}
 
-\begin{itemize}\itemsep3pt
-  \item \todo{PyTorch: writing custom modules, keeping a strict input/output contract
-        so components stay interchangeable.}
-        {I learned to design modules around a fixed contract rather than a fixed
-        implementation: every encoder in \texttt{seanet/features.py} maps
-        $(B, C, T) \to (B, \dmodel, T)$ and every pooling head in
-        \texttt{seanet/pooling.py} maps $(B, \dmodel, T)$ to the same output dict
-        (\Cref{sec:architecture}), which is the only reason 66 different
-        encoder/pooling combinations (\Cref{sec:setup:pipeline}) could be built and
-        trained without writing 66 separate model classes.}
-  \item \todo{Experiment engineering: configuration files, a model registry, resumable
-        sweeps, atomic result writing, MLflow tracking.}
-        {I learned to treat the experiment pipeline itself as something worth
-        engineering, not just a script: a config-driven model registry, sweeps that
-        resume instead of restart, and one results row per (dataset, model, seed)
-        (\Cref{sec:setup:pipeline}) turned out to matter as much to how much I could
-        get done as any single modelling idea did.}
-  \item \todo{Running jobs on a shared HPC platform (Grid'5000): reserving nodes with
-        the scheduler, working with a job time limit, splitting one study over two
-        sites.}
-        {I learned to work around a shared, time-limited resource rather than
-        against it: reserving GPU nodes on Grid'5000 with OAR, planning around each
-        job's wall-clock limit, and running \seanet{}'s recipe unchanged on two
-        different sites (Lille and Sophia, \Cref{sec:setup:pipeline}) so a delay on
-        one site did not stall the whole sweep.}
-  \item \todo{Reproducibility: one command regenerates every figure and table in this
-        report from the stored results.}
-        {I learned to make ``regenerate everything'' a single command
-        (\texttt{python main.py paper}, \Cref{app:commands}) rather than a manual
-        step, specifically so that no number in this report could quietly go stale
-        after a re-run. This turned out to matter for a concrete reason while writing
-        \Cref{sec:results}: some of the auto-generated tables had been produced
-        before a later re-run of the \millet{} baseline finished, so a couple of
-        published-looking numbers were already out of date -- exactly the failure
-        mode this command is meant to prevent, and a reminder to re-run it once more
-        right before submission.}
-  \item \todo{Tooling: Git, remote development over SSH, \LaTeX{}.}
-        {I learned the day-to-day tools of a research codebase: Git for tracking a
-        project that changed shape several times (\Cref{sec:objectives}), VS Code
-        over SSH for developing against Grid'5000 directly, and \LaTeX{} for a report
-        long and structured enough that plain text would not have held together.}
+\begin{itemize}\itemsep4pt
+  \item \textbf{Designing modules around a contract, not an implementation.} Every encoder in
+        \texttt{seanet/features.py} maps $(B, C, \nsteps) \to (B, \dmodel, \nsteps)$ and every
+        pooling head in \texttt{seanet/pooling.py} maps $(B, \dmodel, \nsteps)$ to the same output
+        dictionary. That single rule is the only reason 72 encoder/pooling combinations could be
+        built and trained without writing 72 model classes.
+
+  \item \textbf{Treating the experiment pipeline as something worth engineering.} A config-driven
+        model registry, sweeps that resume instead of restart, and one results row per
+        (dataset, model, seed) (\Cref{sec:setup:pipeline}) ended up mattering as much to how much I
+        got done as any single modelling idea.
+
+  \item \textbf{Working on a shared, time-limited HPC platform.} Reserving GPU nodes on Grid'5000
+        with OAR, planning around each job's wall-clock limit, and running the same recipe on two
+        sites (Lille and Sophia) so that a queue on one did not stall the whole sweep. I also wrote
+        the job scripts and a small tmux + Telegram setup that pushed each model's accuracy to my
+        phone as it finished, so I could react to a failed sweep the same day instead of the next
+        morning.
+
+  \item \textbf{Making ``regenerate everything'' a single command.} \texttt{python main.py paper}
+        rebuilds every figure and table in this report from the stored results
+        (\Cref{app:commands}). This mattered for a concrete reason while I was writing
+        \Cref{sec:results}: some auto-generated tables had been produced before a later re-run
+        finished, so a few numbers were quietly out of date. That is exactly the failure this
+        command prevents, and it is why I re-ran it before submitting.
+
+  \item \textbf{Noticing what the code does not save.} While writing \Cref{sec:res:training} I found
+        that the per-epoch loss curve only went to MLflow, which stays on the Grid'5000 node, so it
+        never came back with the results. I changed the training code to write it next to
+        \texttt{results.csv} instead. Small fix, but it taught me to ask ``where does this number
+        live after the job ends?'' when I write the code, not months later when I need it.
+
+  \item \textbf{The everyday tools.} Git for a project that changed shape several times, VS~Code
+        over SSH to develop directly against Grid'5000, and \LaTeX{} for a report long enough that
+        plain text would not have held together.
 \end{itemize}
 
 \subsection{Professional skills}
 
-\begin{itemize}\itemsep3pt
-  \item \todo{Planning a multi-month project with a fixed deadline and a shared,
-        limited computing resource.}
-        {I learned to plan a 4-month project (\Cref{sec:objectives}) around a
-        compute budget I did not fully control: with a full sweep over 129 datasets
-        costing hours per model on shared Grid'5000 nodes, deciding what to screen on
-        \webtraffic{} first versus what to commit to the full sweep directly
-        (\Cref{sec:setup:data}) was a planning decision, not just a technical one.}
-  \item \todo{Reporting progress to a supervisor: what to show, how often, and how to
-        present a negative result.}
-        \note{Personalise this one -- I do not have visibility into how often you
-        met your supervisor or what that looked like. A concrete version might name
-        a specific update (e.g. reporting the O2 discrepancy with the \millet{}
-        authors, \Cref{tab:objectives}) and what you chose to show versus leave out.}
-  \item \todo{Writing for a reader who is not a specialist -- this report.}
-        {I learned that writing this report was itself a skill exercise, not just a
-        write-up: explaining Multiple Instance Learning, AOPCR, or why a smaller
-        encoder can still be more interpretable, to a reader who has not read the
-        \millet{} paper, forced me to check that I actually understood a mechanism
-        well enough to explain it plainly, not just well enough to implement it.}
-  \item \todo{Keeping documentation up to date so that another student can continue
-        the project.}
-        {I learned to write project state down where a future reader (including a
-        future version of me) would actually find it, rather than only in my own
-        memory: \texttt{PROJECT\_STATE.md} and the module-level docstrings across
-        \texttt{seanet/} exist specifically so someone continuing this project does
-        not have to re-derive what the leaderboard means or how the pipeline fits
-        together from the code alone.}
+\begin{itemize}\itemsep4pt
+  \item \textbf{Planning around a resource I did not control.} With a full sweep costing hours per
+        model on shared nodes, deciding what to screen on \webtraffic{} first and what to commit to
+        the full sweep (\Cref{sec:setup:data}) was a planning decision as much as a technical one.
+        \Cref{sec:res:ucr} shows I got part of that trade-off wrong, which is useful to know.
+
+  \item \textbf{Reporting progress, including bad news.} I met my supervisor at least once a week
+        (\Cref{sec:context}). The update I found hardest to prepare was the O2 discrepancy
+        (\Cref{tab:objectives}): re-training \millet{}'s own architecture did not reproduce their
+        published accuracy. My first instinct was to keep debugging until it matched. Instead I
+        brought the discrepancy itself to the meeting, with the exact numbers and the two possible
+        causes I could think of. That turned a private problem into a shared decision -- we emailed
+        the authors and built \texttt{millet\_paper.yaml} to measure the recipe gap -- and it is the
+        moment I learned that a clearly-stated unresolved result is more useful to a supervisor than
+        a delayed clean one.
+
+  \item \textbf{Writing for a reader who is not a specialist.} Explaining Multiple Instance Learning,
+        AOPCR, or why a smaller encoder can still be more interpretable, to a reader who has not read
+        the \millet{} paper, forced me to check that I actually understood a mechanism well enough to
+        explain it plainly -- not just well enough to implement it.
+
+  \item \textbf{Writing things down where someone else will find them.} \texttt{PROJECT\_STATE.md}
+        and the module docstrings across \texttt{seanet/} exist so that whoever continues this
+        project does not have to re-derive what the leaderboard means or how the pipeline fits
+        together from the code alone.
 \end{itemize}
 
-\begin{guide}
-\todo{Optional closing paragraph (3--4 sentences): the single most valuable lesson of
-the internship. Choose something specific -- for example that a careful experimental
-protocol changed a conclusion I had already believed, or that engineering effort spent
-early paid for itself many times over during the sweeps.}
-\end{guide}
+\subsection{The one lesson I would keep}
 
-{If I had to name one lesson, it is that a careful protocol can overturn a conclusion
-I had already half-believed. Before I checked the 85-dataset \ucr{} sweep, the
-\webtraffic{} numbers alone (\Cref{tab:web_main}) told a clean story: my proposed
-heads win on accuracy, AOPCR and NDCG@$n$ at once, for a fraction of the parameters.
+If I had to name one thing, it is that a careful protocol can overturn a conclusion I had already
+half-believed. Before I checked the 85-dataset \ucr{} sweep, the \webtraffic{} numbers alone told a
+clean story: my heads win on accuracy, AOPCR and NDCG@$n$ at once, for a fraction of the parameters.
 Running the same models against the same re-trained baseline over 85 more datasets
-(\Cref{sec:res:ucr}) showed that story does not fully hold -- the re-trained baseline
-actually generalises better on average. Neither number is wrong; only the second one
-is complete. That is the concrete version of ``do not trust a result you only checked
-once,'' and it is the reason \Cref{sec:disc:limitations} exists as a real section of
-this report rather than a formality at the end.}
+(\Cref{sec:res:ucr}) showed that story does not fully hold -- the baseline generalises better on
+average.
+
+Neither number is wrong. Only the second one is complete. That is the concrete version of ``do not
+trust a result you only checked once'', and it is why \Cref{sec:disc:limitations} is a real section
+of this report and not a formality at the end.

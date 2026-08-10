@@ -1,251 +1,155 @@
 % !TEX root = ../main.tex
 % =====================================================================
-% 9. DISCUSSION                     target: 2 - 2.5 pages
+% 9. DISCUSSION
 %
 % Section 8 says WHAT happened. This section says WHAT IT MEANS.
-% This is where personal analysis and scientific judgement are shown,
-% so it weighs heavily in the evaluation. Use "I" throughout.
+% Written in the first person: this is my own reading of my own numbers.
 % =====================================================================
 
 \section{Analysis and Discussion}
 \label{sec:discussion}
 
-\begin{guide}
-Four subsections: what I found, what did not work, why the numbers must be read
-carefully, and the limits of the study. Keep it honest -- an internship report that
-admits a negative result reads as more competent, not less.
-\end{guide}
-
 % ---------------------------------------------------------------------
 \subsection{What worked}
 \label{sec:disc:worked}
 
-\begin{guide}
-Three or four short paragraphs, one finding each. Structure every one the same way:
-the observation $\rightarrow$ the evidence (point at a table) $\rightarrow$ my
-explanation of \emph{why} it happens.
-\textbf{Questions to answer:} Which of my design goals (\Cref{sec:arch:goals}) were
-actually reached? Which head repaired the weakness it was designed for? Does the
-mechanism I claimed in \Cref{sec:pooling} show up in the numbers, or did the head
-help for a different reason?
-\end{guide}
+\paragraph{The size cut is real, and it did not cost accuracy.}
+Goal~G1 of \Cref{sec:arch:goals} was a smaller model. On \webtraffic{} I reached it without giving
+anything up. \texttt{seanet\_bottleneck\_topk} beats the re-trained \millet{} baseline on accuracy,
+AOPCR and NDCG@$n$ at the same time (\Cref{tab:web_main}) while using 41{,}324 parameters against
+423{,}707 -- a 90\,\% cut, and 11$\times$ fewer FLOPs (\Cref{tab:cost}). This is not one lucky
+point either: \texttt{seanet\_gated\_mean\_topk} reaches the best accuracy of the whole 72-model
+sweep (0.955) at 61{,}740 parameters.
 
-\todo{Finding 1 -- the size / accuracy trade-off.}
+My explanation is the one the design was built on. In a normal convolution most of the weights go
+into mixing channels, not into looking further back in time. The depthwise-separable block
+(\Cref{sec:arch:block}) separates those two jobs and the bottleneck (\Cref{eq:bottleneck}) shrinks
+the channel-mixing part directly. The accuracy numbers then tell me something I did not know in
+advance: most of that channel-mixing capacity was not doing useful work.
 
-{Goal G1 of \Cref{sec:arch:goals} was a smaller model, and on \webtraffic{} it was
-reached without giving up accuracy. \texttt{seanet\_bottleneck\_topk} matches or beats
-the re-trained \millet{} baseline on accuracy, AOPCR and NDCG@$n$ at once
-(\Cref{tab:web_main}) while using 41{,}324 parameters against \millet{}'s 423{,}707 --
-a 90\% reduction (\Cref{tab:cost}). This is not a lucky single point either:
-\texttt{seanet\_gated\_mean\_topk} reaches the single best accuracy in the whole
-66-model sweep (0.954) at 61{,}740 parameters, 4.4$\times$ smaller than the
-same-accuracy \millet{}-encoder model (\Cref{fig:pareto}). I read this as the
-Bottleneck block (\Cref{sec:arch:variants}) and the multi-scale depthwise-separable
-design (\Cref{sec:architecture}) doing what they were built to do: most of a
-standard-convolution encoder's parameters go into channel mixing, not into the
-temporal receptive field, so a pointwise-reduced, depthwise-separable design can keep
-the receptive field and drop the channel-mixing cost -- and the accuracy numbers show
-that cost was mostly redundant, not load-bearing.}
+\paragraph{Top-$k$ pooling improved the explanation for the reason I claimed.}
+\texttt{seanet\_bottleneck\_topk} has the best NDCG@$n$ of every model with full seed data
+(0.773, \Cref{tab:explanation_quality}), and I can point at the mechanism rather than guess.
+Top-$k$ averages only the $\kappa T$ most decisive time steps (\Cref{sec:pool:topk}), so
+$\interp_{k,j}$ is exactly zero everywhere the model did not use, instead of a small weight that is
+never quite zero. The ablation in \Cref{app:ablations} backs this up directly: NDCG@$n$ is highest
+at $\kappa = 0.1$ and falls as $\kappa$ grows towards 1, which is the behaviour the design
+predicts.
 
-\todo{Finding 2 -- explanation quality.}
-
-{Goal G2, sharper explanations without a separate mechanism, also holds up:
-\texttt{seanet\_bottleneck\_topk}'s NDCG@$n$ (0.773) is the best of the three
-\webtraffic{} rows I have full seed data for (\Cref{tab:explanation_quality}), and it
-gets there with a mechanism I can point to directly: Top-$k$ pooling averages only the
-$\kappa T$ most decisive time steps (\Cref{sec:pool:topk}), so $\Phi_{k,j}$ is
-literally zero everywhere the model did not use as evidence, rather than a smoothed
-attention weight that is never exactly zero. That is the mechanism
-\Cref{sec:pooling} claims, and it shows up in the number without needing a separate
-explanation for why NDCG improved. The one place this finding needs a caveat is
-\texttt{seanet\_inputgate\_adaptive}: it has the best \emph{mean} AOPCR of the three,
-but I already showed in \Cref{sec:res:explanations} that the gap over
-\texttt{seanet\_bottleneck\_topk} is smaller than its own seed-to-seed std, so I count
-Top-$k$'s NDCG win as the real, reliable result here and the AOPCR difference as not
-yet established.}
-
-\todo{Finding 3 -- which encoder $\times$ head pairing wins and why.}
-
-{The best single model in the whole sweep, \texttt{seanet\_gated\_mean\_topk} (Gated
-encoder + Top-$k$ pooling, 0.954 accuracy), is not the pairing I would have guessed
-from either component's marginal performance: the Gated encoder alone averages 0.902
-across its pairings and Top-$k$ pooling alone averages 0.904 -- both comfortably
-mid-table, not the best of their kind (\Cref{sec:res:ablation}). Two mediocre-looking
-marginals combining into the single best result is, on its own, evidence of a real
-interaction rather than either component simply being ``good'': my reading is that the
-Gated encoder's per-scale gate (\Cref{sec:arch:variants}) sharpens \emph{which} time
-steps carry usable signal before pooling ever sees them, and Top-$k$'s hard selection
-is exactly the pooling head best placed to exploit an encoder that has already done
-that sharpening -- a smoother head like Softmax+temperature would partly undo the
-gate's work by blending in neighbours it just suppressed. I say ``my reading'' and not
-``the reason'' deliberately: \Cref{fig:ablation_grid} shows the effect, but I have not
-run the controlled ablation (Gated encoder with each pooling head, one factor at a
-time) that would confirm this mechanism rather than another one.}
+\paragraph{The best pair was not the pair of the two best halves.}
+\texttt{seanet\_gated\_mean\_topk} is the best model of the sweep, but neither of its halves is the
+best of its kind: the Gated encoder averages 0.902 over its pairings and Top-$k$ pooling averages
+0.904, both mid-table (\Cref{sec:res:ablation}). Two ordinary-looking halves making the best whole
+is evidence of a real interaction. My reading is that the Gated encoder's channel gate
+(\Cref{eq:gate}) already suppresses the channels that carry no signal, and Top-$k$'s hard selection
+is the head best placed to use an encoder that has done that cleaning -- a smoother head would blend
+back in the neighbours the gate just turned down. I say ``my reading'' on purpose: the grid shows
+the effect, but I did not run the one-factor-at-a-time experiment that would prove this mechanism
+rather than another one.
 
 % ---------------------------------------------------------------------
 \subsection{What did not work}
 \label{sec:disc:negative}
 
-\begin{guide}
-A real section, not an apology. Every honest study has these, and reporting them is
-part of the scientific method.
-\textbf{Questions to answer:} Which of my ideas looked good on paper and did not pay
-off? Do I know why, or is it still open? What would I test next to find out?
-\end{guide}
+\paragraph{Dual-stream pooling: safe on paper, worst in practice.}
+This is the clearest negative result of the sweep. Property~\ref{prop:ds} says Dual-stream pooling
+can never be worse than the Conjunctive baseline, because its blend $\lambda$ can go to 0 and
+recover it exactly. In practice it is the worst head I tried, by a wide margin: mean \webtraffic{}
+accuracy 0.744 over its four encoder pairings, against 0.90 and above for Class-wise,
+Softmax+temperature and Top-$k$, and one pairing (the Spike/trend encoder) collapses to 0.556.
 
-\todo{Negative result 1 -- e.g. a head that generalises the baseline but does not beat
-it in practice. Say what the theory promised (\Cref{prop:ad} or similar) and why the
-promise did not materialise: optimisation difficulty, not enough data, the weakness it
-fixes was not the binding one.}
+The safety net is real but nothing exercises it. No term in the loss pushes $\lambda$ towards 0. So
+if the critical-instance stream (\Cref{eq:ds_streamB}) learns a bad query early, gradient descent
+has no reason to walk back to the safe mean. This is an optimisation failure, not a lack of
+capacity or of data -- the model \emph{could} represent the baseline, it just never finds it.
 
-{Dual-stream conjunctive pooling (\Cref{sec:pool:dsmil}) is the clearest negative
-result in the sweep. Property~\ref{prop:ds} (``safe by construction'') says it should
-never do worse than the Conjunctive baseline, because its blend $\lambda$ can always
-be driven to 0 and recover Conjunctive exactly. In practice it is the
-\emph{worst}-performing pooling head I tried, by a wide margin: mean \webtraffic{}
-accuracy 0.744 across its four encoder pairings, against 0.90+ for Class-wise,
-Softmax+temperature and Top-$k$ conjunctive (\Cref{sec:res:ablation}), and one pairing
-(Spike/trend encoder) collapses to 0.556. The safety net is real on paper but was not
-exercised in training: nothing in the loss pushes $\lambda$ towards 0 specifically, so
-if the critical-instance stream (\Cref{sec:pool:dsmil}, Stream~B) learns a bad
-argmax-based query early, gradient descent has no reason to fall back to the safe
-mean -- an optimisation-difficulty failure, not a capacity or data one, and consistent
-with $\lambda$-blended heads in general being harder to train the more their two
-streams disagree.}
+\paragraph{Gated attention: no floor to fall back on.}
+Per-class Gated attention is a milder version of the same story. It is the only head in
+\Cref{sec:pooling} with no blend parameter, so it cannot reduce to Conjunctive for any setting of
+its weights. I flagged that as a structural difference when I designed it, and the results say it
+matters: its mean \webtraffic{} accuracy (0.918) is respectable, but it is never the best pairing
+for any encoder, unlike Top-$k$ and Class-wise which each produce a top-10 model. Without a
+known-good baseline to fall back on, a mis-trained gate has nothing to catch it, so the head lands
+in the middle of the table instead of either winning or failing outright.
 
-\todo{Negative result 2.}
-
-{Per-class Gated attention (\Cref{sec:pool:gated}) is a milder version of the same
-story. Unlike every other head in \Cref{sec:pooling}, it has no blend parameter and so
-cannot reduce to Conjunctive at any setting of its weights (\Cref{sec:pool:gated}) --
-I flagged this as a structural difference when I wrote that section, and the results
-confirm it matters: its mean \webtraffic{} accuracy (0.918) is respectable but never
-the best pairing for any encoder it was tried with (\Cref{sec:res:ablation}), unlike
-Top-$k$ or Class-wise conjunctive, which each produce at least one top-10 model. The
-two-branch gate ($\tanh$ proposes, $\sigma$ gates, \Cref{sec:pool:gated}) is a
-reasonable idea transferred from whole-slide-image pathology, but without a safety net
-back to a known-good baseline, it has no floor to fall back on if the gate is
-mis-trained -- which I think is why it lands consistently in the middle of the table
-rather than either winning or failing outright.}
-
-\todo{One sentence on what these negative results teach: extra capacity is only useful
-if training can find it.}
-
-{Both results point at the same lesson: a mechanism that is safe or expressive
-\emph{on paper} only pays off if the training recipe actually reaches the regime where
-that safety or expressiveness matters, and neither of my two negative heads (nor
-Gated attention's un-netted design) got there with the single, generic recipe used for
-the whole sweep (\Cref{sec:setup:protocol}).}
+\paragraph{The lesson from both.}
+A mechanism that is safe or expressive \emph{on paper} only pays off if the training recipe
+actually reaches the regime where that property matters. Neither of my two weak heads got there
+with the single generic recipe I used for the whole sweep (\Cref{sec:setup:protocol}). If I ran
+this again, I would either warm-start $\lambda$ near 0 and let the model earn its way up, or add a
+small penalty that keeps a blended head close to its safe branch early in training.
 
 % ---------------------------------------------------------------------
 \subsection{How the numbers should be read}
 \label{sec:disc:reading}
 
-\begin{guide}
-This subsection protects my own credibility. Two points must be made clearly:
-\begin{itemize}\itemsep2pt
-  \item AOPCR is not normalised, so its scale follows the scale of the logits. My
-        values must be compared with each other, never with the published column.
-        The proof that this is a measurement-scale effect and not a model effect is
-        that my \emph{re-trained} InceptionTime shows the same shift.
-  \item Any difference smaller than the seed-to-seed standard deviation is not a
-        result. Say what that spread is, and refuse to claim wins inside it.
-\end{itemize}
-\end{guide}
+\paragraph{AOPCR is not normalised, and I now have direct proof.}
+AOPCR is an area under a curve of raw logit drops, so its scale follows the scale of the model's own
+logits, not a fixed 0--1 range like accuracy (\Cref{sec:setup:metrics}). This is a measurement
+effect, not a statement about explanation quality, and my own runs show it cleanly.
 
-\todo{Paragraph 1 -- the AOPCR scale issue, with the re-trained baseline as evidence.}
+I trained the \emph{same} architecture twice, changing only the training recipe: once with my recipe
+(\texttt{configs/models/sv1/millet.yaml}) and once with \millet{}'s published recipe
+(\texttt{sv1/millet\_paper.yaml} -- 1500 epochs, no weight decay, no label smoothing). On
+\webtraffic{} the first scores AOPCR 2.57 and the second scores \textbf{13.27}. Same encoder, same
+pooling head, same metric code, same dataset: five times the AOPCR, purely from a different training
+recipe. That is what an unnormalised metric looks like, and it is exactly why my AOPCR column must
+never be compared against an AOPCR printed in another paper -- including \millet{}'s own published
+4.55.
 
-{AOPCR is not normalised (\Cref{sec:setup:metrics}): it is an area under a curve of
-raw logit drops, so its scale follows whatever scale the model's own logits happen to
-sit at, not a fixed 0--1 range like accuracy. This is a measurement-scale effect, not
-a sign that one model's explanations are categorically different from another's, and
-the clearest evidence is my own re-trained \millet{} baseline: it is the
-\emph{identical} architecture and pooling head as the published model, yet its AOPCR
-(2.569, \Cref{tab:web_main}) sits nowhere near the published 4.5532
-(\Cref{tab:ucr_accuracy} -- note this published figure is a \ucr{} number, not a
-\webtraffic{} one; see the correction note in \Cref{sec:results}). Same method, same
-architecture, different scale -- exactly what a measurement-scale effect looks like,
-and exactly why \Cref{sec:setup:metrics} warns against reading my AOPCR column against
-anyone else's.}
+\paragraph{A difference smaller than the seed spread is not a result.}
+Where I have 3 seeds, the spread is not small. Accuracy standard deviation runs from 0.003
+(\texttt{seanet\_gated\_mean\_topk}) to 0.030 (\texttt{seanet\_inputgate\_adaptive}), and AOPCR is
+proportionally much noisier -- 0.437 for \texttt{seanet\_inputgate\_adaptive}, about a sixth of its
+own mean, and 0.884 for the re-trained \millet{} baseline (\Cref{tab:web_main}).
 
-\todo{Paragraph 2 -- seed variance and what counts as a real difference.}
+I used this as a rule, not just as a remark. \texttt{seanet\_inputgate\_adaptive}'s AOPCR edge over
+\texttt{seanet\_bottleneck\_topk} (2.651 against 2.621) is far smaller than either model's own
+standard deviation, so I reported it as noise rather than as a win (\Cref{sec:res:explanations}).
+The rule cuts both ways: it also stops me claiming that
+\texttt{seanet\_gated\_mean\_topk}'s accuracy lead over \texttt{seanet\_bottleneck\_topk} (0.955
+against 0.947) is decisive, because the second model's own spread is 0.016.
 
-{Where I have 3 seeds (\Cref{sec:results}), the spread is not small: accuracy std
-ranges from 0.010 (the re-trained \millet{} baseline) to 0.030
-(\texttt{seanet\_inputgate\_adaptive}), and AOPCR std is proportionally far larger --
-0.437 for \texttt{seanet\_inputgate\_adaptive}, almost a fifth of its own mean value
-(\Cref{tab:web_main}). I used this directly as a threshold in \Cref{sec:res:web} and
-\Cref{sec:res:explanations}: \texttt{seanet\_inputgate\_adaptive}'s AOPCR edge over
-\texttt{seanet\_bottleneck\_topk} (2.651 vs.\ 2.621) is smaller than either model's own
-std, so I reported it as not distinguishable from noise rather than as a win. The
-harder problem is that the 66-model \ucr{} sweep has only 1 seed
-(\Cref{sec:setup:protocol}), so I cannot apply the same test there -- every single-seed
-number in \Cref{sec:res:ucr} could plausibly move by a similar amount on a different
-seed, and I have no measurement of how much. That is a real limitation of the study,
-not just of this paragraph, and it means the \ucr{}-85 ranking should be read as
-indicative, not exact.}
+For the rest of the sweep I only have one seed, so I cannot apply the same test there. Those
+numbers should be read as indicative, not exact.
 
-\todo{Paragraph 3 -- any difference between my training budget and the published one
-(number of repeats, epochs), and how that shifts the comparison.}
-
-{My recipe trains for at most 400 epochs with patience 60 (\Cref{sec:setup:protocol});
-the published \millet{} numbers come from their own recipe, which
-\texttt{configs/models/sv1/millet\_paper.yaml} documents as up to 1500 epochs, no
-weight decay, and no label smoothing -- a training budget roughly 4$\times$ longer
-than mine, with a different regularisation profile. I built that file specifically to
-measure the size of this gap by reproducing their exact recipe on my own harness, but
-I have not yet run it (it is flagged in that file as slow -- roughly 4$\times$ the
-cost of my usual sweep, over 85 datasets), so I cannot yet say how much of the
-difference between my re-trained \millet{} baseline and the published numbers is
-architecture versus training budget. Until that run exists, any comparison against the
-published column should be read as ``different recipe, not directly comparable''
-(\Cref{tab:ucr_accuracy}), not as a controlled result.}
+\paragraph{My training budget is not the published one.}
+My recipe trains for at most 400 epochs with patience 60 (\Cref{sec:setup:protocol}). The published
+\millet{} numbers come from a recipe about four times longer, with different regularisation. I built
+\texttt{sv1/millet\_paper.yaml} to measure exactly this gap by running their recipe on my own
+harness. On \webtraffic{} it is already informative -- 0.920 accuracy against 0.887 for my recipe,
+so a good part of the gap really is the budget and not the architecture. The full 85-dataset run was
+still going when this report was written, so I cannot yet split the \ucr{} gap the same way. Until
+it finishes, any comparison against the published column should be read as ``different recipe, not
+directly comparable''.
 
 % ---------------------------------------------------------------------
 \subsection{Limitations}
 \label{sec:disc:limitations}
 
-\begin{guide}
-Bullet list, three to five items, one line each. Be specific: ``synthetic data'' is
-weak, ``\webtraffic{} is synthetic, so the per-time-step ground truth is exact but the
-signal is easier than real traffic'' is strong.
-\end{guide}
-
-\begin{itemize}\itemsep2pt
-  \item \todo{\webtraffic{} is synthetic; it is the only dataset with per-time-step
-        ground truth, so explanation quality is measured on one dataset only.}
-        {\webtraffic{} is synthetic and its modified regions are generated, not
-        observed; NDCG@$n$ -- the only metric checked against real ground truth in
-        this whole study -- is therefore measured on exactly one dataset
-        (\Cref{sec:setup:data}), and I do not know how well it would hold on real,
-        noisier traffic data.}
-  \item \todo{Number of seeds and what that means for the size of a claim.}
-        {Only 3 of my 66 model variants have more than 1 seed on \webtraffic{}, and
-        the full 129-dataset \ucr{} sweep is single-seed throughout
-        (\Cref{sec:setup:protocol}), so most numbers in \Cref{sec:results} carry no
-        variance estimate at all; where I do have 3 seeds, the spread was large
-        enough to overturn a headline claim (\Cref{sec:disc:reading}), which is a
-        reason for caution about the single-seed numbers, not a reason to trust them
-        more.}
-  \item \todo{Only univariate series were tested, although the architecture supports
-        multivariate input.}
-        {Every dataset in this study (\webtraffic{} and the \ucr{} archive,
-        \Cref{sec:setup:data}) is univariate; the encoder's channel width $\dmodel$
-        does not care how many input channels it starts from, so multivariate input
-        should work mechanically, but I have not tested it.}
-  \item \todo{Some variants were screened on \webtraffic{} alone before the full
-        \ucr{} sweep, which biases the selection slightly.}
-        {Both headline variants in \Cref{sec:res:web} were chosen because they did
-        well on \webtraffic{}, and \Cref{sec:res:ucr} shows directly what that costs:
-        on the 85-dataset \ucr{} archive, my re-trained \millet{} baseline actually
-        beats both of them on mean accuracy and average rank. A selection made on one
-        dataset should not be expected to be the best choice on 85 different ones,
-        and it was not.}
-  \item \todo{No human study: a high AOPCR means the explanation is faithful to the
-        model, not that a person finds it useful.}
-        {AOPCR and NDCG@$n$ both measure whether the model's stated explanation
-        matches what the model itself actually relied on (\Cref{sec:bg:metrics}) --
-        faithfulness, not usefulness. A high score does not mean a person looking at
-        the highlighted time steps would find them informative or trustworthy; that
-        would need a human study, which this internship did not have time for.}
+\begin{itemize}\itemsep3pt
+  \item \textbf{Explanation quality is measured on one dataset.} \webtraffic{} is synthetic, and
+        its important regions are generated rather than observed. It is the only dataset in this
+        study with per-time-step ground truth, so NDCG@$n$ -- my only metric checked against a real
+        answer -- rests on that single dataset. I do not know how it would hold on real, noisier
+        traffic.
+  \item \textbf{Most models still have one seed.} Four models have 3 seeds on \webtraffic{}, and
+        two of them also have 3 seeds over the whole \ucr{} archive. The other 68 have one. Where I
+        do have repeats, the spread was large enough to change how I phrase a claim
+        (\Cref{sec:disc:reading}), so it is a reason to be careful about the single-seed numbers,
+        not a reason to trust them.
+  \item \textbf{Only univariate series were tested.} Every dataset here has one channel. The
+        encoder does not care how many input channels it starts from, so multivariate input should
+        work mechanically, but I have not tested it.
+  \item \textbf{My headline models were selected on one dataset.} Both were chosen because they did
+        well on \webtraffic{}, and \Cref{sec:res:ucr} shows exactly what that costs: over the 85
+        \ucr{} datasets the re-trained baseline beats them both. A choice made on one dataset should
+        not be expected to be the best choice on 85 different ones, and it was not.
+  \item \textbf{No human study.} AOPCR and NDCG@$n$ both measure whether the model's stated
+        explanation matches what the model actually used -- faithfulness, not usefulness. A high
+        score does not mean a person would find the highlighted time steps informative. That needs a
+        human study, which this internship had no time for.
+  \item \textbf{Nothing has run on a real microcontroller yet.} The cost numbers say it should fit
+        (\Cref{tab:cost}), but ``should fit'' is not ``does run'' (objective O6,
+        \Cref{tab:objectives}).
 \end{itemize}

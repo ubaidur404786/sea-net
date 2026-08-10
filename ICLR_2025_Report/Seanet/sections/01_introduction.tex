@@ -23,7 +23,7 @@
 
 
 
-{In summary, the \millet{} paper provides both classification and interpretability but has a large size. On the other hand, the MLPerf Tiny Benchmark provides a small micro-model but only gives classification predictions. We tried to solve both issues together in a single model. We tested different encoders with pooling techniques and finally created the SeaNet model. Its size is 45K parameters before quantization, and it provides better explanations. This makes it a great fit for MCU applications.}
+{In summary, the \millet{} paper provides both classification and interpretability but has a large size. On the other hand, the MLPerf Tiny Benchmark provides a small micro-model but only gives classification predictions. We tried to solve both issues together in a single model. We tested different encoders with pooling techniques and finally created the SeaNet model. Its size is 41K parameters before quantization, and it provides better explanations. This makes it a great fit for MCU applications.}
 
 
 % ---------------------------------------------------------------------
@@ -36,7 +36,7 @@
   % ...existing code...
   \includegraphics[width=0.85\linewidth]{results/SEA_NET/teaser/2026-08-06_15-02-34/teaser_WebTraffic_idx0200.pdf}
   % ...existing code...
-  \caption{This figure compares three different models. For each model, we show two parts: the class prediction and its interpretation. We use the exact same input for all models. The true evidence is shown for comparison; it was not used during training. First, the normal black-box model predicts Class 4 with 0.53\% confidence but gives no explanation. Second, the \millet{} model predicts Class 4 with 0.71\% confidence and provides an explanation, but it is large with 424k parameters. Third, our \seanet{} model provides a more accurate prediction and an explanation, while using only 41k parameters. Note: The red color shows the evidence at each time point that supports the prediction for Class 4.}
+  \caption{This figure compares three different models. For each model, we show two parts: the class prediction and its interpretation. We use the exact same input for all models. The true evidence is shown for comparison; it was not used during training. First, the normal black-box model predicts Class 4 with 53\% confidence but gives no explanation. Second, the \millet{} model predicts Class 4 with 71\% confidence and provides an explanation, but it is large with 424k parameters. Third, our \seanet{} model provides a more confident prediction and an explanation, while using only 41k parameters. Note: The red color shows the evidence at each time point that supports the prediction for Class 4.}
   \label{fig:teaser}
 \end{figure}
 \newpage
@@ -71,7 +71,8 @@ marked as existing work. My main contributions are:
   I developed improved pooling heads inspired by conjunctive pooling:
   \texttt{classwise\_conjunctive},
   \texttt{softmax\_conjunctive},
-  \texttt{adaptive\_classwise\_topk\_conjunctive},
+  \texttt{adaptive\_classwise},
+  \texttt{topk\_conjunctive},
   \texttt{attention\_max},
   \texttt{gated\_attention},
   and \texttt{dualstream\_conjunctive}.

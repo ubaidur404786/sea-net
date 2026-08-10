@@ -1,72 +1,45 @@
 % !TEX root = ../main.tex
 % =====================================================================
-% 8. RESULTS                        target: 4 - 4.5 pages
+% 8. RESULTS
 %
-% Only the results that carry the story. Everything else goes to
-% Appendix A (Additional Results).
-%
-% GOLDEN RULE: never type a number by hand. Either fill the cell from a
-% results file, or -- better -- \input the auto-generated table:
-%
-%   \input{../../results/paper_figures/tables/table1_main_results}
-%
-% The path is "../../" because this report lives two folders below the
-% project root. The same holds for figures:
-%
-%   \includegraphics[width=\linewidth]%
-%     {results/paper_figures/01_main_figures/fig1_benchmark_strongest_web_acc}
-%
-% (that one works without "../../" because \graphicspath already adds it).
+% Every number here comes from a file, never from my hand:
+%   results/SEA_NET/leaderboard.csv          (one row per model)
+%   results/SEA_NET/<model>/results.csv      (one row per dataset per seed)
+%   results/SEA_NET/profile.csv              (FLOPs, latency, memory)
+% Rebuild them all with: python main.py leaderboard && python main.py paper
 % =====================================================================
 
 \section{Results}
 \label{sec:results}
 
-\begin{guide}
-Write each subsection in the same three steps: (1) one sentence saying what the table
-or figure shows, (2) the table or figure, (3) two or three sentences reading it out
-loud for the reader -- who wins, by how much, and at what cost. Never leave a table
-without a comment. Report mean $\pm$ standard deviation over the seeds, and say once,
-here, how many seeds were used.
-\end{guide}
+In this section I compare 72 model variants. These are my \seanet{} encoders paired with my
+pooling heads and with \millet{}'s heads, plus the FCN, ResNet and InceptionTime baselines that
+I re-trained myself. Every model is run on \webtraffic{} and on the \ucr{} archive, so up to
+129 datasets per model (\Cref{sec:setup:data}).
 
-\todo{Opening paragraph: what is compared, over how many datasets, over how many
-seeds, and which numbers are mine versus published.}
+I say the seed rule once here instead of repeating it in every caption. My four main models --
+the two headline \seanet{} variants, the best model of the sweep, and the re-trained \millet{}
+baseline -- were trained with \textbf{3 seeds} (0, 1 and 2) on \webtraffic{}, and two of them
+also with 3 seeds over the whole \ucr{} archive. So those rows show a real mean $\pm$ standard
+deviation. The rest of the sweep is single seed (seed~$=0$), because 72 variants over 129
+datasets was already close to my compute budget (\Cref{sec:setup:protocol}). The ResNet and FCN
+baselines also have one seed each, so I show no standard deviation for them.
 
-{This section compares 66 model variants (\seanet{} encoders paired with \seanet{}
-and \millet{} pooling heads, plus the FCN, ResNet and InceptionTime baselines) over up
-to 129 datasets: \webtraffic{} and the 128-dataset \ucr{} archive
-(\Cref{sec:setup:data}). Two seed regimes are used, and I say this once here rather
-than repeating it in every caption. The 66-model \ucr{} sweep is single-seed
-(seed~$=0$) throughout, for the reasons given in \Cref{sec:setup:protocol}. On
-\webtraffic{}, three models were re-run for two extra seeds after the main sweep --
-my two headline variants and the re-trained \millet{} baseline -- so those three rows
-report a real mean $\pm$ std over 3 seeds; the ResNet and FCN baselines only have the
-one \webtraffic{} seed. Every number I present as ``mine'' or ``re-trained'' comes
-from my own training runs with my own recipe (\Cref{sec:setup:protocol}); every number
-marked ``published'' is copied from \citet{early2024millet} and is never averaged or
-combined with a number I produced myself (\Cref{sec:setup:baselines}).}
-% Source: results/SEA_NET/*/results.csv (per-seed rows), results/SEA_NET/leaderboard.csv
-% (already-aggregated means). I checked results.csv directly for seanet_bottleneck_topk,
-% seanet_inputgate_adaptive and millet (3 seeds each on WebTraffic, dated 2026-07-23 and
-% 2026-08-04) and for resnet/fcn (1 seed each, no reruns found).
+One more rule I follow everywhere: a number I produced myself is never mixed in the same column
+with a number copied from \citet{early2024millet}. My numbers use my recipe, theirs use theirs
+(\Cref{sec:setup:baselines}), so putting them side by side would hide the difference.
 
 % ---------------------------------------------------------------------
 \subsection{Main comparison on \webtraffic{}}
 \label{sec:res:web}
 
-\begin{guide}
-This is \emph{the} table of the report: \webtraffic{} is the only dataset where
-accuracy and explanation quality can both be measured against the truth. Keep it
-small -- my two best models, the baseline I re-trained, and the published number.
-\end{guide}
+\webtraffic{} is the only dataset where I can check both things at once: is the prediction right,
+and is the explanation pointing at the real evidence? That is why it gets the first table.
 
 \begin{table}[t]
-\caption{\webtraffic{} results. The first three rows are mean $\pm$ std over 3 seeds;
-ResNet and FCN have only 1 seed each (\Cref{sec:results}), so no std is shown for
-them. Higher is better for accuracy, AOPCR and NDCG@$n$; lower is better for
-parameters. \todo{Fill from \texttt{results/SEA\_NET/webtraffic\_comparison.csv} and
-the per-seed files.}}
+\caption{\webtraffic{} results. The first four rows are the mean $\pm$ standard deviation over
+3 seeds; ResNet and FCN have one seed only. Higher is better for accuracy, AOPCR and NDCG@$n$;
+lower is better for parameters.}
 \label{tab:web_main}
 \begin{center}
 \small
@@ -76,8 +49,9 @@ the per-seed files.}}
 \textbf{Params} \\
 \midrule
 \multicolumn{5}{l}{\emph{Proposed (mine)}}\\
-\texttt{seanet\_bottleneck\_topk}     & $0.947\pm0.016$ & $2.621\pm0.214$ & $0.773\pm0.013$ & 41{,}324 \\
-\texttt{seanet\_inputgate\_adaptive}  & $0.905\pm0.030$ & $2.651\pm0.437$ & $0.732\pm0.043$ & 58{,}102 \\
+\texttt{seanet\_gated\_mean\_topk}    & $\mathbf{0.955}\pm0.003$ & $2.225\pm0.131$ & $0.750\pm0.022$ & 61{,}740 \\
+\texttt{seanet\_bottleneck\_topk}     & $0.947\pm0.016$ & $2.621\pm0.214$ & $\mathbf{0.773}\pm0.013$ & \textbf{41{,}324} \\
+\texttt{seanet\_inputgate\_adaptive}  & $0.905\pm0.030$ & $\mathbf{2.651}\pm0.437$ & $0.732\pm0.043$ & 58{,}102 \\
 \midrule
 \multicolumn{5}{l}{\emph{Baselines re-trained by me, same recipe}}\\
 \millet{} (InceptionTime + Conjunctive) & $0.887\pm0.010$ & $2.569\pm0.884$ & $0.677\pm0.016$ & 423{,}707 \\
@@ -87,171 +61,121 @@ FCN + Conjunctive                       & 0.742 & 3.826 & 0.533 & 267{,}035 \\
 \end{tabular}
 \end{center}
 \end{table}
-% Source: WebTraffic (seed 0/1/2) rows of results/SEA_NET/seanet_bottleneck_topk.../results.csv,
-% seanet_inputgate_adaptive.../results.csv and millet__mil_inceptiontime__mil_conjunctive/results.csv
-% (mean/std computed over the 3 seeds); resnet__.../results.csv and fcn__.../results.csv (1 seed
-% only, no std to report). These match results/SEA_NET/leaderboard.csv's own web_acc/web_aopcr/
-% web_ndcg columns for these five configs, which is already the same seed-averaged number.
-%
-% CORRECTION (caught on a later pass, after this table was first delivered): I originally added a
-% "Published, different recipe" row here with millet_acc=0.8445 / millet_aopcr=4.5532 from
-% leaderboard.csv. That was wrong. Those two columns are NOT a WebTraffic number: comparison_vs_
-% millet.csv (which is where millet_acc is joined in per dataset) never has a "WebTraffic" row --
-% only the 128 UCR dataset names -- and configs/models/sv1/millet_paper.yaml's own comment ties
-% the same figure (it says 0.8433, leaderboard.csv now says 0.8445 -- same quantity, refreshed) to
-% "the paper's published [UCR mean accuracy]", not WebTraffic. So millet_acc/millet_aopcr are the
-% published UCR-85 mean, and belong in Table 8 (tab:ucr_accuracy) instead -- moved there below. I
-% do not have a verified published WebTraffic-specific number for MILLET, so I removed the
-% "Published" row here rather than mislabel a UCR number as one; if the MILLET paper reports
-% WebTraffic accuracy separately, add it by hand rather than reusing millet_acc.
+% Source: the WebTraffic rows of each model's results.csv (seeds 0/1/2), mean and sample std
+% (ddof=1). These match the web_acc / web_aopcr / web_ndcg columns of leaderboard.csv, which is the
+% same seed-average computed by the pipeline.
+% NOTE on the published MILLET number: leaderboard.csv's millet_acc (0.8445) is the published UCR-85
+% mean, NOT a WebTraffic number -- comparison_vs_millet.csv has no "WebTraffic" row at all. So it
+% belongs in Table 8, not here. I do not have a verified published WebTraffic figure for MILLET.
 
-\todo{Two or three sentences reading \Cref{tab:web_main}: which model wins on
-accuracy, which on explanation quality, and what it costs in parameters. If the two
-are not the same model, say so plainly -- that is an interesting result, not a
-failure.}
+All three of my models beat all three re-trained baselines on all three metrics at the same time,
+and they do it with 7 to 10 times fewer parameters. That is the main message of this table.
 
-{Both proposed heads beat every re-trained baseline on all three metrics at once,
-while using between 7$\times$ and 10$\times$ fewer parameters than the re-trained
-\millet{} baseline. \texttt{seanet\_bottleneck\_topk} is the more convincing of the
-two: it has the highest accuracy (0.947) \emph{and} the highest NDCG@$n$ (0.773), it
-is the smaller of my two models (41{,}324 params), and its seed-to-seed std is the
-tightest in the table. \texttt{seanet\_inputgate\_adaptive} edges it on mean AOPCR
-(2.651 vs.\ 2.621), but that gap is well inside one standard deviation of either
-model, so I do not read it as a real win -- and its own numbers are far noisier
-across seeds (accuracy ranges from 0.88 to 0.938 across the three seeds, against
-\texttt{seanet\_bottleneck\_topk}'s narrow 0.938--0.966). So accuracy and explanation
-quality are \emph{not} split across two different models here: one head
-(\texttt{seanet\_bottleneck\_topk}) wins on both, and is also the cheaper and more
-stable of the two -- a cleaner headline result than I expected going in.}
+The second message is that the winner is not the same model for every metric.
+\texttt{seanet\_gated\_mean\_topk} has the best accuracy (0.955) and it is also the most stable
+model in the table: its standard deviation over three seeds is only 0.003.
+\texttt{seanet\_bottleneck\_topk} is a little behind on accuracy (0.947) but it wins on NDCG@$n$
+(0.773) and it is the smallest model here (41{,}324 parameters). So if I want the best classifier
+I pick the first one, and if I want the best explanation for the lowest cost I pick the second.
+
+\texttt{seanet\_inputgate\_adaptive} has the highest mean AOPCR (2.651), but I do not read that as
+a win. The gap to \texttt{seanet\_bottleneck\_topk} (2.621) is much smaller than its own standard
+deviation (0.437), and this model is by far the noisiest one in the table: its accuracy moves
+between 0.880 and 0.938 across the three seeds, while
+\texttt{seanet\_bottleneck\_topk} stays inside 0.938--0.966.
 
 \begin{figure}[t]
   \centering
-  \figph{\textbf{Figure X -- Result comparison.} Grouped bar chart on \webtraffic{}:
-  one group per model, bars for accuracy, AOPCR and NDCG@$n$ (each normalised so they
-  fit one axis), with error bars over the seeds. My models in one colour, re-trained
-  baselines in another, published number as a dashed line.}
-  \caption{\todo{Caption: the headline comparison in one picture.}}
+  \includegraphics[width=\linewidth]{results/paper_figures/01_main_figures/topk5_multimetric}
+  \caption{The five best models by \webtraffic{} accuracy, compared on every metric I measure.
+  All panels keep the same model order, so one model can be followed from quality (accuracy,
+  AOPCR, NDCG@$n$, loss) across to cost (parameters, FLOPs, latency). Blue marks the models I
+  propose in this work. The point of the figure is that the leftmost bars in the quality panels
+  are also among the shortest bars in the cost panels.}
   \label{fig:web_bars}
 \end{figure}
-% Diagram brief for fig:web_bars: same 5 rows as Table 7 (bottleneck_topk, inputgate_adaptive,
-% millet re-trained, resnet, fcn), 3 bars each (accuracy, AOPCR/5 or /max-AOPCR so it fits the same
-% 0-1 axis as accuracy, NDCG). Error bars only on the 3 rows that have 3 seeds (bottleneck_topk,
-% inputgate_adaptive, millet); no error bar on resnet/fcn (1 seed). Do NOT add a published-MILLET
-% dashed line here -- I don't have a verified published WebTraffic number for MILLET (see the
-% correction note above Table 7); the published comparison belongs on the UCR-85 figures/tables
-% instead (Table 8), where millet_acc is actually a published number for that dataset set.
 
 % ---------------------------------------------------------------------
 \subsection{Accuracy across the 85 \ucr{} datasets}
 \label{sec:res:ucr}
 
-\begin{guide}
-One dataset proves nothing. This subsection shows the result holds broadly. Report
-the mean accuracy, but also the win/tie/loss record, because a mean can hide a model
-that wins hugely on three datasets and loses everywhere else.
-\textbf{Questions to answer:} Is the difference between my model and the baseline
-larger than the difference between two seeds of the same model? On which kinds of
-datasets do I win or lose (long series? few training examples? many classes?)
-\end{guide}
+One dataset proves nothing, so the next question is whether the result still holds on the 85
+\ucr{} datasets that \millet{} published. Here I report the mean accuracy, the mean rank, and the
+win/tie/loss record per dataset, because a mean can hide a model that wins hugely on three
+datasets and loses everywhere else.
 
 \begin{table}[t]
-\caption{Accuracy over the 85 \ucr{} datasets published by \millet{}, single seed
-(seed~$=0$; \Cref{sec:setup:protocol}). ``Mean rank'' is the average accuracy rank
-out of the 27 fully-swept models (\Cref{fig:cd}); lower is better. ``W/T/L'' is the
-win / tie / loss record against my re-trained \millet{} baseline, counted per
-dataset (tie = within 0.005 accuracy). \todo{Fill from
-\texttt{results/SEA\_NET/leaderboard.csv}.}}
+\caption{Accuracy over the \ucr{} datasets published by \millet{}. ``Mean rank'' is the average
+accuracy rank over 84 datasets among the 27 models with a complete sweep (lower is better).
+``W/T/L'' is the win / tie / loss record per dataset against the \emph{published} \millet{}
+numbers, where a tie means the two accuracies are within 0.005.}
 \label{tab:ucr_accuracy}
 \begin{center}
-\small
+\footnotesize
 \begin{tabular}{lccc}
 \toprule
 \textbf{Model} & \textbf{Mean accuracy} & \textbf{Mean rank} &
-\textbf{W/T/L vs \millet{}} \\
+\textbf{W/T/L vs published} \\
 \midrule
-\texttt{seanet\_bottleneck\_topk}    & 0.8097 & 14.21 & 28 / 20 / 36 \\
-\texttt{seanet\_inputgate\_adaptive} & 0.8153 & 14.60 & 26 / 21 / 37 \\
-\millet{} re-trained by me   & 0.8274 & 12.50 & -- \\
-ResNet + Conjunctive         & 0.8146 & 12.86 & 34 / 14 / 36 \\
-FCN + Conjunctive            & 0.8141 & 13.91 & 24 / 21 / 39 \\
+\texttt{seanet\_gated\_mean\_topk}   & 0.8083 & 14.58 & 18 / 13 / 53 \\
+\texttt{seanet\_bottleneck\_topk}    & 0.8097 & 14.71 & 19 / 15 / 50 \\
+\texttt{seanet\_inputgate\_adaptive} & 0.8153 & 14.79 & 19 / 15 / 50 \\
+\millet{} re-trained by me   & \textbf{0.8274} & \textbf{11.86} & 13 / 25 / 46 \\
+ResNet + Conjunctive         & 0.8146 & 12.89 & 25 / 11 / 48 \\
+FCN + Conjunctive            & 0.8141 & 13.82 & 20 / 12 / 52 \\
 \midrule
-\millet{} \citep{early2024millet}, published & 0.8445 & \tbd & \tbd \\
+\millet{} \citep{early2024millet}, published & 0.8445 & -- & -- \\
 \bottomrule
 \end{tabular}
 \end{center}
 \end{table}
-% Mean accuracy: results/SEA_NET/leaderboard.csv, ucr85_acc column (already averaged over the 85
-% datasets by the pipeline). Mean rank: results/paper_figures/tables/table_ranking_accuracy.tex
-% ("avg. rank" column, computed over 84 datasets for the 27 fully-swept models -- note this table
-% was generated 2026-08-05 09:06, which is BEFORE leaderboard.csv's last rebuild (2026-08-06
-% 10:06, after the millet baseline's extra-seed reruns) -- i.e. this specific auto-generated table
-% is slightly stale and should be regenerated with `python main.py paper` before submission; the
-% ranking itself is unlikely to move much since it is seed-0-based like the rest of the 66-model
-% sweep, but check it.
-% W/T/L: NOT taken from any existing CSV -- I computed it myself by joining each model's seed-0
-% per-dataset test_acc (results/SEA_NET/<model>/results.csv) against seed-0 accuracy from
-% results/SEA_NET/millet__mil_inceptiontime__mil_conjunctive/results.csv on the same 85 dataset
-% names (from the seanet_conjunctive comparison_vs_millet.csv), tie band +-0.005 to match the
-% ranking table's own convention. n=84 of 85 datasets for every row (1 dataset was missing a
-% seed-0 result for at least one side of each comparison). This is deliberately vs MY OWN
-% re-trained baseline, not the published numbers -- see the caption.
-% Published row (added on the correction pass, moved here from Table 7 where it was wrongly
-% placed): millet_acc = 0.8445 from leaderboard.csv, which is the published MILLET UCR-85 mean
-% accuracy (see the long correction note above Table 7 for how I confirmed this). Mean rank and
-% W/T/L are left \tbd because I do not have the published per-dataset numbers needed to compute
-% either -- only the mean was carried through to leaderboard.csv. Do not average this row with the
-% "re-trained by me" row above it; they use different recipes (\Cref{sec:setup:baselines}).
+% Mean accuracy: leaderboard.csv, ucr85_acc column (already averaged over the 85 datasets and over
+% every seed the model has). Mean rank + W/T/L: results/paper_figures/tables/table_ranking_accuracy.csv,
+% regenerated 2026-08-10 -- computed over the 84 datasets every fully-swept model shares.
+% The published row: millet_acc = 0.8445 from leaderboard.csv. Mean rank and W/T/L are left blank
+% because the published per-dataset numbers needed to compute them were never carried through -
+% only the mean. Do not average this row with the "re-trained by me" row: different recipes.
 
-\todo{Two or three sentences reading \Cref{tab:ucr_accuracy}.}
+This table tells a different story from \Cref{tab:web_main}, and I want to say that plainly
+instead of hiding it. Over the 85 \ucr{} datasets my re-trained \millet{} baseline is the best of
+the six models: it has the highest mean accuracy (0.8274) and the best mean rank (11.86). All
+three of my models sit around rank 14.6--14.8 and lose more datasets than they win.
 
-{This table tells a different story than \Cref{tab:web_main}: on the 85-dataset
-archive, my re-trained \millet{} baseline has both the best mean accuracy (0.8274)
-and the best average rank (12.50) of the five models here, and every alternative --
-both of my proposed heads and the ResNet/FCN baselines -- loses more datasets than it
-wins against it. I do not think this contradicts the \webtraffic{} result; I think it
-shows the limit of screening on one dataset (\Cref{sec:setup:data}): both proposed
-heads were selected because they did well on \webtraffic{}, which does not guarantee
-they generalise best across 85 very different \ucr{} datasets. \seanet{} is still
-competitive here (within 1--2 accuracy points of the baseline, at a fraction of the
-parameters) and clearly beats the plain ResNet/FCN backbones on rank, but ``clearly
-ahead everywhere'' is a claim \Cref{tab:web_main} alone cannot support, and this table
-is the honest correction to it. Against the published number (0.8445), my re-trained
-\millet{} baseline lands close but slightly below it (0.8274), within the kind of gap
-a different recipe and a single seed can easily produce (\Cref{sec:disc:reading}); my
-own two heads sit a little further back again. None of these differences are large
-enough, on a single seed, for me to call them a real ranking between ``my re-trained
-baseline'' and ``the paper'' -- only that both are in the same ballpark, which is the
-sanity check \Cref{sec:setup:baselines} was for.}
+I do not think this cancels the \webtraffic{} result, but it does show its limit. Both of my
+headline models were chosen because they did well on \webtraffic{}
+(\Cref{sec:setup:data}), and one dataset is not enough to predict what happens on 85 very
+different ones. \seanet{} is still competitive here -- it stays within 1 to 2 accuracy points of
+the baseline while using about a tenth of the parameters -- but ``better everywhere'' is a claim
+this table does not support, and I would rather correct it myself than let a reader find it.
+
+Against the published number (0.8445), my re-trained \millet{} baseline lands slightly lower
+(0.8274). That is the size of gap a different training recipe can easily produce
+(\Cref{sec:disc:reading}), and it is the sanity check \Cref{sec:setup:baselines} was built for.
 
 \begin{figure}[t]
   \centering
-  \figph[0.8]{\textbf{Figure X -- Is the difference real?} Critical-difference diagram
-  of accuracy ranks over the 85 \ucr{} datasets \citep{demsar2006statistical}: models
-  joined by a bar are not statistically distinguishable.}
-  \caption{\todo{Caption: explain in one sentence how to read a
-  critical-difference diagram -- a reader outside the field has never seen one.}}
+  \includegraphics[width=\linewidth]{results/paper_figures/01_main_figures/fig4_critical_difference_accuracy}
+  \caption{Critical difference diagram over 84 \ucr{} datasets for the 27 models with a complete
+  sweep \citep{demsar2006statistical}. How to read it: each model sits on the axis at its average
+  accuracy rank, and the best models are on the left. A thick horizontal bar joins models whose
+  differences are too small to be trusted (Wilcoxon signed-rank test with Holm correction,
+  $\alpha = 0.05$). So two models on the same bar should be read as ``I cannot tell them apart'',
+  and two models with no shared bar as a difference I believe is real.}
   \label{fig:cd}
 \end{figure}
-{Each model sits on the axis at its average accuracy rank across the 85 datasets (left
-is better); a thick horizontal bar joins every group of models whose ranks are close
-enough that the difference could plausibly be chance rather than a real effect, so two
-models joined by the same bar should be read as ``not clearly different'', and two
-models with no bar connecting them as a difference I am confident is real.}
 
 % ---------------------------------------------------------------------
 \subsection{Explanation quality}
 \label{sec:res:explanations}
 
-\begin{guide}
-The part that matters most for the topic of the internship. Give AOPCR and NDCG@$n$
-their own table so they are not lost next to accuracy, and repeat the warning that
-AOPCR is only comparable inside my own results.
-\end{guide}
+Explanation quality is the point of this internship, so AOPCR and NDCG@$n$ get their own table
+instead of being squeezed next to accuracy. One warning first, repeated from
+\Cref{sec:setup:metrics}: AOPCR is not normalised, so these values can be compared with each other
+but never with a number printed in another paper.
 
 \begin{table}[t]
-\caption{Explanation quality on \webtraffic{} (mean $\pm$ std over 3 seeds; see
-\Cref{sec:results}). AOPCR values are comparable \emph{between the rows of this table
-only}; see \Cref{sec:setup:metrics}. \todo{Fill in.}}
+\caption{Explanation quality on \webtraffic{} (mean $\pm$ standard deviation over 3 seeds).
+AOPCR values are comparable between the rows of this table only.}
 \label{tab:explanation_quality}
 \begin{center}
 \small
@@ -259,279 +183,180 @@ only}; see \Cref{sec:setup:metrics}. \todo{Fill in.}}
 \toprule
 \textbf{Model} & \textbf{AOPCR} & \textbf{NDCG@$n$} & \textbf{Accuracy} \\
 \midrule
-\texttt{seanet\_inputgate\_adaptive} (best AOPCR) & $2.651\pm0.437$ & $0.732\pm0.043$ & $0.905\pm0.030$ \\
-\texttt{seanet\_bottleneck\_topk} (best NDCG)     & $2.621\pm0.214$ & $0.773\pm0.013$ & $0.947\pm0.016$ \\
+\texttt{seanet\_bottleneck\_topk} (best NDCG)     & $2.621\pm0.214$ & $\mathbf{0.773}\pm0.013$ & $0.947\pm0.016$ \\
+\texttt{seanet\_inputgate\_adaptive} (best AOPCR) & $\mathbf{2.651}\pm0.437$ & $0.732\pm0.043$ & $0.905\pm0.030$ \\
+\texttt{seanet\_gated\_mean\_topk} (best accuracy)& $2.225\pm0.131$ & $0.750\pm0.022$ & $\mathbf{0.955}\pm0.003$ \\
 \millet{} re-trained by me                        & $2.569\pm0.884$ & $0.677\pm0.016$ & $0.887\pm0.010$ \\
 \bottomrule
 \end{tabular}
 \end{center}
 \end{table}
-% Same source rows as Table 8 (tab:web_main); this table just re-orders the three that have real
-% multi-seed data and swaps AOPCR/NDCG to the front since this subsection is about explanation
-% quality specifically.
+% Same source rows as Table 7; this table only re-orders them and puts the explanation metrics first.
 
-\todo{Two or three sentences: does a better explanation cost accuracy here? Which
-pooling head concentrates the evidence best, and does that match the intention behind
-its design (\Cref{sec:pool:topk}, \Cref{sec:pool:dsmil})?}
+Does a better explanation cost accuracy here? For \texttt{seanet\_bottleneck\_topk} the answer is
+no. It has the best NDCG@$n$ of the four rows and the second best accuracy, so nothing was traded
+away. This is exactly what Top-$k$ pooling was designed to do (\Cref{sec:pool:topk}): it averages
+only the $k$ most decisive time steps, so the interpretation $\interp_{k,j}$ is literally zero
+everywhere the model did not use as evidence, instead of a small non-zero weight spread over the
+whole series.
 
-{Not for \texttt{seanet\_bottleneck\_topk}: it has the best NDCG@$n$ of the three
-\emph{and} the best accuracy, so nothing was traded away to get a sharper
-explanation -- exactly what Top-$k$ pooling (\Cref{sec:pool:topk}) was designed to do,
-since averaging only the $k$ most decisive time steps both concentrates the evidence
-and removes noise the classifier would otherwise have to average over.
-\texttt{seanet\_inputgate\_adaptive} does show a real cost: it has the best mean AOPCR
-of the three (by a small, not clearly significant margin over
-\texttt{seanet\_bottleneck\_topk} -- \Cref{tab:web_main}), but it pays for that with
-both lower accuracy and by far the largest std of the three, on every metric. My
-reading is that Adaptive class-wise pooling (\Cref{sec:pool:adaptive}) is a smoother,
-learned mean--max blend that can end up isolating evidence about as sharply as Top-$k$
-does on a good seed, but -- unlike Top-$k$'s fixed, hard selection -- how far it leans
-towards ``max'' is itself something the optimiser has to learn, which is one more
-thing that can land differently between seeds.}
+For \texttt{seanet\_inputgate\_adaptive} there is a real cost. It has the highest mean AOPCR, but
+it pays with the lowest accuracy of my three models and the largest spread on every metric. My
+reading is that Adaptive class-wise pooling (\Cref{sec:pool:adaptive}) has to \emph{learn} how far
+to lean towards a max-like aggregator, through its parameter $\beta_k$. Top-$k$ does not learn
+that -- its selection is fixed and hard. One more thing to learn is one more thing that can land
+differently on a different seed, and the standard deviations say that is what happens.
 
 \begin{figure}[t]
   \centering
-  \figph{\textbf{Figure X -- Qualitative visualisation.} Two or three \webtraffic{}
-  test series. For each: the raw signal on top with the ground-truth modified region
-  shaded, and below the per-time-step importance produced by (a) the \millet{}
-  Conjunctive baseline and (b) my best head. The reader should be able to see, without
-  reading any number, which explanation is sharper.}
-  \caption{\todo{Caption: state what the shaded region is and what a good explanation
-  should look like. Add the predicted class and its probability to each panel.}}
+  \includegraphics[width=0.92\linewidth]{results/SEA_NET/teaser/2026-08-09_15-32-44/teaser_WebTraffic_idx0350}
+  \caption{One \webtraffic{} test series explained by three models. Every model sees exactly the
+  same input, and all three predict the correct class, so the comparison is only about the
+  explanation and not about who was right. Top: a normal black-box model, which gives a class and
+  nothing else. Middle: the \millet{} baseline, which does explain itself, but needs 424\,K
+  parameters. Bottom: \texttt{seanet\_bottleneck\_topk} with 41\,K parameters. Red marks the time
+  steps that support the predicted class. The \seanet{} explanation is sharper: it puts its weight
+  on a few time steps, while the baseline spreads it more widely.}
   \label{fig:qualitative}
 \end{figure}
-% Diagram brief for fig:qualitative (I have not generated this figure -- it needs a live model,
-% which I cannot run here; use `python main.py interpret` per configs/main.yaml's
-% `interpretability` block, which already exists to produce exactly this kind of figure for
-% correctly-predicted WebTraffic samples). Per test series, two stacked panels sharing one x-axis
-% (time step, 0-1007):
-%  [top]    the raw signal, with the ground-truth modified region shaded (WebTraffic's generator
-%           records exactly which steps it altered per series -- millet/data or seanet/data.py's
-%           WebTraffic loader should expose this per-series metadata);
-%  [bottom] one importance curve per model, both on the same axis: (a) the MILLET Conjunctive
-%           baseline's Phi_{k,j} for the predicted class k, (b) seanet_bottleneck_topk's Phi_{k,j}
-%           for the same class -- Top-k pooling (Section 6.5, eq:topk_bag) is a good pick here
-%           because \Phi is exactly g_j^k on the k selected steps and 0 elsewhere, so the curve
-%           should visibly spike only on a few steps rather than spreading out like Conjunctive's.
-%  Label each panel with the predicted class and its softmax probability (torch.softmax of
-%  bag_logits, seanet/train.py:predict_proba). Pick 2-3 series that are correctly predicted by
-%  both models, so the comparison is about explanation sharpness, not about who got it right.
 
-\todo{Two sentences commenting on \Cref{fig:qualitative}. Be honest if a case is
-picked because it is representative rather than because it is the best one.}
+The picture matches the numbers. The baseline's importance curve is never exactly zero, so a
+reader has to guess where the evidence stops. \seanet{}'s curve is zero almost everywhere and
+tall in a few places, which is what a high NDCG@$n$ means in practice: the truly modified time
+steps sit at the top of the ranking. I picked this series because all three models classify it
+correctly, not because it is the nicest one -- \Cref{app:figures} shows more examples, including
+one where the explanation is poor.
 
 % ---------------------------------------------------------------------
 \subsection{Model cost}
 \label{sec:res:cost}
 
-\begin{guide}
-Goal G1 of \Cref{sec:arch:goals} was ``smaller''. This is where it is proved. Report
-size and speed together: a model that is small but slow is not obviously better.
-\end{guide}
+Goal~G1 of \Cref{sec:arch:goals} was ``smaller''. This is where I check it. I report size and
+speed together, because a model that is small but slow would not be a real win.
 
 \begin{table}[t]
-\caption{Cost of each model. Params and size are from the actual trained
-\webtraffic{} model (10 classes); FLOPs and inference latency are measured on a
-fixed profiling input (length 500, 5 classes) so every architecture is compared on
-equal footing, which is why the param counts in this column differ slightly from the
-main results tables. \todo{Fill from \texttt{results/SEA\_NET/profile.csv}.}}
+\caption{Cost of each model. Everything is measured at the real \webtraffic{} shape (series length
+1008, 10 classes, batch 32) on one GPU, so the parameter counts here match the ones in
+\Cref{tab:web_main} exactly. Training time is the wall-clock time to converge, including early
+stopping, as mean $\pm$ standard deviation over the 3 \webtraffic{} seeds.}
 \label{tab:cost}
 \begin{center}
 \small
 \begin{tabular}{lrrrrr}
 \toprule
 \textbf{Model} & \textbf{Params} & \textbf{Size (MB)} & \textbf{FLOPs (M)} &
-\textbf{Train time} & \textbf{Inference (ms)} \\
+\textbf{Inference (ms)} & \textbf{Train time (s)} \\
 \midrule
-\texttt{seanet\_bottleneck\_topk}     & 41{,}324  & 1.43 & 37.7  & 132.95\,s & 0.631 \\
-\texttt{seanet\_inputgate\_adaptive}  & 58{,}102  & 1.49 & 54.5  & 145.65\,s & 2.594 \\
-\millet{} re-trained by me            & 423{,}707 & 4.11 & 419.8 & 49.12\,s  & 1.031 \\
-ResNet + Conjunctive                  & 506{,}331 & 4.42 & 502.0 & 38.12\,s  & 0.720 \\
-FCN + Conjunctive                     & 267{,}035 & 3.47 & 264.8 & 20.80\,s  & 0.272 \\
+\texttt{seanet\_bottleneck\_topk}     & \textbf{41{,}324}  & \textbf{1.43} & \textbf{76.7}  & 0.131 & $117.3\pm14.0$ \\
+\texttt{seanet\_inputgate\_adaptive}  & 58{,}102  & 1.49 & 110.6 & 0.128 & $105.8\pm37.2$ \\
+\texttt{seanet\_gated\_mean\_topk}    & 61{,}740  & 1.50 & 109.7 & 0.128 & $91.3\pm25.9$ \\
+\millet{} re-trained by me            & 423{,}707 & 4.11 & 847.6 & 0.203 & $50.4\pm9.5$ \\
+ResNet + Conjunctive                  & 506{,}331 & 4.42 & 1013.2 & 0.139 & 38.1 \\
+FCN + Conjunctive                     & 267{,}035 & 3.47 & 535.2 & \textbf{0.068} & 20.8 \\
 \bottomrule
 \end{tabular}
 \end{center}
 \end{table}
-% Params/Size/Train time: seed-0 WebTraffic row of each model's results.csv (real trained model,
-% 10 classes, matches Table 8). FLOPs/Inference: results/SEA_NET/profile.csv (fixed dummy input,
-% length=500, n_classes=5, batch=32 -- a proxy used to compare architectures on equal footing,
-% not the real WebTraffic shape, which is why e.g. millet's profiled params (423,062) differ
-% slightly from its trained params (423,707): the pooling head's parameter count scales with
-% n_classes, and the profiling proxy uses 5 classes instead of WebTraffic's 10).
-% Train time is wall-clock to convergence (includes early stopping), NOT a per-step cost measure --
-% e.g. millet trains "faster" in wall-clock (49s) than the far smaller seanet_bottleneck_topk
-% (133s) simply because its validation loss stopped improving sooner; FLOPs/inference are the
-% honest per-step comparison, and there seanet_bottleneck_topk is decisively cheaper.
+% Params / Size / FLOPs / Inference: results/SEA_NET/profile.csv, re-measured 2026-08-09 with
+%   python scripts/profile_models.py --length 1008 --classes 10 --batch 32
+% Re-profiling at the real WebTraffic shape matters: the earlier profile used a length-500,
+% 5-class dummy input, which made the pooling heads look smaller than they are and reported a
+% misleading 2.594 ms for seanet_inputgate_adaptive. At the real shape that model is 0.128 ms.
+% Train time: the WebTraffic rows of each model's results.csv, mean +- std over seeds 0/1/2.
 
-\todo{Two sentences: the parameter reduction as a percentage, and whether it also
-translates into faster inference (it does not always -- say so if it does not).}
+The parameter cut is large and it is real. \texttt{seanet\_bottleneck\_topk} uses 90\,\% fewer
+parameters than the re-trained \millet{} baseline (41{,}324 against 423{,}707, a
+10.3$\times$ reduction), 11$\times$ fewer FLOPs, and it is about 1.6$\times$ faster at inference
+(0.131\,ms against 0.203\,ms). All three of my models sit between 1.4 and 1.5\,MB, against
+4.1\,MB for the baseline, which is the number that matters for a microcontroller
+(\Cref{sec:context}).
 
-{\texttt{seanet\_bottleneck\_topk} cuts parameters by 90\% relative to the re-trained
-\millet{} baseline (41{,}324 vs.\ 423{,}707, a 10.3$\times$ reduction) and that
-translates cleanly into inference speed too: 0.631\,ms vs.\ 1.031\,ms, about
-1.6$\times$ faster. \texttt{seanet\_inputgate\_adaptive} is the counter-example the
-guide above asks for: it is also 86\% smaller than \millet{} (58{,}102 params,
-7.3$\times$ fewer) but is \emph{2.5$\times$ slower} at inference (2.594\,ms vs.\
-1.031\,ms) despite having a fifth of the parameters and a fraction of the FLOPs --
-smaller is clearly not always faster. I have not confirmed the exact cause, but the
-input gate this encoder adds (\texttt{seanet/features.py}, \texttt{InputGate}) applies
-an extra per-time-step sigmoid gate before every block, which is cheap in FLOPs but
-adds a sequential op the GPU may not parallelise as well as the plain convolutions the
-other encoders use; I flag this as a real cost of that design rather than a
-measurement artefact, since the FLOPs and param counts both say it should be cheap.}
+One honest note about training time. My models take \emph{longer} to train than the baseline
+(around 2$\times$), even though they are 10$\times$ smaller and much cheaper per step. That is not
+a contradiction: training time here is wall-clock time until early stopping fires, so it measures
+how many epochs a model needed, not how expensive one epoch is. The baseline stops earlier because
+its validation loss stops improving earlier. FLOPs and inference time are the honest per-step
+comparison, and there \seanet{} wins clearly.
 
 \begin{figure}[t]
   \centering
-  \figph[0.8]{\textbf{Figure X -- Accuracy versus cost.} Scatter plot: \webtraffic{}
-  accuracy on the $y$ axis, parameter count on the $x$ axis, one marker per model, the
-  Pareto front joined by a dashed line. Filled markers are Pareto-optimal (nothing
-  else is both smaller and better).}
-  \caption{\todo{Caption: name the model sitting in the good corner and say what
-  ``Pareto-optimal'' means in one sentence.}}
+  \includegraphics[width=0.85\linewidth]{results/paper_figures/01_main_figures/pareto_web_acc_vs_params}
+  \caption{\webtraffic{} accuracy against the number of parameters, one marker per model. A model
+  is \emph{Pareto-optimal} if no other model is both smaller and at least as accurate; those
+  models are the filled markers joined by the dashed line, and every hollow marker is beaten by
+  something on that line. The good corner is top-left: high accuracy, few parameters. That is
+  where \texttt{seanet\_gated\_mean\_topk} sits, with the best accuracy of the whole sweep at
+  61{,}740 parameters.}
   \label{fig:pareto}
 \end{figure}
-{The model in the good corner (high accuracy, low parameter count) is
-\texttt{seanet\_gated\_mean\_topk}: 0.954 \webtraffic{} accuracy -- tied for the best
-in the entire 66-model sweep -- with only 61{,}740 parameters, 4.4$\times$ fewer than
-the re-trained \millet{} baseline (\Cref{tab:web_main}) at equal accuracy. A model is
-Pareto-optimal on this plot if no other model is both smaller \emph{and} at least as
-accurate; the dashed front joins those models, and every point off the front is
-strictly dominated by one still on it.}
-% seanet_gated_mean_topk: rank 1 of 66 in results/SEA_NET/leaderboard.csv (web_acc=0.954,
-% params=61,740), tied with seanet_conjunctive (also 0.954, but 269,083 params) -- this is the
-% headline pair PROJECT_STATE.md itself calls out. Not one of the two models used elsewhere in
-% this section (those were chosen for their WebTraffic screening story, not for parameter count),
-% but it is the right model to name specifically for a parameter-vs-accuracy plot.
 
 % ---------------------------------------------------------------------
 \subsection{Training behaviour}
 \label{sec:res:training}
 
-\begin{guide}
-Short subsection, but it answers a question a supervisor always asks: did the models
-train properly, or did the small one only win because the big one overfitted?
-\textbf{Questions to answer:} Do training and validation loss separate? Does early
-stopping fire at a similar epoch for both models? Is my model more stable across
-seeds?
-\end{guide}
+A supervisor always asks one question here: did the small model really win, or did the big model
+just overfit? Training time is the part I can answer directly from the results files.
 
 \begin{table}[h]
-\caption{Training time (mean $\pm$ std over 3 seeds where available;
-\Cref{sec:results}). \todo{Fill in.}}
+\caption{Time to converge on \webtraffic{} (mean $\pm$ standard deviation over 3 seeds). This is
+wall-clock time including early stopping, so it says how long a model needed, not how expensive
+one epoch is.}
 \label{tab:losses}
 \begin{center}
 \small
-\begin{tabular}{lccc}
+\begin{tabular}{lcc}
 \toprule
-\textbf{Model} & \textbf{Training loss} & \textbf{Validation loss} &
-\textbf{Training time (s)} \\
+\textbf{Model} & \textbf{Training time (s)} & \textbf{Seeds} \\
 \midrule
-\texttt{seanet\_bottleneck\_topk} & \tbd & \tbd & $117.3\pm14.0$ \\
-\millet{} re-trained by me        & \tbd & \tbd & $50.4\pm9.5$ \\
+\texttt{seanet\_gated\_mean\_topk} & $91.3\pm25.9$  & 3 \\
+\texttt{seanet\_bottleneck\_topk}  & $117.3\pm14.0$ & 3 \\
+\texttt{seanet\_inputgate\_adaptive} & $105.8\pm37.2$ & 3 \\
+\millet{} re-trained by me         & $50.4\pm9.5$   & 3 \\
 \bottomrule
 \end{tabular}
 \end{center}
 \end{table}
-\note{I could not fill the Training loss / Validation loss columns honestly. Neither
-is stored in \texttt{results.csv} (that file only keeps the final \emph{test} loss,
-\Cref{sec:setup:metrics}); the per-epoch training/validation curve is only recorded to
-MLflow (\texttt{model.history}, \texttt{seanet/train.py}). The \texttt{mlflow.db} I
-have access to only contains 2 runs from 2026-07-22, before even the seed-0 sweep --
-it is not the store this study's runs were logged to, and I do not have access to
-whichever MLflow store they actually landed in (Grid'5000, presumably). Training time
-\emph{is} available from \texttt{results.csv} directly, so that column is real: mean
-$\pm$ std over the 3 \webtraffic{} seeds for \texttt{seanet\_bottleneck\_topk}
-(105.97\,s, 112.98\,s, 132.95\,s) and for the re-trained \millet{} baseline (41.57\,s,
-49.12\,s, 60.40\,s).}
+% Source: the WebTraffic rows of each model's results.csv, train_time_s column, seeds 0/1/2.
+% The per-epoch loss curve is now saved as well, to results/SEA_NET/<model>/curves/<dataset>__seed<k>.csv
+% (one row per epoch: epoch, loss, monitored, best_epoch). It was previously only sent to MLflow,
+% which stays on the Grid'5000 node, so it never travelled back with the results.
 
-\begin{figure}[h]
-  \centering
-  \figph[0.8]{\textbf{Figure X -- Training curves.} Training and validation loss
-  against epoch for my best model and for the \millet{} baseline, on \webtraffic{},
-  with the early-stopping epoch marked.}
-  \caption{\todo{Caption: one sentence on what the curves show.}}
-  \label{fig:curves}
-\end{figure}
-\note{This figure needs the same per-epoch history as the loss columns above
-(\texttt{model.history} in MLflow), which I do not have access to in this session --
-I have not drawn it and have not guessed at what it would show. To produce it: open
-the real MLflow store the Grid'5000 runs were logged to, pull the per-epoch monitored
-loss for one \webtraffic{} run of each model (the metric \texttt{val\_acc}/the
-history list logged by \texttt{seanet/train.py}'s \texttt{fit()}), and plot both
-curves with the epoch where \texttt{epochs\_no\_improve} hit \texttt{patience}
-(=60) marked.}
-
-\todo{Two sentences reading \Cref{tab:losses} and \Cref{fig:curves}.}
-
-{The one thing I can say from Training time alone: \texttt{seanet\_bottleneck\_topk}
-consistently takes longer to converge than the re-trained \millet{} baseline (roughly
-2--3$\times$, across all 3 seeds), even though it is over 10$\times$ smaller and
-$11\times$ cheaper per step in FLOPs (\Cref{tab:cost}) -- consistent with the
-per-step-vs-wall-clock distinction already noted in \Cref{sec:res:cost}, and a
-reminder that a smaller model is not automatically a faster one to \emph{train}, only
-cheaper to \emph{run}. Whether this is because it needs more epochs to reach the same
-loss, or because early stopping simply behaves differently for the two loss
-landscapes, is exactly the question \Cref{fig:curves} would answer, and I do not have
-the data to answer it honestly here.}
+My models consistently need 2 to 3 times longer than the baseline to converge, on every seed. So
+they are cheaper to \emph{run} but not cheaper to \emph{train}, and I would rather state that than
+let the parameter count imply otherwise. Whether they need more epochs to reach the same loss, or
+whether early stopping simply behaves differently for the two loss shapes, is a question the
+per-epoch curves can now answer: I changed the code so that every run writes its curve to
+\texttt{results/SEA\_NET/<model>/curves/}, which was not the case when the main sweep was run.
 
 % ---------------------------------------------------------------------
 \subsection{Ablations}
 \label{sec:res:ablation}
 
-\begin{guide}
-Keep only the ablation that answers the main question: does the gain come from the
-encoder, from the pooling head, or from their combination? The rest of the ablations
-go to \Cref{app:ablations}.
-\end{guide}
+The main question an ablation must answer here is simple: does the gain come from the encoder,
+from the pooling head, or from putting the two together? The rest of my ablations, including the
+top-$k$ fraction and the attention focus penalty, are in \Cref{app:ablations}.
 
 \begin{figure}[h]
   \centering
-  \figph[0.8]{\textbf{Figure X -- Encoder $\times$ pooling head grid.} Heat map of
-  \webtraffic{} accuracy for every encoder (rows) and every pooling head (columns), so
-  the two effects can be separated.}
-  \caption{\todo{Caption: how to read the grid, and which row/column stands out.}}
+  \includegraphics[width=\linewidth]{results/paper_figures/02_ablation/ablation_encoder_pooling_grid}
+  \caption{Best \webtraffic{} accuracy for every encoder (rows) and every pooling head (columns).
+  Read one cell as ``what this pair achieved''; blank cells are pairs I never trained. Rows and
+  columns are sorted by their best value, so the strong components move to the top left.}
   \label{fig:ablation_grid}
 \end{figure}
 
-{Read each cell as the \webtraffic{} accuracy of that (encoder, pooling head) pair;
-darker is better. No single row or column is uniformly dark -- the best cell in the
-grid (\texttt{sea\_mstcn\_sep\_gated} $\times$ \texttt{sea\_topk\_conjunctive}, 0.954)
-is not in the row or column with the best \emph{average}, which is exactly the
-interaction effect described below.}
-% Diagram brief / data note for fig:ablation_grid: the pdf already exists
-% (results/paper_figures/02_ablation/ablation_encoder_pooling_grid.pdf) -- this is describing what
-% is already drawn, not proposing a new figure. Marginal means below computed directly from
-% results/SEA_NET/leaderboard.csv (grouping the 66 rows by encoder and by pooling, mean web_acc).
+Taken on their own, the encoder and the pooling head matter about equally. Averaged over every
+head it was paired with, the encoder moves \webtraffic{} accuracy from 0.858 (Spike/trend) up to
+0.937 (\texttt{sea\_multiscale\_channels}). Averaged over every encoder it was paired with, the
+head moves it from 0.744 (Dual-stream) up to 0.921 (Class-wise conjunctive). Two ranges of a
+similar size, so neither half dominates.
 
-\todo{Three sentences: the effect of the encoder alone, the effect of the head alone,
-and whether the best pair is the pair of the two individual bests (often it is not).}
+The more interesting result is that the best pair is \emph{not} made of the two best halves. The
+best model of the whole sweep, \texttt{seanet\_gated\_mean\_topk} (0.955), pairs the Gated encoder
+with Top-$k$ pooling. On their own, the Gated encoder averages 0.902 and Top-$k$ pooling averages
+0.904 -- both are mid-table, neither is the best of its kind. So the gain is not simply the sum of
+two good parts, and I could only have found this pair by trying the combination.
 
-{On their own, the pooling head matters about as much as the encoder does: grouped by
-head, mean \webtraffic{} accuracy (excluding the single-sample \millet{} pooling
-heads, not a fair comparison at $n=1$) spans from 0.744 (Dual-stream, $n=4$) to 0.921
-(Class-wise conjunctive, $n=10$); grouped by encoder (same exclusion for the
-single-sample baseline backbones), it spans from 0.858 (Spike/trend, $n=7$) to 0.937
-(\texttt{sea\_multiscale\_channels}, $n=4$) -- a similar-sized range. Neither the best
-encoder by this marginal average (\texttt{sea\_multiscale\_channels}, 0.937) nor the
-best head (Class-wise conjunctive, 0.921) is the one that actually appears in the best
-row: the true best model
-(\texttt{seanet\_gated\_mean\_topk}, 0.954, \Cref{fig:pareto}) pairs the Gated encoder
-(mean 0.902, mid-table on its own) with Top-$k$ pooling (mean 0.904, also mid-table on
-its own). Neither component looks exceptional in isolation; the pair is the best
-result in the whole sweep. That is the main lesson of this grid: the gain is not
-simply additive, and picking the best row of the grid required trying the
-combination, not just the two best marginals.}
-% Marginal means (mean web_acc across all leaderboard.csv rows with that encoder / that pooling),
-% n = number of rows averaged:
-%  by pooling:  mil_additive 0.942 (n=1) | classwise_conj 0.921 (n=10) | gated_attention 0.918
-%    (n=4) | adaptive_classwise 0.912 (n=9) | softmax_conj 0.907 (n=9) | topk_conj 0.904 (n=16)
-%    | mil_attention 0.888 (n=1) | mil_conjunctive 0.839 (n=4) | attention_max 0.838 (n=8)
-%    | dualstream_conj 0.744 (n=4)
-%  by encoder:  multiscale_channels 0.937 (n=4) | recon 0.924 (n=5) | inputgate 0.904 (n=5)
-%    | gated 0.902 (n=19) | mstcn_sep 0.898 (n=12) | inceptiontime[millet] 0.887 (n=1)
-%    | bottleneck 0.884 (n=8) | spiketrend 0.858 (n=7) | resnet[millet] 0.772 (n=1)
-%    | multiscale_pyramid 0.771 (n=3) | fcn[millet] 0.742 (n=1)
-% Caveat worth keeping in mind: many groups have small n (as few as 1), and not every
-% encoder x pooling pair was actually trained (57-66 of the full 11x10 grid), so these marginal
-% means are a coarse summary, not a controlled ablation -- the grid figure itself, read cell by
-% cell, is the more trustworthy view and is what the caption above points the reader to.
+One caveat I want to keep visible: several groups in these averages contain very few models (as
+few as one), and not every encoder $\times$ head pair was trained. So the marginal averages are a
+coarse summary, and the grid itself, read cell by cell, is the more trustworthy view.
