@@ -11,6 +11,9 @@
 \usepackage{amssymb}        % \mathbb{R} and friends
 \usepackage{amsthm}         % theorem-like "Property" boxes for the pooling maths
 \usepackage{multirow}       % cells spanning several rows
+\usepackage{float}          % the [H] specifier: "put the table exactly HERE".
+                            % Used in the appendix, where a queue of floating
+                            % tables was leaving several half-empty pages.
 \usepackage{subcaption}     % (a) (b) sub-figures
 \usepackage[table]{xcolor}  % colours (also for coloured table cells)
 \usepackage{framed}         % shaded / leftbar boxes (guide + contribution boxes)
@@ -28,6 +31,16 @@
 %     \includegraphics{results/paper_figures/01_main_figures/fig1_...}
 % and my own drawings go in the local figures/ folder.
 \graphicspath{{./}{figures/}{../../}}
+
+% --- Float placement -------------------------------------------------
+% This report is table-heavy, and LaTeX's defaults refuse to put more than
+% 70% of a page into floats. That was leaving half-empty pages all over the
+% appendix. Loosening the four fractions below lets a big table share a page
+% with the text around it instead of pushing everything down.
+\renewcommand{\topfraction}{0.92}
+\renewcommand{\bottomfraction}{0.85}
+\renewcommand{\textfraction}{0.06}
+\renewcommand{\floatpagefraction}{0.80}
 
 % =====================================================================
 % DRAFTING HELPERS
@@ -57,6 +70,11 @@
 
 % Inline blue note (a reminder to myself, not a missing piece).
 \newcommand{\note}[1]{\textcolor{notecolor}{[#1]}}
+
+% Blue flag: something I still have to check or add back later. It is easy to
+% spot in the PDF and easy to delete once fixed. Different from \todo (red),
+% which means "this number is missing"; \missing means "read this and decide".
+\newcommand{\missing}[1]{\textcolor{notecolor}{\textbf{[CHECK:}~#1\textbf{]}}}
 
 % A number I still have to read off a results file.
 % Example: accuracy of \num{web_acc of seanet_bottleneck_topk}

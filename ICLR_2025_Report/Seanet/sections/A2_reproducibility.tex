@@ -20,7 +20,7 @@ depth, which differ between the wide base encoder and the smaller variants used 
 parameter-count comparison in \Cref{tab:cost}. Giving a single number there would be wrong for half
 the sweep.
 
-\begin{table}[h]
+\begin{table}[H]
 \caption{Hyperparameters shared by every model config, plus the two encoder sizes actually used.}
 \label{tab:hparams}
 \begin{center}
@@ -112,12 +112,12 @@ on Grid'5000 \citep{balouek2013grid5000}, split across two sites so a queue on o
 whole study. \Cref{tab:environment} gives the two environments separately, because they are not the
 same and only the Grid'5000 column produced the numbers in this report.
 
-\begin{table}[h]
+\begin{table}[H]
 \caption{The two environments. Only the Grid'5000 column produced the results in this report.}
 \label{tab:environment}
 \begin{center}
 \small
-\begin{tabular}{lll}
+\begin{tabular}{p{0.20\linewidth} p{0.32\linewidth} p{0.38\linewidth}}
 \toprule
  & \textbf{Local (development)} & \textbf{Grid'5000 (training)} \\
 \midrule

@@ -15,39 +15,26 @@
 \label{sec:bg:tsc}
 
 A univariate time series of length $\nsteps$ is just a list of numbers in time order,
-$\bag = (\inst_1, \dots, \inst_{\nsteps})$. Time series classification (TSC) means giving the
-whole list one label $y \in \{1, \dots, \nclz\}$ -- for example ``this heartbeat is normal'' or
-``this week of web traffic contains an attack''.
+$\bag = (\inst_1, \dots, \inst_{\nsteps})$. Time series classification (TSC) means giving the whole
+list one label $y \in \{1, \dots, \nclz\}$ -- for example ``this heartbeat is normal''. What happens
+at one point usually depends most on what happened just before and just after it, so a convolution
+filter fits well: it only looks at a small window around each point, called the \emph{receptive
+field}. A plain stack of convolutions needs many layers before it can see far back, so Temporal
+Convolutional Networks (TCNs) \citep{bai2018tcn} use \emph{dilated} convolutions, where the filter
+skips over some points and the window grows quickly for almost no extra cost. My encoder
+(\Cref{sec:architecture}) is built on this idea, together with depthwise-separable convolutions
+\citep{chollet2017xception, howard2017mobilenets}: instead of one convolution that mixes time and
+channels at once, a cheap step filters each channel on its own and a cheap $1\times1$ step mixes the
+channels, which needs far fewer weights for almost the same result.
 
-A time series is different from an image or a sentence in one simple way: it has a single time
-axis, and what happens at one point usually depends most on what happened just before and just
-after it, not on something far away. A convolution filter fits this well, because it only looks at
-a small window around each point. That window is called the \emph{receptive field}. Stacking more
-convolution layers makes the window wider, but a plain stack needs a lot of layers before it can
-see far back in a long series. Temporal Convolutional Networks (TCNs) \citep{bai2018tcn} solve this
-with \emph{dilated} convolutions: the filter skips over some points, so the window grows quickly
-with each extra layer without costing much more compute. My encoder in \Cref{sec:architecture} is
-built on this idea.
-
-It also uses depthwise-separable convolutions \citep{chollet2017xception, howard2017mobilenets},
-which were invented to shrink image models for mobile phones. Instead of one convolution that mixes
-time and channels at the same time, the work is split in two: a cheap step that filters each
-channel on its own, then a cheap $1\times1$ step that mixes the channels. This needs far fewer
-weights for almost the same result.
-
-Three deep networks are the standard comparison point in the TSC literature, and I use all three as
-baselines. The Fully Convolutional Network (FCN) and the Residual Network (ResNet) of
-\citet{wang2017fcn} were the first strong deep baselines: they replace hand-picked features with a
-stack of 1-D convolutions, and ResNet adds skip connections so that a deeper stack still trains
-well. InceptionTime \citep{fawaz2020inceptiontime} goes further and runs several kernel sizes in
-parallel inside every block, so the model does not have to guess one ``right'' kernel size in
-advance. The review of \citet{fawaz2019review} covers these and many others and finds that this
-general recipe wins on most public benchmarks.
-
-All three share one property that matters a lot for this report: they end with global average
-pooling, which averages every time step into a single vector before the classifier. That step
-throws away exactly the information needed to say \emph{which} time step mattered. This is why none
-of these three models can explain its own prediction.
+Three deep networks are the standard comparison point, and I use all three as baselines: FCN and
+ResNet \citep{wang2017fcn}, and InceptionTime \citep{fawaz2020inceptiontime}, which runs several
+kernel sizes in parallel so the model does not have to guess one ``right'' kernel size. For a full
+survey of this family the review of \citet{fawaz2019review} is the place to read. What matters here
+is one property all three share: they end with global average pooling, which averages every time
+step into a single vector before the classifier. That step throws away exactly the information
+needed to say \emph{which} time step mattered, which is why none of them can explain its own
+prediction.
 
 % ---------------------------------------------------------------------
 \subsection{Multiple instance learning}
@@ -203,34 +190,19 @@ $\text{NDCG@}n \in [0,1]$ and $1.0$ is perfect.
 Unlike AOPCR, NDCG@$n$ is normalised and is checked against a real answer, which is why I lean on it
 more than on AOPCR whenever the two disagree.
 
-\begin{figure}[h]
-  \centering
-  \figph[0.85]{How AOPCR is computed: the model's confidence as the highest-ranked time steps are
-  masked, next to the curve obtained by masking random time steps. The shaded area between the two
-  curves is the score.}
-  \caption{How to read an AOPCR curve. The x-axis is the number of top-ranked time steps removed and
-  the y-axis is the model's confidence in its own prediction. The gap between the ``ranked'' curve
-  and the ``random'' curve is the AOPCR score: a wide gap means the ranking found the real evidence.
-  The same curve is drawn automatically for every explained sample by
-  \texttt{python main.py interpret}.}
-  \label{fig:aopcr_curve}
-\end{figure}
-
 % ---------------------------------------------------------------------
 \subsection{Related work in one paragraph}
 \label{sec:bg:related}
 
-Two broad families of methods try to explain a model's decision. Post-hoc explainers such as LIME
-\citep{ribeiro2016lime}, SHAP \citep{lundberg2017shap} and Integrated Gradients
-\citep{sundararajan2017ig} are applied \emph{after} a model is trained and frozen. Because they
-build a separate, approximate explanation, that explanation can disagree with what the model
-actually computed. \citet{rudin2019stop} argues that for high-stakes decisions it is safer to use a
-model that is interpretable \emph{by design}, so the explanation and the prediction always match.
-That is the position \millet{} takes, and the one this report takes too.
-
-MIL is also used heavily outside time series, most of all on whole-slide pathology images, where one
-slide is a bag and one small image patch is an instance \citep{ilse2018attention,
-hashimoto2020msdamil, li2021dsmil}. Two of my pooling heads in \Cref{sec:pooling} adapt ideas from
-that literature to time series. So this report sits between the two lines: it keeps \millet{}'s
-built-in, always-faithful explanation, and borrows pooling ideas from pathology-image MIL to fix the
-three weaknesses of the Conjunctive baseline listed above.
+Post-hoc explainers such as LIME \citep{ribeiro2016lime}, SHAP \citep{lundberg2017shap} and
+Integrated Gradients \citep{sundararajan2017ig} are applied \emph{after} a model is trained and
+frozen, so the separate explanation they build can disagree with what the model actually computed.
+\citet{rudin2019stop} argues that for high-stakes decisions it is safer to use a model that is
+interpretable \emph{by design}, which is the position \millet{} takes and the one this report takes
+too. Other interpretable-by-design TSC models go through shapelets rather than MIL
+\citep{wen2025interpgn, wen2024vqshape}. MIL itself is used heavily outside time series, most of all
+on whole-slide pathology images, where one slide is a bag and one image patch is an instance
+\citep{ilse2018attention, hashimoto2020msdamil, li2021dsmil}; two of my pooling heads
+(\Cref{sec:pooling}) adapt ideas from that literature. So this report sits between the two lines: it
+keeps \millet{}'s built-in, always-faithful explanation and borrows pooling ideas from
+pathology-image MIL to fix the three weaknesses listed above.

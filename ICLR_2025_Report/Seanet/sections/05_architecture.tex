@@ -191,7 +191,8 @@ That factor is why goal~G1 is reachable at all.
 
 I built several encoders on top of the same block. Each paragraph below follows the same shape: the
 problem it attacks, the change in one equation, and what I expected. The results are in
-\Cref{sec:results}, not here.
+\Cref{sec:results}, not here. \Cref{tab:encoder_variants} in the appendix lists all of them side by
+side with the parameter count of each, so this section can stay about the ideas.
 
 \paragraph{Bottleneck.}
 The pointwise $1\times1$ convolution dominates the parameter count, because it costs $\dmodel^2$.
@@ -312,43 +313,8 @@ otherwise the coarsest scales collapse to a nearly constant signal and the inter
 badly. That is why the pyramid config uses a shallow 2-block base with \texttt{max\_dilation=1}, and
 why \texttt{scripts/check\_multiscale.py} checks this automatically for any new combination.
 
-\begin{table}[t]
-\caption{The encoder variants I designed. To keep the comparison fair, the parameter column is the
-whole model with the \emph{same} pooling head (Class-wise conjunctive) and the same small recipe
-($\dmodel = 64$, 4 blocks), so only the encoder differs between rows. The two wrappers and the
-baselines use their own heads and are marked as such.}
-\label{tab:encoder_variants}
-\begin{center}
-\small
-\begin{tabular}{p{0.20\linewidth} p{0.33\linewidth} p{0.26\linewidth} r}
-\toprule
-\textbf{Variant} & \textbf{What changes} & \textbf{Why I tried it} & \textbf{Params} \\
-\midrule
-Base (MS-TCN sep.)   & stacked multi-scale depthwise-separable residual blocks, dilation capped & the proposed encoder itself (\Cref{sec:arch:block}) & 57{,}580 \\
-Bottleneck           & pointwise $d\to d$ conv factorised to $d\to r\to d$, $r=d/4$ & the pointwise step dominates the parameter count, so cut it directly (G1) & \textbf{41{,}324} \\
-Gated                & one whole-series summary re-weights the channels & not every channel matters for every series & 61{,}740 \\
-Input gate           & same idea, gate read from the raw input, per time step & test coarse against fine-grained gating & 58{,}092 \\
-Spike / trend        & second high-pass branch mixed in before gating & some evidence is a spike, not a trend & 67{,}020 \\
-Reconstruction       & residual (input $-$ rebuilt input) mixed in as extra channels & look at what the smooth features cannot explain & 62{,}925 \\
-\midrule
-Multi-scale channels$^\dagger$ & 14 rolling-statistic input channels, same encoder underneath & give the stem non-linear local statistics for free & 47{,}176 \\
-Multi-scale pyramid$^\dagger$  & same encoder shared over 4 downsampled copies, fused by attention & the 1-D analogue of multi-magnification WSI MIL & 42{,}365 \\
-\midrule
-Base, wide setting   & the same encoder at $\dmodel = 128$, 6 blocks & the original recipe, kept for reference & 269{,}164 \\
-InceptionTime \reused & baseline encoder \citep{fawaz2020inceptiontime} & the backbone \millet{} uses & 423{,}707 \\
-\bottomrule
-\end{tabular}
-\end{center}
-$^\dagger$ Wrappers, not encoders: they sit in front of one of the encoders above. Both rows use the
-Bottleneck encoder with Top-$k$ pooling, so they are comparable with each other but not directly
-with the rows above.
-\end{table}
-% Source: results/SEA_NET/leaderboard.csv, params column. The first six rows are the models
-% seanet_slim / seanet_bottleneck / seanet_gated_* / seanet_inputgate / seanet_spiketrend /
-% seanet_recon, all with sea_classwise_conjunctive pooling at d=64, n_blocks=4 -- so the ONLY thing
-% that differs between them is the encoder. Wrappers: seanet_bottleneck_mschan (47,176) and
-% seanet_bottleneck_pyramid (42,365), both with sea_topk_conjunctive. Wide base: seanet_classwise
-% (269,164). InceptionTime: the millet row (423,707).
+% NOTE: the summary table of these variants (tab:encoder_variants) moved to the appendix,
+% Appendix A "Encoder variants at a glance", to keep this section inside the page budget.
 
 % ---------------------------------------------------------------------
 \subsection{Why this design and not another}

@@ -29,7 +29,7 @@ advance: most of that channel-mixing capacity was not doing useful work.
 
 \paragraph{Top-$k$ pooling improved the explanation for the reason I claimed.}
 \texttt{seanet\_bottleneck\_topk} has the best NDCG@$n$ of every model with full seed data
-(0.773, \Cref{tab:explanation_quality}), and I can point at the mechanism rather than guess.
+(0.773, \Cref{tab:web_main}), and I can point at the mechanism rather than guess.
 Top-$k$ averages only the $\kappa T$ most decisive time steps (\Cref{sec:pool:topk}), so
 $\interp_{k,j}$ is exactly zero everywhere the model did not use, instead of a small weight that is
 never quite zero. The ablation in \Cref{app:ablations} backs this up directly: NDCG@$n$ is highest
@@ -85,7 +85,7 @@ small penalty that keeps a blended head close to its safe branch early in traini
 
 \paragraph{AOPCR is not normalised, and I now have direct proof.}
 AOPCR is an area under a curve of raw logit drops, so its scale follows the scale of the model's own
-logits, not a fixed 0--1 range like accuracy (\Cref{sec:setup:metrics}). This is a measurement
+logits, not a fixed 0--1 range like accuracy (\Cref{sec:bg:metrics}). This is a measurement
 effect, not a statement about explanation quality, and my own runs show it cleanly.
 
 I trained the \emph{same} architecture twice, changing only the training recipe: once with my recipe
@@ -105,7 +105,7 @@ own mean, and 0.884 for the re-trained \millet{} baseline (\Cref{tab:web_main}).
 
 I used this as a rule, not just as a remark. \texttt{seanet\_inputgate\_adaptive}'s AOPCR edge over
 \texttt{seanet\_bottleneck\_topk} (2.651 against 2.621) is far smaller than either model's own
-standard deviation, so I reported it as noise rather than as a win (\Cref{sec:res:explanations}).
+standard deviation, so I reported it as noise rather than as a win (\Cref{sec:res:web}).
 The rule cuts both ways: it also stops me claiming that
 \texttt{seanet\_gated\_mean\_topk}'s accuracy lead over \texttt{seanet\_bottleneck\_topk} (0.955
 against 0.947) is decisive, because the second model's own spread is 0.016.

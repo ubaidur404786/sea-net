@@ -334,51 +334,8 @@ Property~\ref{prop:ds} says this head should never be worse than the baseline. \
 shows that it is, in fact, the worst head I tried, and explains why a safety net that nothing pushes
 the model towards is not a safety net at all.
 
-% ----- DIAGRAM BRIEF for fig:pooling_arch (draw this in your own tool) -------------------
-% Source of truth: seanet/pooling.py (ClasswiseConjunctivePooling, SoftmaxConjunctivePooling,
-% AdaptiveClasswisePooling, TopKConjunctivePooling, AttentionMaxPooling, GatedAttentionPooling,
-% DualStreamConjunctivePooling) and Eq. (common template) above.
-%
-% LEFT side (shared by every head), top to bottom:
-%   1. Per-time-step embeddings z_j          (B, T, d)
-%   2. TWO branches read z_j in parallel:
-%        (a) attention branch A(z_j) -> gate values [shape varies by head]
-%        (b) classifier  p_j = W_c z_j + b_c -> (B, T, C)   [IDENTICAL in every head]
-%   3. Aggregation box -> bag_logits (B, C) AND interpretation (B, C, T)
-%      -- this box is the ONLY thing that changes between heads.
-%
-% RIGHT side: eight small boxes, each showing ONLY its aggregation rule:
-%   - Conjunctive (baseline; different colour -- reused, not mine): a_j shared -> mean over time
-%   - Class-wise            a_j^k per class -> mean over time           [Eq. cw_bag]
-%   - Softmax + temperature a_j^k -> softmax over time / tau            [Eq. sm_bag]
-%   - Adaptive class-wise   a_j^k -> soft-argmax with learned beta_k    [Eq. ad_bag]
-%   - Top-k                 a_j^k -> mean of the top k over time        [Eq. topk_bag]
-%   - Attention-max         a_j^k -> learned blend of mean and max      [Eq. attnmax]
-%   - Gated attention       tanh*sigmoid features -> softmax over time  [Eq. ga_bag]
-%   - Dual-stream           two streams blended, lambda near 0 at init  [Eq. ds_blend]
-%
-% Draw a short arrow from the Conjunctive box to EVERY other box EXCEPT Gated attention -- it is
-% the one head that does NOT reduce back to Conjunctive for any parameter setting.
-%
-% Colours: Conjunctive = grey (reused); Class-wise / Softmax / Adaptive / Top-k / Attention-max =
-% accent colour (my own analysis); Gated attention + Dual-stream = a second accent (adapted from
-% the WSI MIL papers).
-% -------------------------------------------------------------------------------------------
-\begin{figure}[t]
-  \centering
-  \figph{\textbf{Proposed pooling architecture.} The shared template on the left (embeddings
-  $\rightarrow$ attention branch + per-time-step classifier) and the eight aggregation variants on
-  the right, each drawn as a small box: shared gate (baseline), per-class gate, softmax over time,
-  soft-argmax with $\beta$, top-$k$ selection, mean/max blend, gated attention, dual-stream. Arrows
-  show where each one departs from the baseline.}
-  \caption{All the pooling heads share the same skeleton; only the aggregation changes. The
-  Conjunctive box is the \millet{} baseline and every other box is mine. Five of them
-  (\Cref{sec:pool:classwise}--\Cref{sec:pool:attnmax}) share the left-hand template exactly and only
-  change how the per-time-step evidence $g_j^k$ is combined over time. The last two
-  (\Cref{sec:pool:gated}--\Cref{sec:pool:dsmil}) also change how the attention itself is computed,
-  adapting ideas from whole-slide-image MIL.}
-  \label{fig:pooling_arch}
-\end{figure}
+% NOTE: the "all heads at a glance" diagram was dropped. Table tab:pooling_summary below already
+% says the same thing in one page-cheap block, so the figure was pure duplication.
 
 % ---------------------------------------------------------------------
 \subsection{Summary and cost}
