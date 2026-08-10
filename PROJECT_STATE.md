@@ -2,7 +2,7 @@
 
 Purpose of this file: so a new Claude session knows where we are **without
 exploring the repo**. Exploring costs a lot of tokens. Everything below is
-already checked and true as of **2026-08-06**.
+already checked and true as of **2026-08-10**.
 
 If something here disagrees with the actual files, the files win — but tell me,
 so we fix this file.
@@ -28,14 +28,27 @@ Datasets: **WebTraffic** (our main one) + the **UCR 2018** archive
 
 **Current phase: writing the report. Not running new experiments.**
 
-- Branch: `report2` (created from `report1` on 2026-08-06).
-- The experiments are **done for now**. 66 model variants trained, all ranked in
-  `results/SEA_NET/leaderboard.csv`.
-- The job now is to produce a **complete first draft** of the report.
-- Only after the draft is finished do we go back to new experiments.
+- Branch: `report3` (created from `report2` on 2026-08-10).
+- **72 model variants** trained and ranked in `results/SEA_NET/leaderboard.csv`.
+- **The full first draft is DONE.** Every section 00-A2 is written, all numbers
+  come from the CSVs, and it builds with 0 undefined citations/references and
+  **0 live `\todo`, `\num`, `\tbd` or guide boxes** left.
+- **The one job left: the page count.** The PDF is **45 pages** and the examiner
+  limit is **20-30**. Cutting 15 pages is the next task, and it needs my
+  decision about what to drop, not a guess.
+- Still open besides that: 6 hand-drawn diagrams (see section 3), and one table
+  that runs ~1.3 inch into the margin.
 
-So: if I ask for something, assume it is about **writing/figures/tables**, not
-about training. Do not suggest new training runs unless I ask.
+So: if I ask for something, assume it is about **writing/figures/tables/page
+count**, not about training. Do not suggest new training runs unless I ask.
+
+### One long job still running on the server
+
+`python main.py train --model sv1/millet_paper` (MILLET's own 1500-epoch recipe
+on our harness, for objective O2). Its **WebTraffic result is final** (0.920
+accuracy, AOPCR 13.27) and the report already uses it. Its **UCR sweep is not**
+-- check the `ucr85_n` column before quoting any UCR number from that row; it
+must say 85. When it finishes, re-run the five rebuild commands in section 7.
 
 ---
 
@@ -60,22 +73,37 @@ ICLR_2025_Report/
 
 Section files, in report order:
 
-| file | section | state |
-|---|---|---|
-| `00_abstract.tex` | Abstract | write last |
-| `01_introduction.tex` | Introduction | drafted: motivation + teaser + 4 contributions + structure. One `\todo` left (the MLPerf Tiny 38.6 K / 92 % figure needs its source) |
-| `02_context.tex` | Context | short |
-| `03_objectives.tex` | What I had to do | |
-| `04_background.tex` | Background (MIL, AOPCR) | |
-| `05_architecture.tex` | SEA-Net architecture | needs the main diagram |
-| `06_pooling.tex` | Pooling heads | biggest section (16 KB) |
-| `07_setup.tex` | Experimental setup | |
-| `08_results.tex` | Results | tables to fill from CSVs |
-| `09_discussion.tex` | Discussion | |
-| `10_skills.tex` | Skills (internship requirement) | |
-| `11_conclusion.tex` | Conclusion | |
-| `A1_additional_results.tex` | Appendix A | |
-| `A2_reproducibility.tex` | Appendix B | |
+All sections are **written**. 00-03 are in my own words and should not be
+rewritten — only factual errors get fixed there. 04-A2 were drafted with Claude
+from the real CSVs and code, with no invented explanation.
+
+| file | section | pages | state |
+|---|---|---|---|
+| `00_abstract.tex` | Abstract | — | done |
+| `01_introduction.tex` | Introduction | 2 | mine, done (teaser figure in) |
+| `02_context.tex` | Context | 0.5 | mine, done |
+| `03_objectives.tex` | What I had to do | 1.5 | mine, done |
+| `04_background.tex` | Background (MIL, AOPCR) | 3 | done — needs 2 diagrams |
+| `05_architecture.tex` | SEA-Net architecture | 5 | done — needs 2 diagrams |
+| `06_pooling.tex` | Pooling heads | 4 | done — needs 1 diagram |
+| `07_setup.tex` | Experimental setup | 3 | done — needs 1 diagram |
+| `08_results.tex` | Results | 7 | done, 5 real figures |
+| `09_discussion.tex` | Discussion | 2 | done |
+| `10_skills.tex` | Skills | 1.5 | done |
+| `11_conclusion.tex` | Conclusion | 2.5 | done |
+| `A1_additional_results.tex` | Appendix A | 9 | done — **biggest cut target** |
+| `A2_reproducibility.tex` | Appendix B | — | done |
+
+Plus title + abstract + TOC = 3 pages and references = 2 pages. **Total 45.**
+
+### The 6 diagrams I still have to draw myself
+
+They are the only `\figph{}` grey boxes left. Each already has a full drawing
+brief written as a `%` comment right above it in the `.tex` file (exact boxes,
+shapes, tensor sizes, colours):
+
+`fig:mil_view` · `fig:aopcr_curve` (04) — `fig:arch_overall` · `fig:arch_block`
+(05) — `fig:pooling_arch` (06) — `fig:pipeline` (07)
 
 Page budget: **20–30 pages including appendix** (examiner rule, AIEDA400).
 The full writing guide, macro list, figure list and submission checklist are in
@@ -125,6 +153,8 @@ without checking here first.**
 | `results/paper_figures/` | 148 files, the report's real figures (PDF+PNG+SVG) | **yes** |
 | `results/paper_figures/tables/` | generated LaTeX tables to `\input` | **yes** |
 | `results/SEA_NET/teaser/` | page-1 teaser image | **yes** — cited in `01_introduction.tex` |
+| `results/SEA_NET/<model>/curves/*.csv` | **NEW** per-epoch loss curve, one file per dataset per seed | yes — training-behaviour figure |
+| `results/SEA_NET/<model>/interpretation/` | per-sample explanation figures (`main.py interpret`) | yes |
 | `results/SEA_NET/<model>/predictions/*.npz` | raw outputs, 3 models only | ensemble voting — keep |
 | `results/SEA_NET/ensemble_vote.csv` | ensemble voting result | yes |
 | `results/SEA_NET/profile.csv` | params / FLOPs / memory / latency | yes — efficiency table |
@@ -173,22 +203,36 @@ Available generated tables: `table1_main_results`,
 Ranked by WebTraffic accuracy. `web_aopcr` is the interpretability score
 (higher is better).
 
-| rank | config | encoder | pooling | web_acc | web_aopcr | params |
-|---|---|---|---|---|---|---|
-| 1 | `seanet_gated_mean_topk` | `sea_mstcn_sep_gated` | `sea_topk_conjunctive` | 0.954 | 2.293 | 61,740 |
-| 2 | `seanet_conjunctive` | `sea_mstcn_sep` | `mil_conjunctive` | 0.954 | 1.502 | 269,083 |
-| 3 | `seanet_gated_max_topk` | `sea_mstcn_sep_gated` | `sea_topk_conjunctive` | — | — | — |
-| 4 | `seanet_spiketrend_topk` | `sea_mstcn_sep_spiketrend` | `sea_topk_conjunctive` | — | — | — |
-| 5 | `seanet_inputgate_mschan` | `sea_multiscale_channels` | `sea_topk_conjunctive` | — | — | — |
+| rank | config | encoder | pooling | web_acc | web_aopcr | web_ndcg | params |
+|---|---|---|---|---|---|---|---|
+| 1 | `seanet_gated_mean_topk` | `sea_mstcn_sep_gated` | `sea_topk_conjunctive` | 0.9547 | 2.225 | 0.750 | 61,740 |
+| 2 | `seanet_conjunctive` | `sea_mstcn_sep` | `mil_conjunctive` | 0.9540 | 1.502 | 0.698 | 269,083 |
+| 3 | `seanet_gated_max_topk` | `sea_mstcn_sep_gated` | `sea_topk_conjunctive` | 0.9520 | 2.268 | 0.719 | 61,740 |
+| 4 | `seanet_topk_nofocus` | `sea_mstcn_sep_bottleneck` | `sea_topk_conjunctive` | 0.9500 | 2.303 | 0.765 | 41,324 |
+| 5 | `seanet_spiketrend_topk` | `sea_mstcn_sep_spiketrend` | `sea_topk_conjunctive` | 0.9500 | 2.316 | 0.756 | 67,020 |
 
-**The story for the report:** rank 1 matches rank 2 on accuracy (0.954) but has
-a much better AOPCR (2.29 vs 1.50) using **4.4× fewer parameters** (62 K vs
-269 K). That is the headline: more interpretable *and* far cheaper, at equal
-accuracy. MILLET's own reference numbers are in the last three leaderboard
-columns (`millet_acc` 0.8445, `millet_loss` 1.2241, `millet_aopcr` 4.5532).
+**Seeds matter here.** Four models have 3 seeds on WebTraffic, and two of them
+also have 3 seeds over the whole UCR archive:
 
-Read the real CSV before quoting any other number — do not trust this table for
-values marked `—`.
+| model | acc | AOPCR | NDCG | params |
+|---|---|---|---|---|
+| `seanet_gated_mean_topk` | 0.955 ± 0.003 | 2.225 ± 0.131 | 0.750 ± 0.022 | 61,740 |
+| `seanet_bottleneck_topk` | 0.947 ± 0.016 | 2.621 ± 0.214 | **0.773** ± 0.013 | **41,324** |
+| `seanet_inputgate_adaptive` | 0.905 ± 0.030 | 2.651 ± 0.437 | 0.732 ± 0.043 | 58,102 |
+| `millet` re-trained | 0.887 ± 0.010 | 2.569 ± 0.884 | 0.677 ± 0.016 | 423,707 |
+
+**The story for the report:** `seanet_bottleneck_topk` beats the re-trained
+MILLET baseline on accuracy, AOPCR *and* NDCG at once, with **90 % fewer
+parameters** (41 K vs 424 K) and 11× fewer FLOPs. `seanet_gated_mean_topk` has
+the best accuracy of the sweep and is the most stable model trained.
+
+**Two honest counterweights the report states plainly:**
+1. On the 85 UCR datasets the re-trained MILLET baseline is still best
+   (0.8274 mean, rank 11.86 of 27) — our heads sit near rank 14.6.
+2. AOPCR is unnormalised. Proof: the *same* architecture scores AOPCR 2.57
+   under our recipe and **13.27** under MILLET's (`sv1/millet_paper`).
+
+Read the real CSV before quoting any number not in the tables above.
 
 ---
 
@@ -196,7 +240,9 @@ values marked `—`.
 
 ```
 main.py                  <- ONE entry point, all commands (44 KB)
-configs/                 <- YAML: models/, datasets, main.yaml
+configs/                 <- YAML: models/ (sv1..sv7), datasets, main.yaml
+                            sv7/ = the ablation copies added 2026-08-10:
+                            top_frac 0.05/0.25/0.5/1.0 + lambda_entropy 0
 seanet/                  <- our code (encoders, pooling heads, paper figures)
 millet/                  <- upstream MILLET, kept diffable — avoid editing
 model/                   <- saved weights (git-ignored)
