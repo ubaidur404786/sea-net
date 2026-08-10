@@ -23,7 +23,7 @@ a reader can look up any model I mention anywhere in this report.
 % page. Locally turning \small into \scriptsize inside this group shrinks it to fit, without
 % editing the generated file (which python main.py paper would overwrite anyway).
 {\let\small\tiny
- \setlength{\tabcolsep}{2pt}
+ \setlength{\tabcolsep}{1.2pt}
  \input{../../results/paper_figures/tables/table_appendix_full_leaderboard}}
 
 Three things are worth pointing out in it. First, the top of the table is crowded: several models
@@ -51,7 +51,7 @@ are shown for reference; two of them were only ever paired with InceptionTime, s
 is not a fair comparison with a head averaged over ten pairings.}
 \label{tab:ablation_pooling}
 \begin{center}
-\small
+\footnotesize
 \begin{tabular}{lcccr}
 \toprule
 \textbf{Pooling head} & \textbf{Mean accuracy} & \textbf{Mean AOPCR} & \textbf{Mean NDCG@$n$} & \textbf{$n$} \\
@@ -88,7 +88,7 @@ was paired with. The bottom three rows are the baseline encoders, each only ever
 Conjunctive pooling.}
 \label{tab:ablation_encoder}
 \begin{center}
-\small
+\footnotesize
 \begin{tabular}{lcccr}
 \toprule
 \textbf{Encoder} & \textbf{Mean accuracy} & \textbf{Mean AOPCR} & \textbf{Mean NDCG@$n$} & \textbf{$n$} \\

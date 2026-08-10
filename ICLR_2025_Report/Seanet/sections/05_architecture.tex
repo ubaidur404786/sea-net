@@ -54,7 +54,7 @@ This is the only place \seanet{} changes \millet{}. The pooling head afterwards 
 of \Cref{sec:pooling} -- the \millet{} Conjunctive baseline, or one of my own -- unchanged in shape.
 It reads the $(B, \dmodel, \nsteps)$ embeddings and returns the bag logits $(B, \nclz)$ and the
 interpretation $(B, \nclz, \nsteps)$. Every encoder in this section follows that same input/output
-contract (\texttt{seanet/features.py}), which is what makes goal~G5 possible.
+contract, which is what makes goal~G5 possible.
 
 % ----- DIAGRAM BRIEF for fig:arch_overall (draw this in your own tool) -------------------
 % Source of truth: seanet/features.py (MSTCNSepEncoder, MultiScaleSepBlock), seanet/model.py
@@ -124,8 +124,8 @@ simply added, so the block does not have to pick one scale in advance. The point
 that follows does not look at time at all -- it only mixes the $\dmodel$ channels at each time step,
 combining what the three kernels found. BatchNorm \citep{ioffe2015batchnorm} keeps the activations on
 a stable scale, ReLU adds the non-linearity, and dropout regularises. Every convolution in
-\Cref{eq:unit} is \emph{depthwise} (one filter per channel, \texttt{groups=d} in the code), which is
-what makes the whole step cheap.
+\Cref{eq:unit} is \emph{depthwise} -- one filter per channel -- which is what makes the whole step
+cheap.
 
 % ----- DIAGRAM BRIEF for fig:arch_block (draw this in your own tool) ---------------------
 % Source of truth: seanet/features.py, class MultiScaleSepBlock (forward() method).
@@ -171,15 +171,14 @@ $\dmodel^2 k$ weights. A depthwise-separable pair costs only
   \label{eq:sep_cost}
 \end{equation}
 
-Counting the weights of \Cref{eq:unit} directly from the code
-(\texttt{seanet/features.py}, \texttt{MultiScaleSepBlock}), with the base width $\dmodel = 128$ and
-kernels $\{5,11,23\}$: the three depthwise convolutions together cost
+Counting the weights of \Cref{eq:unit} directly from the code, with the base width $\dmodel = 128$
+and kernels $\{5,11,23\}$: the three depthwise convolutions together cost
 $\dmodel \cdot 6 + \dmodel \cdot 12 + \dmodel \cdot 24 = 5{,}376$ weights, counting one bias per
 channel. The pointwise convolution alone costs $\dmodel^2 + \dmodel = 16{,}512$ -- already three
 times more than all three depthwise convolutions put together. Adding BatchNorm's $2\dmodel = 256$,
 one unit costs $22{,}144$ parameters, one block (two units) costs $44{,}288$, and the full six-block
-encoder plus its stem costs about $266{,}752$. That matches the $269{,}083$ measured for
-\texttt{seanet\_conjunctive} in the leaderboard, the small remainder being the pooling head.
+encoder plus its stem costs about $266{,}752$. That matches the $269{,}083$ measured for the wide
+base model in the leaderboard, the small remainder being the pooling head.
 
 A standard, non-separable convolution looking at the same three kernel sizes would instead cost
 $\dmodel^2 \cdot (5{+}11{+}23) = 638{,}976$ weights for that same step -- about $29\times$ more.
@@ -202,8 +201,7 @@ So I factorise it through a narrower rank $r < \dmodel$:
   \qquad \text{cost } \dmodel^2 \rightarrow 2\dmodel r .
   \label{eq:bottleneck}
 \end{equation}
-With the ratio 4 used in \texttt{configs/models/sv4/seanet\_bottleneck.yaml}, we get $r = \dmodel/4$,
-so the pointwise cost drops from $\dmodel^2$ to $\dmodel^2/2$ -- exactly half, whatever $\dmodel$ is.
+With the ratio 4 I used, we get $r = \dmodel/4$, so the pointwise cost drops from $\dmodel^2$ to $\dmodel^2/2$ -- exactly half, whatever $\dmodel$ is.
 At the size actually used in the experiments ($\dmodel = 64$, 4 blocks), this cuts the full model
 from 57{,}580 to 41{,}324 parameters, a real 28\,\% saving on the whole encoder and not just on the
 pointwise step. This is the cheapest encoder I built, and it is the one in my headline result.
@@ -218,9 +216,8 @@ Not every channel matters for every series. A summary over time drives a channel
 \end{equation}
 where $\odot$ multiplies element by element. This lets the whole-series context decide which feature
 channels to trust, without touching individual time steps. The gate multiplies by
-$(1+\text{gate}) \in [1,2]$ rather than replacing the features outright
-(\texttt{seanet/features.py}, \texttt{SummaryGate}), so the per-time-step differences that AOPCR and
-NDCG depend on are never flattened -- only the channels are turned up or down, never the time axis.
+$(1+\text{gate}) \in [1,2]$ rather than replacing the features outright, so the per-time-step
+differences that AOPCR and NDCG depend on are never flattened -- only the channels are turned up or down, never the time axis.
 The code offers three ways to summarise time into that one vector (max, mean, or the last time step)
 and I trained all three under the same recipe so they could be compared.
 
@@ -262,7 +259,7 @@ of my real encoders, so the idea did not pay off.
 This one asks a different question: what does the encoder \emph{fail} to explain? A $1\times1$
 convolution rebuilds the input from the trend features, the rebuilt version is subtracted from the
 real input, and the leftover residual is turned into $d_{\text{res}} = 16$ extra channels which are
-mixed back in (\texttt{seanet/features.py}, \texttt{MSTCNSepReconEncoder}):
+mixed back in:
 \begin{equation}
   \widehat{\bag} = P_{\text{rec}}(\text{trend}), \qquad
   \mathbf{h}_j = P_{1\times1}\big([\,\text{trend}_j \,;\, \phi(\bag - \widehat{\bag})_j\,]\big).
@@ -310,8 +307,8 @@ $1.9\times$). This was my attempt at the 1-D version of multi-magnification whol
 (\Cref{tab:ablation_encoder}). One constraint was needed to make it work at all: the wrapped encoder
 must stay shallow enough that its receptive field does not exceed $\nsteps / \max(\mathcal{S})$,
 otherwise the coarsest scales collapse to a nearly constant signal and the interpretation degrades
-badly. That is why the pyramid config uses a shallow 2-block base with \texttt{max\_dilation=1}, and
-why \texttt{scripts/check\_multiscale.py} checks this automatically for any new combination.
+badly. That is why the pyramid setting uses a shallow 2-block base with the smallest dilation, and
+why the pipeline checks this automatically for any new combination.
 
 % NOTE: the summary table of these variants (tab:encoder_variants) moved to the appendix,
 % Appendix A "Encoder variants at a glance", to keep this section inside the page budget.

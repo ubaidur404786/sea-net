@@ -44,11 +44,10 @@
 \subsection{Technical skills}
 
 \begin{itemize}\itemsep4pt
-  \item \textbf{Designing modules around a contract, not an implementation.} Every encoder in
-        \texttt{seanet/features.py} maps $(B, C, \nsteps) \to (B, \dmodel, \nsteps)$ and every
-        pooling head in \texttt{seanet/pooling.py} maps $(B, \dmodel, \nsteps)$ to the same output
-        dictionary. That single rule is the only reason 72 encoder/pooling combinations could be
-        built and trained without writing 72 model classes.
+  \item \textbf{Designing modules around a contract, not an implementation.} Every encoder maps
+        $(B, C, \nsteps) \to (B, \dmodel, \nsteps)$ and every pooling head maps
+        $(B, \dmodel, \nsteps)$ to the same output. That single rule is the only reason 72
+        encoder/pooling combinations could be built and trained without writing 72 model classes.
 
   \item \textbf{Treating the experiment pipeline as something worth engineering.} A config-driven
         model registry, sweeps that resume instead of restart, and one results row per
@@ -62,18 +61,18 @@
         phone as it finished, so I could react to a failed sweep the same day instead of the next
         morning.
 
-  \item \textbf{Making ``regenerate everything'' a single command.} \texttt{python main.py paper}
-        rebuilds every figure and table in this report from the stored results
-        (\Cref{app:commands}). This mattered for a concrete reason while I was writing
+  \item \textbf{Making ``regenerate everything'' a single command.} One command rebuilds every
+        figure and table in this report from the stored results (\Cref{app:commands}). This
+        mattered for a concrete reason while I was writing
         \Cref{sec:results}: some auto-generated tables had been produced before a later re-run
         finished, so a few numbers were quietly out of date. That is exactly the failure this
         command prevents, and it is why I re-ran it before submitting.
 
-  \item \textbf{Noticing what the code does not save.} While writing \Cref{sec:res:training} I found
-        that the per-epoch loss curve only went to MLflow, which stays on the Grid'5000 node, so it
-        never came back with the results. I changed the training code to write it next to
-        \texttt{results.csv} instead. Small fix, but it taught me to ask ``where does this number
-        live after the job ends?'' when I write the code, not months later when I need it.
+  \item \textbf{Noticing what the code does not save.} While writing \Cref{sec:results} I found that
+        the per-epoch loss curve only went to MLflow, which stays on the Grid'5000 node, so it never
+        came back with the results. I changed the training code to save it next to the results
+        instead. Small fix, but it taught me to ask ``where does this number live after the job
+        ends?'' when I write the code, not months later when I need it.
 
   \item \textbf{The everyday tools.} Git for a project that changed shape several times, VS~Code
         over SSH to develop directly against Grid'5000, and \LaTeX{} for a report long enough that
@@ -94,7 +93,7 @@
         published accuracy. My first instinct was to keep debugging until it matched. Instead I
         brought the discrepancy itself to the meeting, with the exact numbers and the two possible
         causes I could think of. That turned a private problem into a shared decision -- we emailed
-        the authors and built \texttt{millet\_paper.yaml} to measure the recipe gap -- and it is the
+        the authors and built a full-fidelity reproduction to measure the recipe gap -- and it is the
         moment I learned that a clearly-stated unresolved result is more useful to a supervisor than
         a delayed clean one.
 
@@ -103,10 +102,10 @@
         the \millet{} paper, forced me to check that I actually understood a mechanism well enough to
         explain it plainly -- not just well enough to implement it.
 
-  \item \textbf{Writing things down where someone else will find them.} \texttt{PROJECT\_STATE.md}
-        and the module docstrings across \texttt{seanet/} exist so that whoever continues this
-        project does not have to re-derive what the leaderboard means or how the pipeline fits
-        together from the code alone.
+  \item \textbf{Writing things down where someone else will find them.} A living project-state note
+        and a docstring on every module exist so that whoever continues this project does not have
+        to re-derive what the leaderboard means or how the pipeline fits together from the code
+        alone.
 \end{itemize}
 
 \subsection{The one lesson I would keep}

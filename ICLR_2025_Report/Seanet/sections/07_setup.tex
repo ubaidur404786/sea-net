@@ -54,14 +54,14 @@ papers; I re-trained all three myself through the same pipeline and the same rec
 That was the most important methodological decision of the internship, because a published number
 mixes the architecture with whatever recipe its authors used. Re-training removes the doubt: any gap
 between \seanet{} and a re-trained baseline is down to the architecture. The recipe really does
-matter, and I can show it rather than assert it -- \texttt{configs/models/sv1/millet\_paper.yaml}
-runs \millet{}'s own published hyperparameters on my harness, and on \webtraffic{} the identical
-architecture scores 0.887 with my recipe against 0.920 with theirs (\Cref{sec:disc:reading}). That
-is why published \millet{} numbers always stay in their own column in \Cref{sec:results}.
+matter, and I can show it rather than assert it -- I also set up a run that uses \millet{}'s own
+published hyperparameters on my harness, and on \webtraffic{} the identical architecture scores
+0.887 with my recipe against 0.920 with theirs (\Cref{sec:disc:reading}). That is why published
+\millet{} numbers always stay in their own column in \Cref{sec:results}.
 
 \label{sec:setup:protocol}
-Every model, mine and baseline alike, is trained with the recipe in \Cref{tab:protocol}
-(\texttt{seanet/train.py}), so the numbers in \Cref{sec:results} differ only because of the model.
+Every model, mine and baseline alike, is trained with the recipe in \Cref{tab:protocol}, so the
+numbers in \Cref{sec:results} differ only because of the model.
 Two settings adapt to the dataset instead of being fixed, because the \ucr{} archive spans 40 to
 24{,}000 series: I hold out a 20\,\% validation split only when a dataset has at least 100 training
 series (below that the split would be too noisy, so I watch the training loss instead), and the
@@ -95,9 +95,9 @@ Hardware               & Grid'5000 GPU nodes (Lille, Sophia) \\
 \end{table}
 
 I report accuracy and loss for classification, AOPCR and NDCG@$n$ for explanation quality
-(\Cref{sec:bg:metrics}), and parameters, size, FLOPs, latency and peak memory for cost
-(\texttt{results/SEA\_NET/profile.csv}). Cost sits next to accuracy on purpose: without it a reader
-cannot tell whether a gain came from a better idea or just from more capacity.
+(\Cref{sec:bg:metrics}), and the number of parameters, the saved model size and the time for one
+prediction for cost. Cost sits next to accuracy on purpose: without it a reader cannot tell whether
+a gain came from a better idea or just from more capacity.
 
 % ---------------------------------------------------------------------
 \subsection{The experimental pipeline I built}
@@ -109,28 +109,24 @@ store, figure and table generation, experiment tracking -- is my own work. It is
 possible to train and compare 72 model variants over 129 datasets inside the internship.
 \end{contribution}
 
-A model is always \emph{encoder + pooling head}, and both are chosen by name in
-\texttt{configs/models/<model>.yaml} rather than hardcoded. Two small registries
-(\texttt{seanet/features.py} for encoders, \texttt{seanet/pooling.py} for heads) map a name like
-\texttt{sea\_topk\_conjunctive} to the matching class, and \texttt{build\_model\_from\_config} wires
-the two together. This is what let 72 variants exist without 72 copies of nearly identical training
-code: every new row in the results tables is a new YAML file, not a new script. The five ablation
-configs in \Cref{app:ablations} are a good example -- each is a copy of an existing file with one
-line changed.
+A model is always \emph{encoder + pooling head}, and both are chosen by name in a small
+configuration file rather than hardcoded. Two registries, one for encoders and one for heads, map a
+name to the matching class, and a builder wires the two together. This is what let 72 variants exist
+without 72 copies of nearly identical training code: every new row in the results tables is a new
+configuration file, not a new script. The five ablation settings in \Cref{app:ablations} are a good
+example -- each is a copy of an existing file with one line changed.
 
-Each model writes into its own folder, \texttt{results/SEA\_NET/<model>/results.csv}, one row per
-dataset per seed, so two models can never overwrite each other. Grid'5000 jobs have a wall-clock
-limit and a full sweep does not always finish inside it, so every model tracks the datasets it has
-finished in a small \texttt{done\_train\_dataset.txt} file; restarting the same command skips those
-and a killed job costs at most the one dataset that was mid-training. Every run is also logged to
-MLflow, and writes its per-epoch loss curve to \texttt{results/SEA\_NET/<model>/curves/} so the curve
-travels with the results when they are copied off the training machine. Finally, every figure and
-\LaTeX{} table in this report is generated from those \texttt{results.csv} files by one command
-(\texttt{python main.py paper}), which is what lets me say no number here was typed in by hand.
+Each model writes into its own results folder, one row per dataset per seed, so two models can never
+overwrite each other. Grid'5000 jobs have a wall-clock limit and a full sweep does not always finish
+inside it, so every model keeps a list of the datasets it has already finished; restarting the same
+job skips those, and a killed job costs at most the one dataset that was mid-training. Every run is
+also logged to MLflow and saves its per-epoch loss curve, so the curve travels with the results when
+they are copied off the training machine. Finally, every figure and \LaTeX{} table in this report is
+generated from those stored results by a single command (\Cref{app:commands}), which is what lets me
+say no number here was typed in by hand.
 
 The stack is PyTorch \citep{paszke2019pytorch} for the models, MLflow for tracking, Optuna
 \citep{akiba2019optuna} for the search in \Cref{app:extra}, Git, and \LaTeX{}. Development and smoke
 tests happened locally on Windows; every real run happened on Grid'5000 Linux GPU nodes. The two
-environments differ in more than the operating system (\Cref{app:env}), so the same
-\texttt{configs/*.yaml} files are used on both sides to keep the one thing that must not drift
-identical between them.
+environments differ in more than the operating system (\Cref{app:env}), so the same configuration
+files are used on both sides to keep the one thing that must not drift identical between them.

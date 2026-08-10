@@ -69,15 +69,10 @@ marked as existing work. My main contributions are:
 
   \item \textbf{Seven new MIL pooling heads.}
   I developed improved pooling heads inspired by conjunctive pooling:
-  \texttt{classwise\_conjunctive},
-  \texttt{softmax\_conjunctive},
-  \texttt{adaptive\_classwise},
-  \texttt{topk\_conjunctive},
-  \texttt{attention\_max},
-  \texttt{gated\_attention},
-  and \texttt{dualstream\_conjunctive}.
-  Each targets a weakness of \millet{} conjunctive pooling
-  (\Cref{sec:pooling}).
+  class-wise conjunctive, softmax conjunctive with a learnable temperature,
+  adaptive class-wise, top-$k$ conjunctive, attention-max, per-class gated
+  attention, and dual-stream conjunctive. Each targets a weakness of \millet{}
+  conjunctive pooling (\Cref{sec:pooling}).
 
   \item \textbf{A modular, config-driven benchmark.}
   I created configuration files that work as a pipeline. By just changing the settings, we can get different results. For example, we can use Optuna to fine-tune an encoder and pooling pair to find the best parameters, and then use those for final training. We also use MLflow to track the experiments. My contribution is providing a template so that any new encoder or pooling module can easily integrate into the whole pipeline with less effort.

@@ -17,7 +17,8 @@
 Goal~G1 of \Cref{sec:arch:goals} was a smaller model. On \webtraffic{} I reached it without giving
 anything up. \texttt{seanet\_bottleneck\_topk} beats the re-trained \millet{} baseline on accuracy,
 AOPCR and NDCG@$n$ at the same time (\Cref{tab:web_main}) while using 41{,}324 parameters against
-423{,}707 -- a 90\,\% cut, and 11$\times$ fewer FLOPs (\Cref{tab:cost}). This is not one lucky
+423{,}707 -- a 90\,\% cut, in a third of the file size and faster per prediction
+(\Cref{tab:cost}). This is not one lucky
 point either: \texttt{seanet\_gated\_mean\_topk} reaches the best accuracy of the whole 72-model
 sweep (0.955) at 61{,}740 parameters.
 
@@ -89,8 +90,7 @@ logits, not a fixed 0--1 range like accuracy (\Cref{sec:bg:metrics}). This is a 
 effect, not a statement about explanation quality, and my own runs show it cleanly.
 
 I trained the \emph{same} architecture twice, changing only the training recipe: once with my recipe
-(\texttt{configs/models/sv1/millet.yaml}) and once with \millet{}'s published recipe
-(\texttt{sv1/millet\_paper.yaml} -- 1500 epochs, no weight decay, no label smoothing). On
+and once with \millet{}'s published one (1500 epochs, no weight decay, no label smoothing). On
 \webtraffic{} the first scores AOPCR 2.57 and the second scores \textbf{13.27}. Same encoder, same
 pooling head, same metric code, same dataset: five times the AOPCR, purely from a different training
 recipe. That is what an unnormalised metric looks like, and it is exactly why my AOPCR column must
@@ -116,7 +116,7 @@ numbers should be read as indicative, not exact.
 \paragraph{My training budget is not the published one.}
 My recipe trains for at most 400 epochs with patience 60 (\Cref{sec:setup:protocol}). The published
 \millet{} numbers come from a recipe about four times longer, with different regularisation. I built
-\texttt{sv1/millet\_paper.yaml} to measure exactly this gap by running their recipe on my own
+a full-fidelity reproduction to measure exactly this gap by running their recipe on my own
 harness. On \webtraffic{} it is already informative -- 0.920 accuracy against 0.887 for my recipe,
 so a good part of the gap really is the budget and not the architecture. The full 85-dataset run was
 still going when this report was written, so I cannot yet split the \ucr{} gap the same way. Until

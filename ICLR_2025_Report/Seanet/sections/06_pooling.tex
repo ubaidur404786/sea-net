@@ -74,9 +74,9 @@ One property is worth stating on its own, because it is the reason the explanati
 For every head in this section, $\interp$ is \emph{not} computed by a separate branch after the
 fact. It is exactly the per-time-step, per-class quantity that $\bagpred$ is built from by summing
 or averaging -- for example \Cref{eq:cw_bag} sets $\interp_{k,j} = g_j^k$, the very term summed to
-build $\bagpred^{\,k}$. This is also what the code does: every \texttt{forward()} in
-\texttt{seanet/pooling.py} builds \texttt{bag\_logits} and \texttt{interpretation} from the same
-intermediate tensor, never from two independent computations. If the two were computed separately,
+build $\bagpred^{\,k}$. This is also what the code does: every head builds its bag logits and its
+interpretation from the same intermediate tensor, never from two independent computations. If the
+two were computed separately,
 nothing would stop them from disagreeing, and the explanation would lose exactly the property that
 post-hoc explainers lack (\Cref{sec:bg:related}).
 
@@ -173,7 +173,7 @@ $\beta_k \to \infty$ gives $\bagpred^{\,k} \to \max_j g_j^k$. Since $\bagpred^{\
 convex combination of the values $g_j^k$, it stays inside their range, which keeps training stable.
 \end{property}
 
-$\beta_k$ starts small (\texttt{init\_beta}, default $0.3$) so training begins close to the safe
+$\beta_k$ starts small (default $0.3$) so training begins close to the safe
 class-wise mean, and the optimiser sharpens it towards a max-like aggregator only for the classes
 where that actually reduces the loss.
 
@@ -388,6 +388,6 @@ high entropy, so minimising the loss pushes the attention to be peaked:
 \end{equation}
 Here $\bar a_j$ is the attention each pooling head returns, averaged over classes (so
 $\bar a_j = \frac{1}{\nclz}\sum_k a_j^k$ for the class-wise family), $\epsilon$ avoids $\log 0$, and
-$\lambda_{\text{focus}}$ is \texttt{lambda\_entropy} in the config. Its default is $0.01$, and it is
+$\lambda_{\text{focus}}$ sets how strong the penalty is. Its default is $0.01$, and it is
 set to $0$ for the \millet{} baseline, since the focus penalty is a \seanet{} idea and not part of
 \millet{}. \Cref{tab:ablation_focus} measures what it actually buys.
