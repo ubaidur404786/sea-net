@@ -1,0 +1,14 @@
+[log] command 'interpret' started at 2026-08-09_15-27-06 for model 'millet__mil_inceptiontime__mil_conjunctive'
+[log] a copy of everything below is being saved to: results/SEA_NET/millet__mil_inceptiontime__mil_conjunctive/logs/interpret_2026-08-09_15-27-06.log
+
+=== interpret: model=millet__mil_inceptiontime__mil_conjunctive (config sv1/millet) dataset=WebTraffic device=cuda mode=full ===
+    stage 1/3: loading data ...
+    stage 2/3: training on 400 series (val=100, C=10, T=1008, batch=16) ...
+    drawing figures ...
+
+saved 3 figure(s) to results/SEA_NET/millet__mil_inceptiontime__mil_conjunctive/interpretation/WebTraffic/2026-08-09_15-28-46/
+   results/SEA_NET/millet__mil_inceptiontime__mil_conjunctive/interpretation/WebTraffic/2026-08-09_15-28-46/WebTraffic_sample0000_true0_pred0.png
+   results/SEA_NET/millet__mil_inceptiontime__mil_conjunctive/interpretation/WebTraffic/2026-08-09_15-28-46/WebTraffic_sample0050_true1_pred1.png
+   results/SEA_NET/millet__mil_inceptiontime__mil_conjunctive/interpretation/WebTraffic/2026-08-09_15-28-46/WebTraffic_sample0102_true2_pred2.png
+
+[log] finished; full output saved to results/SEA_NET/millet__mil_inceptiontime__mil_conjunctive/logs/interpret_2026-08-09_15-27-06.log

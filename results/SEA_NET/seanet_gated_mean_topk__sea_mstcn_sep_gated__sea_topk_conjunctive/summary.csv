@@ -14,7 +14,7 @@ overall_ucr_datasets,116
 overall_mean_acc,0.813
 overall_mean_loss,0.5669
 overall_mean_aopcr,1.211
-webtraffic_acc,0.954
-webtraffic_ndcg,0.7721
+webtraffic_acc,0.9547
+webtraffic_ndcg,0.7496
 params,61740
 model_size_mb,1.502

@@ -1,7 +1,8 @@
 model,millet85_datasets,mean_acc_ours,mean_acc_millet,acc_win_tie_loss,mean_loss_ours,mean_loss_millet,loss_win_tie_loss,mean_aopcr_ours,mean_aopcr_millet,aopcr_win_tie_loss,overall_ucr_datasets,overall_mean_acc,overall_mean_loss,overall_mean_aopcr,webtraffic_acc,webtraffic_ndcg,params,model_size_mb
+millet_paper__mil_inceptiontime__mil_conjunctive,22,0.8552,0.8606,6/8/8,0.9569,0.9931,12/3/7,4.4021,4.2017,14/0/8,22,0.8552,0.9569,4.4021,0.92,0.6612,427190,4.123
 seanet__sea_mstcn_sep__mil_additive,85,0.8298,0.8445,24/19/42,0.5088,1.2241,60/2/23,0.5511,4.5532,3/0/82,128,0.8277,0.5502,0.6459,0.942,0.7291,269083,3.539
 seanet_classwise__sea_mstcn_sep__sea_classwise_conjunctive,85,0.8292,0.8445,27/19/39,0.5113,1.2241,60/1/24,0.5642,4.5532,3/0/82,128,0.8279,0.5541,0.6543,0.946,0.686,269164,3.539
-millet__mil_inceptiontime__mil_conjunctive,84,0.8274,0.8433,13/25/46,0.5297,1.2321,56/2/26,0.8119,4.5579,3/0/81,124,0.8134,0.5891,0.9191,0.8873,0.6769,423707,4.11
+millet__mil_inceptiontime__mil_conjunctive,84,0.8274,0.8433,13/25/46,0.5297,1.2321,56/2/26,0.8119,4.5579,3/0/81,124,0.8135,0.5902,0.9134,0.8873,0.6769,423707,4.11
 seanet_conjunctive__sea_mstcn_sep__mil_conjunctive,85,0.8238,0.8445,23/20/42,0.518,1.2241,57/5/23,0.6257,4.5532,4/0/81,128,0.824,0.5564,0.6847,0.954,0.6983,269083,3.539
 seanet_gated_max__sea_mstcn_sep_gated__sea_classwise_conjunctive,85,0.8237,0.8445,20/17/48,0.5214,1.2241,61/0/24,0.6192,4.5532,4/0/81,128,0.8231,0.5594,0.7164,0.944,0.5924,61740,1.502
 seanet_inputgate_adaptive__sea_mstcn_sep_inputgate__sea_adaptive_classwise,85,0.8153,0.8445,20/15/50,0.5545,1.2241,60/0/25,0.9636,4.5532,4/0/81,128,0.8119,0.5985,1.0786,0.9053,0.7321,58102,1.489
@@ -10,14 +11,14 @@ seanet_bottleneck_gatedattn__sea_mstcn_sep_bottleneck__sea_gated_attention,85,0.
 fcn__mil_fcn__mil_conjunctive,85,0.8141,0.8445,21/12/52,0.5727,1.2241,55/1/29,1.3777,4.5532,5/3/77,128,0.7992,0.6353,1.4024,0.742,0.5327,267035,3.474
 seanet_recon_adaptive__sea_mstcn_sep_recon__sea_adaptive_classwise,85,0.814,0.8445,19/18/48,0.5502,1.2241,58/1/26,1.0913,4.5532,4/0/81,128,0.8095,0.5977,1.2209,0.946,0.7679,62935,1.51
 seanet_acp__sea_mstcn_sep__sea_adaptive_classwise,85,0.8134,0.8445,25/17/43,0.5354,1.2241,57/1/27,0.891,4.5532,4/1/80,128,0.8145,0.5717,1.0711,0.918,0.6188,183934,3.191
-seanet_inputgate_topk__sea_mstcn_sep_inputgate__sea_topk_conjunctive,85,0.8131,0.8445,23/16/46,0.5365,1.2241,60/1/24,0.9636,4.5532,3/1/81,128,0.8107,0.5823,1.1415,0.946,0.7482,58092,1.489
 seanet_softmax__sea_mstcn_sep__sea_softmax_conjunctive,85,0.8131,0.8445,17/13/55,0.5436,1.2241,60/7/18,1.2467,4.5532,4/0/81,128,0.8038,0.6286,1.4117,0.88,0.6045,43629,1.421
+seanet_inputgate_topk__sea_mstcn_sep_inputgate__sea_topk_conjunctive,85,0.8131,0.8445,23/16/46,0.5365,1.2241,60/1/24,0.9636,4.5532,3/1/81,128,0.8107,0.5823,1.1415,0.946,0.7482,58092,1.489
 seanet_gated_max_topk__sea_mstcn_sep_gated__sea_topk_conjunctive,85,0.8108,0.8445,22/16/47,0.5464,1.2241,59/0/26,0.936,4.5532,5/1/79,128,0.8114,0.5868,1.1164,0.952,0.7185,61740,1.502
 seanet_bottleneck_softmax__sea_mstcn_sep_bottleneck__sea_softmax_conjunctive,85,0.8106,0.8445,22/17/46,0.5509,1.2241,58/1/26,0.7592,4.5532,3/0/82,128,0.8072,0.6001,0.9435,0.94,0.7401,41325,1.428
 seanet_bottleneck_topk__sea_mstcn_sep_bottleneck__sea_topk_conjunctive,85,0.8097,0.8445,20/15/50,0.5506,1.2241,58/1/26,1.0909,4.5532,4/0/81,128,0.8058,0.599,1.3239,0.9473,0.7725,41324,1.428
 seanet_slim_topk__sea_mstcn_sep__sea_topk_conjunctive,85,0.8093,0.8445,20/11/54,0.5525,1.2241,60/1/24,1.0179,4.5532,5/0/80,128,0.8083,0.5918,1.319,0.932,0.7776,57580,1.484
 seanet_spiketrend_topk__sea_mstcn_sep_spiketrend__sea_topk_conjunctive,85,0.8089,0.8445,19/23/43,0.546,1.2241,56/1/28,1.1076,4.5532,6/0/79,128,0.8008,0.6072,1.197,0.95,0.756,67020,1.525
-seanet_gated_mean_topk__sea_mstcn_sep_gated__sea_topk_conjunctive,85,0.8083,0.8445,19/13/53,0.556,1.2241,58/1/26,1.0636,4.5532,4/0/81,116,0.813,0.5669,1.211,0.954,0.7721,61740,1.502
+seanet_gated_mean_topk__sea_mstcn_sep_gated__sea_topk_conjunctive,85,0.8083,0.8445,19/13/53,0.556,1.2241,58/1/26,1.0636,4.5532,4/0/81,116,0.813,0.5669,1.211,0.9547,0.7496,61740,1.502
 seanet_recon_topk__sea_mstcn_sep_recon__sea_topk_conjunctive,85,0.8063,0.8445,19/19/47,0.553,1.2241,59/0/26,1.2221,4.5532,5/0/80,128,0.8046,0.5947,1.3165,0.94,0.6984,62925,1.51
 seanet_gated_last_gatedattn__sea_mstcn_sep_gated__sea_gated_attention,85,0.8048,0.8445,17/15/53,0.5564,1.2241,58/0/27,0.4998,4.5532,3/0/82,128,0.797,0.6178,0.6745,0.918,0.757,62260,1.505
 seanet_spiketrend_gatedattn__sea_mstcn_sep_spiketrend__sea_gated_attention,85,0.8039,0.8445,15/14/56,0.5537,1.2241,58/1/26,0.6818,4.5532,4/0/81,128,0.8007,0.6124,0.8118,0.93,0.7205,67540,1.528
@@ -65,3 +66,8 @@ seanet_spiketrend__sea_mstcn_sep_spiketrend__sea_classwise_conjunctive,0,,,,,,,,
 seanet_spiketrend_attnmax__sea_mstcn_sep_spiketrend__sea_attention_max,0,,,,,,,,,,0,,,,0.854,0.6438,67030,1.526
 seanet_spiketrend_dualstream__sea_mstcn_sep_spiketrend__sea_dualstream_conjunctive,0,,,,,,,,,,0,,,,0.556,0.5099,67541,1.528
 seanet_spiketrend_softmax__sea_mstcn_sep_spiketrend__sea_softmax_conjunctive,0,,,,,,,,,,0,,,,0.878,0.665,67021,1.526
+seanet_topk_k005__sea_mstcn_sep_bottleneck__sea_topk_conjunctive,0,,,,,,,,,,0,,,,0.888,0.715,41324,1.428
+seanet_topk_k025__sea_mstcn_sep_bottleneck__sea_topk_conjunctive,0,,,,,,,,,,0,,,,0.94,0.7332,41324,1.428
+seanet_topk_k050__sea_mstcn_sep_bottleneck__sea_topk_conjunctive,0,,,,,,,,,,0,,,,0.882,0.7321,41324,1.428
+seanet_topk_k100__sea_mstcn_sep_bottleneck__sea_topk_conjunctive,0,,,,,,,,,,0,,,,0.908,0.722,41324,1.428
+seanet_topk_nofocus__sea_mstcn_sep_bottleneck__sea_topk_conjunctive,0,,,,,,,,,,0,,,,0.95,0.7653,41324,1.428

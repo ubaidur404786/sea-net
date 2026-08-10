@@ -115,3 +115,5 @@ MelbournePedestrian
 MixedShapesRegularTrain
 MixedShapesSmallTrain
 PLAID
+WebTraffic#1
+WebTraffic#2

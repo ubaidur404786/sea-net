@@ -4,7 +4,7 @@
 |---|---|---|---|---|---|
 | sea_mstcn-cl…sea_cls_conj | **10.95** | **26** | 19 | 39 | -0.0158 |
 | sea_mstcn__mil_add | 11.42 | 23 | 19 | 42 | **-0.0151** |
-| mil_incept__mil_conj | 11.86 | 13 | 25 | 46 | -0.0159 |
+| mil_incept-m…et__mil_conj | 11.86 | 13 | 25 | 46 | -0.0159 |
 | sea_mstcn__mil_conj | 11.86 | 22 | 20 | 42 | -0.0212 |
 | sea_mstcn-ac…ea_adapt_cls | 12.20 | 24 | 17 | 43 | -0.0317 |
 | sea_gated-ma…sea_cls_conj | 12.46 | 19 | 17 | 48 | -0.0212 |

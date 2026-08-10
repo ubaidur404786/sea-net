@@ -1,57 +1,72 @@
-model                                                                             , config                          , params, size_mb, flops_m, infer_ms, throughput, peak_mem_mb, device, batch, length, n_classes
-fcn__mil_fcn__mil_conjunctive                                                     , sv1/fcn                         , 266390,  3.4717, 264.84 ,   0.272 ,     3676.5,      67.276, cuda  ,    32,    500,         5
-seanet_recon_attnmax__sea_mstcn_sep_recon__sea_attention_max                      , sv4/seanet_recon_attnmax        ,  62560,  1.5089,  59.288,   0.3123,     3202.2,      37.557, cuda  ,    32,    500,         5
-seanet_slim_topk__sea_mstcn_sep__sea_topk_conjunctive                             , sv4/seanet_slim_topk            ,  57210,  1.4834,  54.056,   0.3781,     2644.5,      37.532, cuda  ,    32,    500,         5
-seanet_recon_adaptive__sea_mstcn_sep_recon__sea_adaptive_classwise                , sv4/seanet_recon_adaptive       ,  62560,  1.5089,  59.288,   0.3831,     2610.1,      37.557, cuda  ,    32,    500,         5
-seanet_slim__sea_mstcn_sep__sea_classwise_conjunctive                             , sv4/seanet_slim                 ,  57210,  1.4834,  54.056,   0.3964,     2522.8,      37.532, cuda  ,    32,    500,         5
-seanet_bottleneck_attnmax__sea_mstcn_sep_bottleneck__sea_attention_max            , sv4/seanet_bottleneck_attnmax   ,  40959,  1.4272,  37.672,   0.4063,     2461.5,      41.38 , cuda  ,    32,    500,         5
-seanet_recon_softmax__sea_mstcn_sep_recon__sea_softmax_conjunctive                , sv4/seanet_recon_softmax        ,  62556,  1.5088,  59.288,   0.429 ,     2330.8,      37.557, cuda  ,    32,    500,         5
-seanet_bottleneck__sea_mstcn_sep_bottleneck__sea_classwise_conjunctive            , sv4/seanet_bottleneck           ,  40954,  1.4269,  37.672,   0.4336,     2306.5,      41.379, cuda  ,    32,    500,         5
-seanet_acp__sea_mstcn_sep__sea_adaptive_classwise                                 , sv3/seanet_acp                  , 183119,  3.1886, 176.8  ,   0.4944,     2022.6,      66.09 , cuda  ,    32,    500,         5
-seanet_slim_softmax__sea_mstcn_sep__sea_softmax_conjunctive                       , sv4/seanet_slim_softmax         ,  57211,  1.4836,  54.056,   0.5428,     1842.5,      37.532, cuda  ,    32,    500,         5
-seanet_softmax__sea_mstcn_sep__sea_softmax_conjunctive                            , sv3/seanet_softmax              ,  43259,  1.4201,  40.872,   0.5702,     1753.8,      37.472, cuda  ,    32,    500,         5
-seanet_bottleneck_adaptive__sea_mstcn_sep_bottleneck__sea_adaptive_classwise      , sv4/seanet_bottleneck_adaptive  ,  40959,  1.4272,  37.672,   0.5815,     1719.8,      41.38 , cuda  ,    32,    500,         5
-seanet_bottleneck_topk__sea_mstcn_sep_bottleneck__sea_topk_conjunctive            , sv4/seanet_bottleneck_topk      ,  40954,  1.4269,  37.672,   0.6306,     1585.9,      41.379, cuda  ,    32,    500,         5
-seanet__sea_mstcn_sep__mil_additive                                               , sv2/seanet                      , 268438,  3.5365, 259.08 ,   0.7124,     1403.8,      66.421, cuda  ,    32,    500,         5
-resnet__mil_resnet__mil_conjunctive                                               , sv1/resnet                      , 505686,  4.4135, 501.96 ,   0.72  ,     1388.8,      52.142, cuda  ,    32,    500,         5
-seanet_recon_topk__sea_mstcn_sep_recon__sea_topk_conjunctive                      , sv4/seanet_recon_topk           ,  62555,  1.5086,  59.288,   0.7368,     1357.2,      37.556, cuda  ,    32,    500,         5
-seanet_classwise__sea_mstcn_sep__sea_classwise_conjunctive                        , sv3/seanet_classwise            , 268474,  3.5367, 259.112,   0.7593,     1317.1,      66.421, cuda  ,    32,    500,         5
-seanet_slim_attnmax__sea_mstcn_sep__sea_attention_max                             , sv4/seanet_slim_attnmax         ,  57215,  1.4837,  54.056,   0.819 ,     1221.1,      37.532, cuda  ,    32,    500,         5
-seanet_bottleneck_softmax__sea_mstcn_sep_bottleneck__sea_softmax_conjunctive      , sv4/seanet_bottleneck_softmax   ,  40955,  1.4271,  37.672,   0.9065,     1103.1,      41.38 , cuda  ,    32,    500,         5
-seanet_gated_last_adaptive__sea_mstcn_sep_gated__sea_adaptive_classwise           , sv4/seanet_gated_last_adaptive  ,  61375,  1.5018,  54.064,   0.9307,     1074.5,      37.548, cuda  ,    32,    500,         5
-seanet_slim_adaptive__sea_mstcn_sep__sea_adaptive_classwise                       , sv4/seanet_slim_adaptive        ,  57215,  1.4837,  54.056,   0.9539,     1048.3,      37.532, cuda  ,    32,    500,         5
-seanet_gated_last__sea_mstcn_sep_gated__sea_classwise_conjunctive                 , sv4/seanet_gated_last           ,  61370,  1.5015,  54.064,   1.0016,      998.4,      37.548, cuda  ,    32,    500,         5
-seanet_spiketrend_softmax__sea_mstcn_sep_spiketrend__sea_softmax_conjunctive      , sv4/seanet_spiketrend_softmax   ,  66651,  1.5247,  59.232,   1.002 ,      998.0,      37.572, cuda  ,    32,    500,         5
-seanet_gated_max_adaptive__sea_mstcn_sep_gated__sea_adaptive_classwise            , sv4/seanet_gated_max_adaptive   ,  61375,  1.5018,  54.064,   1.0162,      984.1,      37.548, cuda  ,    32,    500,         5
-millet__mil_inceptiontime__mil_conjunctive                                        , sv1/millet                      , 423062,  4.1077, 419.816,   1.0308,      970.2,      62.0  , cuda  ,    32,    500,         5
-seanet_spiketrend_topk__sea_mstcn_sep_spiketrend__sea_topk_conjunctive            , sv4/seanet_spiketrend_topk      ,  66650,  1.5244,  59.232,   1.0875,      919.5,      37.571, cuda  ,    32,    500,         5
-seanet_conjunctive__sea_mstcn_sep__mil_conjunctive                                , sv3/seanet_conjunctive          , 268438,  3.5365, 259.08 ,   1.139 ,      877.9,      66.421, cuda  ,    32,    500,         5
-seanet_spiketrend__sea_mstcn_sep_spiketrend__sea_classwise_conjunctive            , sv4/seanet_spiketrend           ,  66650,  1.5244,  59.232,   1.153 ,      867.3,      37.571, cuda  ,    32,    500,         5
-seanet_gated_last_topk__sea_mstcn_sep_gated__sea_topk_conjunctive                 , sv4/seanet_gated_last_topk      ,  61370,  1.5015,  54.064,   1.1669,      857.0,      37.548, cuda  ,    32,    500,         5
-seanet_gated_last_dualstream__sea_mstcn_sep_gated__sea_dualstream_conjunctive     , sv5/seanet_gated_last_dualstream,  61891,  1.5044,  54.576,   1.2304,      812.7,      37.551, cuda  ,    32,    500,         5
-seanet_gated_last_softmax__sea_mstcn_sep_gated__sea_softmax_conjunctive           , sv4/seanet_gated_last_softmax   ,  61371,  1.5018,  54.064,   1.2725,      785.8,      37.548, cuda  ,    32,    500,         5
-seanet_slim_dualstream__sea_mstcn_sep__sea_dualstream_conjunctive                 , sv5/seanet_slim_dualstream      ,  57731,  1.4862,  54.568,   1.288 ,      776.4,      37.535, cuda  ,    32,    500,         5
-seanet_bottleneck_gatedattn__sea_mstcn_sep_bottleneck__sea_gated_attention        , sv5/seanet_bottleneck_gatedattn ,  41474,  1.4293,  38.184,   1.2924,      773.8,      41.382, cuda  ,    32,    500,         5
-seanet_slim_gatedattn__sea_mstcn_sep__sea_gated_attention                         , sv5/seanet_slim_gatedattn       ,  57730,  1.4858,  54.568,   1.3205,      757.3,      37.534, cuda  ,    32,    500,         5
-seanet_spiketrend_attnmax__sea_mstcn_sep_spiketrend__sea_attention_max            , sv4/seanet_spiketrend_attnmax   ,  66655,  1.5247,  59.232,   1.3438,      744.2,      37.572, cuda  ,    32,    500,         5
-seanet_gated_last_gatedattn__sea_mstcn_sep_gated__sea_gated_attention             , sv5/seanet_gated_last_gatedattn ,  61890,  1.504 ,  54.576,   1.3679,      731.0,      37.55 , cuda  ,    32,    500,         5
-seanet_spiketrend_gatedattn__sea_mstcn_sep_spiketrend__sea_gated_attention        , sv5/seanet_spiketrend_gatedattn ,  67170,  1.5268,  59.744,   1.378 ,      725.7,      37.574, cuda  ,    32,    500,         5
-seanet_gated_max__sea_mstcn_sep_gated__sea_classwise_conjunctive                  , sv4/seanet_gated_max            ,  61370,  1.5015,  54.064,   1.516 ,      659.6,      37.548, cuda  ,    32,    500,         5
-seanet_spiketrend_adaptive__sea_mstcn_sep_spiketrend__sea_adaptive_classwise      , sv4/seanet_spiketrend_adaptive  ,  66655,  1.5247,  59.232,   1.5569,      642.3,      37.572, cuda  ,    32,    500,         5
-seanet_gated_last_attnmax__sea_mstcn_sep_gated__sea_attention_max                 , sv4/seanet_gated_last_attnmax   ,  61375,  1.5018,  54.064,   1.7164,      582.6,      37.548, cuda  ,    32,    500,         5
-seanet_spiketrend_dualstream__sea_mstcn_sep_spiketrend__sea_dualstream_conjunctive, sv5/seanet_spiketrend_dualstream,  67171,  1.5272,  59.744,   1.8093,      552.7,      37.574, cuda  ,    32,    500,         5
-seanet_inputgate_attnmax__sea_mstcn_sep_inputgate__sea_attention_max              , sv4/seanet_inputgate_attnmax    ,  57727,  1.4879,  54.504,   1.927 ,      518.9,      37.535, cuda  ,    32,    500,         5
-seanet_inputgate_topk__sea_mstcn_sep_inputgate__sea_topk_conjunctive              , sv4/seanet_inputgate_topk       ,  57722,  1.4876,  54.504,   2.0415,      489.8,      37.534, cuda  ,    32,    500,         5
-seanet_gated_max_softmax__sea_mstcn_sep_gated__sea_softmax_conjunctive            , sv4/seanet_gated_max_softmax    ,  61371,  1.5018,  54.064,   2.053 ,      487.1,      37.548, cuda  ,    32,    500,         5
-seanet_gated_mean_topk__sea_mstcn_sep_gated__sea_topk_conjunctive                 , sv4/seanet_gated_mean_topk      ,  61370,  1.5015,  54.064,   2.109 ,      474.2,      37.548, cuda  ,    32,    500,         5
-seanet_gated_max_attnmax__sea_mstcn_sep_gated__sea_attention_max                  , sv4/seanet_gated_max_attnmax    ,  61375,  1.5018,  54.064,   2.1126,      473.4,      37.548, cuda  ,    32,    500,         5
-seanet_gated_mean_softmax__sea_mstcn_sep_gated__sea_softmax_conjunctive           , sv4/seanet_gated_mean_softmax   ,  61371,  1.5018,  54.064,   2.2368,      447.1,      37.548, cuda  ,    32,    500,         5
-seanet_bottleneck_dualstream__sea_mstcn_sep_bottleneck__sea_dualstream_conjunctive, sv5/seanet_bottleneck_dualstream,  41475,  1.4297,  38.184,   2.2522,      444.0,      41.382, cuda  ,    32,    500,         5
-seanet_inputgate__sea_mstcn_sep_inputgate__sea_classwise_conjunctive              , sv4/seanet_inputgate            ,  57722,  1.4876,  54.504,   2.3125,      432.4,      37.534, cuda  ,    32,    500,         5
-seanet_gated_mean_attnmax__sea_mstcn_sep_gated__sea_attention_max                 , sv4/seanet_gated_mean_attnmax   ,  61375,  1.5018,  54.064,   2.3566,      424.3,      37.548, cuda  ,    32,    500,         5
-seanet_recon__sea_mstcn_sep_recon__sea_classwise_conjunctive                      , sv4/seanet_recon                ,  62555,  1.5086,  59.288,   2.572 ,      388.8,      37.556, cuda  ,    32,    500,         5
-seanet_gated_max_topk__sea_mstcn_sep_gated__sea_topk_conjunctive                  , sv4/seanet_gated_max_topk       ,  61370,  1.5015,  54.064,   2.5722,      388.8,      37.548, cuda  ,    32,    500,         5
-seanet_inputgate_adaptive__sea_mstcn_sep_inputgate__sea_adaptive_classwise        , sv4/seanet_inputgate_adaptive   ,  57727,  1.4879,  54.504,   2.5939,      385.5,      37.535, cuda  ,    32,    500,         5
-seanet_inputgate_softmax__sea_mstcn_sep_inputgate__sea_softmax_conjunctive        , sv4/seanet_inputgate_softmax    ,  57723,  1.4879,  54.504,   2.7062,      369.5,      37.535, cuda  ,    32,    500,         5
-seanet_gated_mean_adaptive__sea_mstcn_sep_gated__sea_adaptive_classwise           , sv4/seanet_gated_mean_adaptive  ,  61375,  1.5018,  54.064,   2.8805,      347.2,      37.548, cuda  ,    32,    500,         5
-seanet_gated_mean__sea_mstcn_sep_gated__sea_classwise_conjunctive                 , sv4/seanet_gated_mean           ,  61370,  1.5015,  54.064,   2.9349,      340.7,      37.548, cuda  ,    32,    500,         5
+model,config,params,size_mb,flops_m,infer_ms,throughput,peak_mem_mb,device,batch,length,n_classes
+fcn__mil_fcn__mil_conjunctive,sv1/fcn,267035,3.4737,535.208,0.068,14703.8,132.153,cuda,32,1008,10
+seanet_bottleneck_shallow__sea_mstcn_sep_bottleneck__sea_topk_conjunctive,sv6/seanet_bottleneck_shallow,21548,1.3289,40.03,0.0689,14510.2,178.923,cuda,32,1008,10
+seanet_softmax__sea_mstcn_sep__sea_softmax_conjunctive,sv3/seanet_softmax,43629,1.421,83.124,0.0939,10645.4,64.794,cuda,32,1008,10
+seanet_slim__sea_mstcn_sep__sea_classwise_conjunctive,sv4/seanet_slim,57580,1.4843,109.703,0.1229,8135.7,64.854,cuda,32,1008,10
+seanet_slim_adaptive__sea_mstcn_sep__sea_adaptive_classwise,sv4/seanet_slim_adaptive,57590,1.4846,109.703,0.1238,8075.8,64.855,cuda,32,1008,10
+seanet_slim_softmax__sea_mstcn_sep__sea_softmax_conjunctive,sv4/seanet_slim_softmax,57581,1.4846,109.703,0.1241,8056.6,64.855,cuda,32,1008,10
+seanet_slim_attnmax__sea_mstcn_sep__sea_attention_max,sv4/seanet_slim_attnmax,57590,1.4846,109.703,0.1243,8047.4,64.855,cuda,32,1008,10
+seanet_gated_last__sea_mstcn_sep_gated__sea_classwise_conjunctive,sv4/seanet_gated_last,61740,1.5025,109.711,0.1243,8047.0,64.871,cuda,32,1008,10
+seanet_gated_mean__sea_mstcn_sep_gated__sea_classwise_conjunctive,sv4/seanet_gated_mean,61740,1.5025,109.711,0.1244,8035.9,64.871,cuda,32,1008,10
+seanet_gated_max__sea_mstcn_sep_gated__sea_classwise_conjunctive,sv4/seanet_gated_max,61740,1.5025,109.711,0.1248,8011.0,64.871,cuda,32,1008,10
+seanet_slim_gatedattn__sea_mstcn_sep__sea_gated_attention,sv5/seanet_slim_gatedattn,58100,1.4868,110.735,0.125,8002.6,64.857,cuda,32,1008,10
+seanet_gated_last_softmax__sea_mstcn_sep_gated__sea_softmax_conjunctive,sv4/seanet_gated_last_softmax,61741,1.5028,109.711,0.1251,7991.4,64.871,cuda,32,1008,10
+seanet_gated_mean_softmax__sea_mstcn_sep_gated__sea_softmax_conjunctive,sv4/seanet_gated_mean_softmax,61741,1.5028,109.711,0.1253,7979.5,64.871,cuda,32,1008,10
+seanet_gated_last_adaptive__sea_mstcn_sep_gated__sea_adaptive_classwise,sv4/seanet_gated_last_adaptive,61750,1.5028,109.711,0.1253,7978.5,64.871,cuda,32,1008,10
+seanet_gated_mean_adaptive__sea_mstcn_sep_gated__sea_adaptive_classwise,sv4/seanet_gated_mean_adaptive,61750,1.5028,109.711,0.1256,7961.4,64.871,cuda,32,1008,10
+seanet_gated_max_softmax__sea_mstcn_sep_gated__sea_softmax_conjunctive,sv4/seanet_gated_max_softmax,61741,1.5028,109.711,0.1257,7956.2,64.871,cuda,32,1008,10
+seanet_gated_last_attnmax__sea_mstcn_sep_gated__sea_attention_max,sv4/seanet_gated_last_attnmax,61750,1.5028,109.711,0.1257,7952.5,64.871,cuda,32,1008,10
+seanet_gated_max_adaptive__sea_mstcn_sep_gated__sea_adaptive_classwise,sv4/seanet_gated_max_adaptive,61750,1.5028,109.711,0.1257,7957.7,64.871,cuda,32,1008,10
+seanet_gated_last_gatedattn__sea_mstcn_sep_gated__sea_gated_attention,sv5/seanet_gated_last_gatedattn,62260,1.5049,110.743,0.1259,7943.2,64.873,cuda,32,1008,10
+seanet_slim_topk__sea_mstcn_sep__sea_topk_conjunctive,sv4/seanet_slim_topk,57580,1.4843,109.703,0.1259,7942.1,64.854,cuda,32,1008,10
+seanet_gated_mean_attnmax__sea_mstcn_sep_gated__sea_attention_max,sv4/seanet_gated_mean_attnmax,61750,1.5028,109.711,0.1264,7913.9,64.871,cuda,32,1008,10
+seanet_gated_max_attnmax__sea_mstcn_sep_gated__sea_attention_max,sv4/seanet_gated_max_attnmax,61750,1.5028,109.711,0.1264,7908.8,64.871,cuda,32,1008,10
+seanet_inputgate__sea_mstcn_sep_inputgate__sea_classwise_conjunctive,sv4/seanet_inputgate,58092,1.4886,110.606,0.1268,7883.4,64.857,cuda,32,1008,10
+seanet_bottleneck__sea_mstcn_sep_bottleneck__sea_classwise_conjunctive,sv4/seanet_bottleneck,41324,1.4279,76.673,0.1274,7849.4,179.015,cuda,32,1008,10
+seanet_recon__sea_mstcn_sep_recon__sea_classwise_conjunctive,sv4/seanet_recon,62925,1.5096,120.25,0.1275,7840.7,145.752,cuda,32,1008,10
+seanet_gated_last_topk__sea_mstcn_sep_gated__sea_topk_conjunctive,sv4/seanet_gated_last_topk,61740,1.5025,109.711,0.1275,7846.2,64.871,cuda,32,1008,10
+seanet_inputgate_softmax__sea_mstcn_sep_inputgate__sea_softmax_conjunctive,sv4/seanet_inputgate_softmax,58093,1.4889,110.606,0.1277,7829.8,64.857,cuda,32,1008,10
+seanet_bottleneck_softmax__sea_mstcn_sep_bottleneck__sea_softmax_conjunctive,sv4/seanet_bottleneck_softmax,41325,1.4281,76.673,0.1278,7824.8,179.015,cuda,32,1008,10
+seanet_bottleneck_adaptive__sea_mstcn_sep_bottleneck__sea_adaptive_classwise,sv4/seanet_bottleneck_adaptive,41334,1.4282,76.673,0.1279,7821.1,179.015,cuda,32,1008,10
+seanet_gated_mean_topk__sea_mstcn_sep_gated__sea_topk_conjunctive,sv4/seanet_gated_mean_topk,61740,1.5025,109.711,0.1279,7821.2,64.871,cuda,32,1008,10
+seanet_inputgate_adaptive__sea_mstcn_sep_inputgate__sea_adaptive_classwise,sv4/seanet_inputgate_adaptive,58102,1.4889,110.606,0.1279,7819.8,64.857,cuda,32,1008,10
+seanet_gated_max_topk__sea_mstcn_sep_gated__sea_topk_conjunctive,sv4/seanet_gated_max_topk,61740,1.5025,109.711,0.1279,7820.5,64.871,cuda,32,1008,10
+seanet_inputgate_attnmax__sea_mstcn_sep_inputgate__sea_attention_max,sv4/seanet_inputgate_attnmax,58102,1.4889,110.606,0.1282,7800.6,64.857,cuda,32,1008,10
+seanet_bottleneck_attnmax__sea_mstcn_sep_bottleneck__sea_attention_max,sv4/seanet_bottleneck_attnmax,41334,1.4282,76.673,0.1284,7787.0,179.015,cuda,32,1008,10
+seanet_recon_adaptive__sea_mstcn_sep_recon__sea_adaptive_classwise,sv4/seanet_recon_adaptive,62935,1.5099,120.25,0.1285,7779.4,145.752,cuda,32,1008,10
+seanet_bottleneck_gatedattn__sea_mstcn_sep_bottleneck__sea_gated_attention,sv5/seanet_bottleneck_gatedattn,41844,1.4302,77.705,0.1286,7778.5,179.017,cuda,32,1008,10
+seanet_recon_softmax__sea_mstcn_sep_recon__sea_softmax_conjunctive,sv4/seanet_recon_softmax,62926,1.5098,120.25,0.1287,7767.8,145.752,cuda,32,1008,10
+seanet_spiketrend__sea_mstcn_sep_spiketrend__sea_classwise_conjunctive,sv4/seanet_spiketrend,67020,1.5254,120.13,0.1289,7760.9,64.894,cuda,32,1008,10
+seanet_recon_attnmax__sea_mstcn_sep_recon__sea_attention_max,sv4/seanet_recon_attnmax,62935,1.5099,120.25,0.1291,7745.3,145.752,cuda,32,1008,10
+seanet_spiketrend_softmax__sea_mstcn_sep_spiketrend__sea_softmax_conjunctive,sv4/seanet_spiketrend_softmax,67021,1.5256,120.13,0.1296,7716.8,64.895,cuda,32,1008,10
+seanet_spiketrend_adaptive__sea_mstcn_sep_spiketrend__sea_adaptive_classwise,sv4/seanet_spiketrend_adaptive,67030,1.5256,120.13,0.1297,7712.1,64.895,cuda,32,1008,10
+seanet_inputgate_topk__sea_mstcn_sep_inputgate__sea_topk_conjunctive,sv4/seanet_inputgate_topk,58092,1.4886,110.606,0.1298,7702.5,64.857,cuda,32,1008,10
+seanet_topk_k005__sea_mstcn_sep_bottleneck__sea_topk_conjunctive,sv7/seanet_topk_k005,41324,1.4279,76.673,0.13,7691.2,179.015,cuda,32,1008,10
+seanet_spiketrend_attnmax__sea_mstcn_sep_spiketrend__sea_attention_max,sv4/seanet_spiketrend_attnmax,67030,1.5256,120.13,0.13,7693.4,64.895,cuda,32,1008,10
+seanet_topk_nofocus__sea_mstcn_sep_bottleneck__sea_topk_conjunctive,sv7/seanet_topk_nofocus,41324,1.4279,76.673,0.1301,7683.7,179.015,cuda,32,1008,10
+seanet_bottleneck_topk__sea_mstcn_sep_bottleneck__sea_topk_conjunctive,sv4/seanet_bottleneck_topk,41324,1.4279,76.673,0.1305,7664.5,179.015,cuda,32,1008,10
+seanet_slim_dualstream__sea_mstcn_sep__sea_dualstream_conjunctive,sv5/seanet_slim_dualstream,58101,1.4872,110.735,0.1305,7665.1,64.857,cuda,32,1008,10
+seanet_spiketrend_gatedattn__sea_mstcn_sep_spiketrend__sea_gated_attention,sv5/seanet_spiketrend_gatedattn,67540,1.5278,121.162,0.1307,7648.8,64.896,cuda,32,1008,10
+seanet_recon_topk__sea_mstcn_sep_recon__sea_topk_conjunctive,sv4/seanet_recon_topk,62925,1.5096,120.25,0.1307,7651.1,145.752,cuda,32,1008,10
+seanet_topk_k025__sea_mstcn_sep_bottleneck__sea_topk_conjunctive,sv7/seanet_topk_k025,41324,1.4279,76.673,0.1314,7607.6,179.015,cuda,32,1008,10
+seanet_gated_last_dualstream__sea_mstcn_sep_gated__sea_dualstream_conjunctive,sv5/seanet_gated_last_dualstream,62261,1.5053,110.743,0.1318,7589.7,64.874,cuda,32,1008,10
+seanet_topk_k050__sea_mstcn_sep_bottleneck__sea_topk_conjunctive,sv7/seanet_topk_k050,41324,1.4279,76.673,0.132,7573.3,179.015,cuda,32,1008,10
+seanet_topk_k100__sea_mstcn_sep_bottleneck__sea_topk_conjunctive,sv7/seanet_topk_k100,41324,1.4279,76.673,0.1322,7563.4,179.015,cuda,32,1008,10
+seanet_spiketrend_topk__sea_mstcn_sep_spiketrend__sea_topk_conjunctive,sv4/seanet_spiketrend_topk,67020,1.5254,120.13,0.1322,7564.1,64.894,cuda,32,1008,10
+seanet_bottleneck_mschan_lean__sea_multiscale_channels__sea_topk_conjunctive,sv6/seanet_bottleneck_mschan_lean,43576,1.4391,81.188,0.1326,7538.8,179.764,cuda,32,1008,10
+seanet_bottleneck_dualstream__sea_mstcn_sep_bottleneck__sea_dualstream_conjunctive,sv5/seanet_bottleneck_dualstream,41845,1.4307,77.705,0.1347,7423.0,179.018,cuda,32,1008,10
+seanet_gated_mschan__sea_multiscale_channels__sea_topk_conjunctive,sv6/seanet_gated_mschan,67592,1.5273,121.452,0.135,7408.4,66.618,cuda,32,1008,10
+seanet_spiketrend_dualstream__sea_mstcn_sep_spiketrend__sea_dualstream_conjunctive,sv5/seanet_spiketrend_dualstream,67541,1.5282,121.162,0.1363,7336.1,64.897,cuda,32,1008,10
+seanet_bottleneck_mschan__sea_multiscale_channels__sea_topk_conjunctive,sv6/seanet_bottleneck_mschan,47176,1.4527,88.414,0.1374,7280.0,180.762,cuda,32,1008,10
+seanet_inputgate_mschan__sea_multiscale_channels__sea_topk_conjunctive,sv6/seanet_inputgate_mschan,69768,1.5357,134.088,0.138,7244.5,66.626,cuda,32,1008,10
+resnet__mil_resnet__mil_conjunctive,sv1/resnet,506331,4.4156,1013.242,0.1389,7197.6,76.524,cuda,32,1008,10
+millet_paper__mil_inceptiontime__mil_conjunctive,sv1/millet_paper,423707,4.1098,847.639,0.2021,4948.9,112.284,cuda,32,1008,10
+millet__mil_inceptiontime__mil_conjunctive,sv1/millet,423707,4.1098,847.639,0.2026,4934.8,112.284,cuda,32,1008,10
+seanet_gated_pyramid__sea_multiscale_pyramid__sea_topk_conjunctive,sv6/seanet_gated_pyramid,34877,1.3886,108.074,0.2077,4814.9,203.122,cuda,32,1008,10
+seanet_bottleneck_pyramid__sea_multiscale_pyramid__sea_topk_conjunctive,sv6/seanet_bottleneck_pyramid,22589,1.3429,77.076,0.2083,4800.1,202.577,cuda,32,1008,10
+conventional__mil_inceptiontime__mil_gap,sv1/conventional,422666,1.6627,842.981,0.2155,4640.0,109.884,cuda,32,1008,10
+seanet_acp__sea_mstcn_sep__sea_adaptive_classwise,sv3/seanet_acp,183934,3.1913,358.042,0.242,4131.8,123.405,cuda,32,1008,10
+seanet_bottleneck_mschan_pyramid__sea_multiscale_pyramid__sea_topk_conjunctive,sv6/seanet_bottleneck_mschan_pyramid,28441,1.3674,99.09,0.2498,4003.4,202.601,cuda,32,1008,10
+seanet_conjunctive__sea_mstcn_sep__mil_conjunctive,sv3/seanet_conjunctive,269083,3.5386,523.596,0.3584,2790.0,123.735,cuda,32,1008,10
+seanet_classwise__sea_mstcn_sep__sea_classwise_conjunctive,sv3/seanet_classwise,269164,3.5389,523.741,0.3591,2784.6,123.735,cuda,32,1008,10
+seanet__sea_mstcn_sep__mil_additive,sv2/seanet,269083,3.5386,523.596,0.3601,2776.9,123.735,cuda,32,1008,10

@@ -14,9 +14,9 @@
 | mean_aopcr_millet | 4.5579 |
 | aopcr_win_tie_loss | 3/0/81 |
 | overall_ucr_datasets | 124 |
-| overall_mean_acc | 0.8134 |
-| overall_mean_loss | 0.5891 |
-| overall_mean_aopcr | 0.9191 |
+| overall_mean_acc | 0.8135 |
+| overall_mean_loss | 0.5902 |
+| overall_mean_aopcr | 0.9134 |
 | webtraffic_acc | 0.8873 |
 | webtraffic_ndcg | 0.6769 |
 | params | 423707 |

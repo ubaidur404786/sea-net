@@ -1,0 +1,40 @@
+[log] command 'train' started at 2026-08-10_10-55-24 for model 'millet_paper__mil_inceptiontime__mil_conjunctive'
+[log] a copy of everything below is being saved to: results/SEA_NET/millet_paper__mil_inceptiontime__mil_conjunctive/logs/train_2026-08-10_10-55-24.log
+
+=== train: model=millet_paper__mil_inceptiontime__mil_conjunctive (config sv1/millet_paper) device=cuda mode=full datasets=129 ===
+[params] using DEFAULT recipe (no Optuna record yet - run 'python main.py optuna --model sv1/millet_paper').
+  results  -> results/SEA_NET/millet_paper__mil_inceptiontime__mil_conjunctive/results.csv
+  resume   -> results/SEA_NET/millet_paper__mil_inceptiontime__mil_conjunctive/done_train_dataset.txt  (delete it to retrain everything; delete one line to retrain that dataset)
+
+  [mlflow] logging runs to experiment 'SEA-Net_millet_paper__mil_inceptiontime__mil_conjunctive_2026-08-10' at sqlite:///mlflow.db
+  [mlflow] browse later with:  mlflow ui --backend-store-uri sqlite:///mlflow.db
+[  1/129] WebTraffic                   already done -> skip
+[  2/129] Adiac                        already done -> skip
+[  3/129] ArrowHead                    already done -> skip
+[  4/129] Beef                         already done -> skip
+[  5/129] BeetleFly                    already done -> skip
+[  6/129] BirdChicken                  already done -> skip
+[  7/129] Car                          already done -> skip
+[  8/129] CBF                          already done -> skip
+[  9/129] ChlorineConcentration        already done -> skip
+[ 10/129] CinCECGTorso                 already done -> skip
+[ 11/129] Coffee                       already done -> skip
+[ 12/129] Computers                    already done -> skip
+[ 13/129] CricketX                     already done -> skip
+[ 14/129] CricketY                     already done -> skip
+[ 15/129] CricketZ                     already done -> skip
+[ 16/129] DiatomSizeReduction          already done -> skip
+[ 17/129] DistalPhalanxOutlineAgeGroup already done -> skip
+[ 18/129] DistalPhalanxOutlineCorrect  already done -> skip
+[ 19/129] DistalPhalanxTW              already done -> skip
+[ 20/129] Earthquakes                  already done -> skip
+[ 21/129] ECG200                       already done -> skip
+[ 22/129] ECG5000                      already done -> skip
+[ 23/129] ECGFiveDays                  already done -> skip
+[ 24/129] ElectricDevices
+    stage 1/3: loading data ...
+    stage 2/3: training on 8926 series (no val (train-loss early stop), C=7, T=96, batch=16) ...
+
+Interrupted - progress is saved, re-run the same command to resume.
+
+[log] finished; full output saved to results/SEA_NET/millet_paper__mil_inceptiontime__mil_conjunctive/logs/train_2026-08-10_10-55-24.log

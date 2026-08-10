@@ -1,5 +1,8 @@
 # H100 94 GiB, 6 nodes × 2 GPUs — best availability
 oarsub -q abaca -I -l gpu=1,walltime=12:00:00 -p musa
+oarsub -q besteffort -I -l gpu=1,walltime=12:00:00 -p "musa"
+
+
 
 # A100 80 GiB
 oarsub -q abaca -I -l gpu=1,walltime=12:00:00 -p esterel37
