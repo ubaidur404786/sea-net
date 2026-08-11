@@ -80,15 +80,12 @@ contract, which is what makes goal~G5 possible.
 % -------------------------------------------------------------------------------------------
 \begin{figure}[t]
   \centering
-  \figph{\textbf{Overall \seanet{} architecture.} Left to right: raw series $(B,1,\nsteps)$, stem
-  convolution, $N$ multi-scale separable residual blocks with dilations $1,2,4,8,16,16$,
-  per-time-step embeddings $(B,\dmodel,\nsteps)$, MIL pooling head, and the two outputs: bag logits
-  $(B,\nclz)$ and interpretation $(B,\nclz,\nsteps)$.}
-  \caption{The \seanet{} architecture, read left to right. The stem lifts the raw series from one
+  \includegraphics[width=\linewidth]{figures/fig04_seanet_architecture.pdf}
+  \caption{The \seanet{} Top-k architecture, read left to right. The stem lifts the raw series from one
   channel to $\dmodel$ channels. The blocks refine those features while keeping the length
   $\nsteps$ fixed and the dilation capped at 16. The result is one embedding per time step, which
-  the pooling head turns into a class prediction and a matching interpretation. The stem and the
-  blocks are the new encoder proposed here; the pooling head on the right is swappable and is
+  the top-k conjunction pooling head turns into a class prediction and a matching interpretation. The stem and the
+  blocks are the new encoder proposed and the topk classwise conjunction pooling head is detailed here; the pooling head on the right is swappable and is
   detailed in \Cref{sec:pooling}.}
   \label{fig:arch_overall}
 \end{figure}
