@@ -1,0 +1,124 @@
+% !TEX root = ../main.tex
+% =====================================================================
+% fig_block_tikz.tex -- the zoom-in on ONE multi-scale separable block.
+%
+% Drawn in TikZ instead of an image file, so it stays sharp and so the
+% numbers on it can never drift away from the text.
+% Source of truth: seanet/features.py, class MultiScaleSepBlock.forward()
+%
+% This file is pulled in by sections/05_architecture.tex with \input, and
+% that \input sits inside \ifshowblockfig ... \fi. So it is OPTIONAL:
+% set \showblockfigfalse in preamble.tex and the whole thing disappears
+% without touching anything else.
+%
+% Two panels:
+%   (a) the data path through one unit, the "x2", and the residual add
+%   (b) the receptive field: same 5 taps, dilation 1 against dilation 16
+% =====================================================================
+
+% ---- panel (a): the data path ---------------------------------------
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[
+  font=\small,
+  >={Stealth[length=2mm]},
+  % a convolution branch: the three of them differ only in kernel size
+  conv/.style   = {draw=orange!65!black, fill=orange!18, rounded corners=2pt,
+                   minimum height=8mm, inner xsep=4pt, align=center},
+  % the cheap "mix and clean up" steps after the sum
+  stage/.style   = {draw=black!55, fill=black!7, rounded corners=2pt,
+                   minimum height=8mm, minimum width=11mm, align=center},
+  % the tensors going in and out
+  tensor/.style = {draw=black!45, fill=black!3, rounded corners=2pt,
+                   minimum height=11mm, minimum width=13mm, align=center},
+  op/.style     = {draw=black!65, circle, inner sep=1pt, minimum size=5.5mm},
+]
+
+% --- input ------------------------------------------------------------
+\node[tensor] (h) at (0,0) {$\mathbf{h}$\\[1pt]\scriptsize$(B,d,T)$};
+
+% --- the three depthwise convolutions, one per kernel size ------------
+% drawn with increasing width, so "wider box = looks further in time"
+\node[conv, minimum width=20mm] (k5)  at (3.7, 1.7) {depthwise $k{=}5$\\[-1pt]\scriptsize dilation $\delta$, groups $=d$};
+\node[conv, minimum width=26mm] (k11) at (3.7, 0.0) {depthwise $k{=}11$\\[-1pt]\scriptsize dilation $\delta$, groups $=d$};
+\node[conv, minimum width=32mm] (k23) at (3.7,-1.7) {depthwise $k{=}23$\\[-1pt]\scriptsize dilation $\delta$, groups $=d$};
+
+\draw[->] (h.east) -- ++(0.4,0) |- (k5.west);
+\draw[->] (h.east) -- ++(0.4,0) |- (k11.west);
+\draw[->] (h.east) -- ++(0.4,0) |- (k23.west);
+
+% --- they are simply added together -----------------------------------
+\node[op] (sum) at (6.9,0) {$+$};
+\draw[->] (k5.east)  -| (sum.north);
+\draw[->] (k11.east) -- (sum.west);
+\draw[->] (k23.east) -| (sum.south);
+
+% --- mix the channels, normalise, activate, regularise ----------------
+\node[stage] (pw)   at ( 8.9,0) {$1{\times}1$\\[-1pt]pointwise};
+\node[stage] (bn)   at (10.7,0) {BatchNorm};
+\node[stage] (relu) at (12.4,0) {ReLU};
+\node[stage] (drop) at (14.0,0) {Dropout};
+
+\draw[->] (sum.east)  -- (pw.west);
+\draw[->] (pw.east)   -- (bn.west);
+\draw[->] (bn.east)   -- (relu.west);
+\draw[->] (relu.east) -- (drop.west);
+
+% --- the residual add that closes the block ---------------------------
+\node[op] (add) at (16.0,0) {$+$};
+\node[stage, minimum width=9mm] (outrelu) at (17.6,0) {ReLU};
+\node[tensor] (out) at (19.6,0) {output\\[1pt]\scriptsize$(B,d,T)$};
+
+\draw[->] (drop.east)     -- (add.west);
+\draw[->] (add.east)      -- (outrelu.west);
+\draw[->] (outrelu.east) -- (out.west);
+
+% the skip connection: the BLOCK's own input, carried over the top
+\draw[->, thick, black!60] (h.north) |- (0,3.0) -| node[pos=0.25, above, black!60]
+      {\small skip connection: the block's own input $\mathbf{h}$} (add.north);
+
+% --- the dashed box marking what gets repeated twice ------------------
+\begin{scope}[on background layer]
+  \node[draw=black!55, dashed, rounded corners=3pt, inner sep=7pt,
+        fit=(k5)(k23)(drop)] (unitbox) {};
+\end{scope}
+% the label sits UNDER the dashed box, where nothing else is drawn
+\node[anchor=north west, black!70] at ($(unitbox.south west)+(2pt,-1pt)$)
+      {\small \textbf{one unit} -- run twice, back to back ($\times 2$)};
+
+\end{tikzpicture}}
+
+\vspace{5pt}
+
+% ---- panel (b): the receptive field ---------------------------------
+\resizebox{0.92\linewidth}{!}{%
+\begin{tikzpicture}[x=0.185cm, y=1cm, font=\small, >={Stealth[length=1.6mm]}]
+
+% ---- top row: dilation 1 --------------------------------------------
+% 65 input positions; the k=5 filter takes 5 neighbouring points
+\foreach \i in {0,...,64} { \fill[black!22] (\i,0) circle (0.5mm); }
+\foreach \i in {30,31,32,33,34} {
+  \draw[orange!65!black, thin] (\i,0) -- (32,0.85);
+  \fill[orange!75!black] (\i,0) circle (0.9mm);
+}
+\fill[black!80] (32,0.85) circle (1.1mm);
+\node[anchor=west, black!80] at (34,0.85) {\ one output value};
+\node[anchor=east] at (-1.5,0) {$\delta = 1$\ };
+\node[anchor=north, black!60] at (32,-0.30) {\small sees 5 time steps in a row};
+
+% ---- bottom row: dilation 16 ----------------------------------------
+\begin{scope}[yshift=-2.1cm]
+\foreach \i in {0,...,64} { \fill[black!22] (\i,0) circle (0.5mm); }
+\foreach \i in {0,16,32,48,64} {
+  \draw[orange!65!black, thin] (\i,0) -- (32,0.85);
+  \fill[orange!75!black] (\i,0) circle (0.9mm);
+}
+\fill[black!80] (32,0.85) circle (1.1mm);
+\node[anchor=west, black!80] at (34,0.85) {\ one output value};
+\node[anchor=east] at (-1.5,0) {$\delta = 16$\ };
+\node[anchor=north, black!60] at (32,-0.30)
+     {\small the same 5 taps, now spread over 65 time steps};
+% the reach, drawn as a measured bar
+\draw[<->, black!55] (0,-0.95) -- node[below, black!55, font=\small] {receptive field} (64,-0.95);
+\end{scope}
+
+\end{tikzpicture}}

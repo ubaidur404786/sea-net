@@ -29,7 +29,8 @@ because the two use different recipes.
 
 \webtraffic{} is the only dataset where I can check both things at once: is the prediction right,
 and is the explanation pointing at the real evidence? \Cref{tab:web_main} is therefore the main
-table of this report: the ten best models of the whole sweep, then the baselines I re-trained.
+table of this report -- the ten best models of the whole sweep, then the baselines I re-trained --
+and the paragraph after it only says what to notice in it.
 
 \begin{table}[tbp]
 \caption{The ten best models on \webtraffic{}, ranked by accuracy, with the re-trained baselines
@@ -77,18 +78,27 @@ of this table with each other, never with a number printed in another paper.}
 % NOTE: leaderboard.csv's millet_acc (0.8445) is the published UCR-85 mean, NOT a WebTraffic number,
 % so it belongs in the UCR table, not here.
 
-Three things to notice. First, the whole top ten is mine, and the best baseline sits at 0.887, so
-every one of the ten beats it. Second, the top ten is tight -- 0.946 to 0.955, a range of nine
-thousandths -- which is why \Cref{sec:disc:reading} refuses to call any of them the winner on
-accuracy alone. Third, the parameter column separates what the accuracy column cannot: ranks 2 and
-10 need about 269\,K parameters to reach the same place that rank 7 reaches with 41\,K.
+Four things to notice. First, the whole top ten is mine, and every one of the ten beats the best
+baseline at 0.887. Second, the top ten is tight -- 0.946 to 0.955, a range of nine thousandths --
+which is why \Cref{sec:disc:reading} refuses to call any of them the winner on accuracy alone.
+Third, the parameter column separates what the accuracy column cannot: ranks 2 and 10 need about
+269\,K parameters to reach where rank 7 gets with 41\,K. Fourth, and this is the argument of the
+whole report in one row, rank 7 has the best NDCG@$n$ of the table (0.773) \emph{and} the smallest
+size, so nothing was traded away for the better explanation. That is what Top-$k$ pooling was
+designed to do (\Cref{sec:pool:topk}): it averages only the $k$ most decisive time steps, so the
+interpretation is exactly zero everywhere the model did not use as evidence, while the baseline's
+importance curve is never quite zero and a reader has to guess where the evidence stops
+(\Cref{fig:teaser}).
 
-That is the argument of this report in one row. Rank 7 has the best NDCG@$n$ of the table (0.773)
-\emph{and} the smallest size, so nothing was traded away for the better explanation. This is what
-Top-$k$ pooling was designed to do (\Cref{sec:pool:topk}): it averages only the $k$ most decisive
-time steps, so the interpretation is exactly zero everywhere the model did not use as evidence.
-\Cref{fig:teaser} shows what that looks like on one series -- the baseline's importance curve is
-never quite zero, so a reader has to guess where the evidence stops.
+Size is not just a parameter count. Measured on the real \webtraffic{} input, rank 7 is 90\,\%
+smaller than the re-trained baseline, its saved file drops from 4.11\,MB to 1.43\,MB, and one
+prediction is about 1.6 times faster -- the MB figure being the one that matters for the
+microcontroller target of \Cref{sec:context}. The full cost table is \Cref{tab:cost} in the
+appendix, and it carries the honest counterpart: my models take 2--3 times \emph{longer to train}.
+
+\Cref{fig:web_bars} puts quality and cost side by side for the five best models, and it is the
+clearest single picture of the trade-off: the bars that are longest in the quality panels are among
+the shortest in the cost panels.
 
 \begin{figure}[tbp]
   \centering
@@ -107,7 +117,9 @@ never quite zero, so a reader has to guess where the evidence stops.
 
 One dataset proves nothing, so the next question is whether the result holds on the 85 \ucr{}
 datasets \millet{} published. A mean can hide a model that wins hugely on three datasets and loses
-everywhere else, so \Cref{tab:ucr_accuracy} reports the mean rank and the per-dataset record too.
+everywhere else, so \Cref{tab:ucr_accuracy} reports the mean rank and the per-dataset record next to
+it, for my three headline models and the three re-trained baselines only. Every other model is in
+the full leaderboard, \Cref{app:leaderboard}.
 
 \begin{table}[tbp]
 \caption{Accuracy over the \ucr{} datasets published by \millet{}. ``Mean rank'' is the average
@@ -146,85 +158,13 @@ hiding it. Over the 85 \ucr{} datasets my re-trained \millet{} baseline is the b
 all three of my models lose more datasets than they win. That does not cancel the \webtraffic{}
 result, but it shows its limit: both headline models were chosen because they did well on
 \webtraffic{} (\Cref{sec:setup:data}), and one dataset cannot predict what happens on 85 very
-different ones. \seanet{} is still competitive -- within 1 to 2 accuracy points of the baseline at
+different ones. \seanet{} stays competitive -- within 1 to 2 accuracy points of the baseline at
 about a tenth of the parameters -- but ``better everywhere'' is a claim this table does not support.
-Against the published number my re-trained baseline lands slightly lower, which is the size of gap a
-different training recipe can easily produce (\Cref{sec:disc:reading}).
 \missing{The full-fidelity \millet{} reproduction was still sweeping \ucr{} when this was written.
 Once it finishes, rebuild the results and add its \ucr{} row here -- that is the number that closes
 objective O2.}
 
-% ---------------------------------------------------------------------
-\subsection{Model cost}
-\label{sec:res:cost}
-\label{sec:res:training}
-
-Goal~G1 of \Cref{sec:arch:goals} was ``smaller''. \Cref{tab:cost} checks it on the three numbers a
-device actually cares about: how many weights the model has, how large the saved file is, and how
-long one prediction takes.
-
-\begin{table}[tbp]
-\caption{Cost of each model, measured on the real \webtraffic{} input (series of length 1008,
-10 classes) on one GPU. ``One prediction'' is the time to classify one series. ``Training time'' is
-the wall-clock time to converge including early stopping, over the 3 \webtraffic{} seeds.}
-\label{tab:cost}
-\begin{center}
-\footnotesize
-\begin{tabular}{lrrrr}
-\toprule
-\textbf{Model} & \textbf{Parameters} & \textbf{Size (MB)} &
-\textbf{One prediction (ms)} & \textbf{Training (s)} \\
-\midrule
-\texttt{seanet\_bottleneck\_topk}     & \textbf{41{,}324}  & \textbf{1.43} & 0.131 & $117.3\pm14.0$ \\
-\texttt{seanet\_inputgate\_adaptive}  & 58{,}102  & 1.49 & 0.128 & $105.8\pm37.2$ \\
-\texttt{seanet\_gated\_mean\_topk}    & 61{,}740  & 1.50 & 0.128 & $91.3\pm25.9$ \\
-\millet{} re-trained by me            & 423{,}707 & 4.11 & 0.203 & $50.4\pm9.5$ \\
-ResNet + Conjunctive                  & 506{,}331 & 4.42 & 0.139 & 38.1 \\
-FCN + Conjunctive                     & 267{,}035 & 3.47 & \textbf{0.068} & 20.8 \\
-\bottomrule
-\end{tabular}
-\end{center}
-\end{table}
-% Params / Size / inference time: results/SEA_NET/profile.csv, re-measured 2026-08-09 at
-% length 1008, 10 classes, batch 32. The FLOPs column of that file is deliberately not shown here
-% (it confused the reader); the same information is carried by parameters + prediction time.
-% Re-profiling at the real WebTraffic shape mattered: the earlier profile used a length-500,
-% 5-class dummy input and reported a misleading 2.594 ms for seanet_inputgate_adaptive.
-% Train time: the WebTraffic rows of each model's results.csv, mean +- std over seeds 0/1/2.
-
-The size cut is large and it is real: 41{,}324 parameters against 423{,}707 is 90\,\% fewer, the
-saved file drops from 4.11\,MB to 1.43\,MB, and one prediction is about 1.6 times faster. The MB
-column is the one that matters for a microcontroller (\Cref{sec:context}).
-
-The last column is the honest counterweight. My models take \emph{longer} to train than the
-baseline, roughly 2 to 3 times, on every seed. That is not a contradiction: training time here is
-wall-clock time until early stopping fires, so it measures how many epochs a model needed, not how
-expensive one epoch is. The baseline simply stops improving earlier. Prediction time is the fair
-per-step comparison, and there \seanet{} wins.
-
-% ---------------------------------------------------------------------
-\subsection{Ablations}
-\label{sec:res:ablation}
-
-The question here is simple: does the gain come from the encoder, from the pooling head, or from
-putting the two together? The rest of my ablations, including the top-$k$ fraction and the attention
-focus penalty, are in \Cref{app:ablations}.
-
-\begin{figure}[htbp]
-  \centering
-  \includegraphics[width=0.85\linewidth]{results/paper_figures/02_ablation/ablation_encoder_pooling_grid}
-  \caption{Best \webtraffic{} accuracy for every encoder (rows) and every pooling head (columns).
-  Read one cell as ``what this pair achieved''; blank cells are pairs I never trained. Rows and
-  columns are sorted by their best value, so the strong components move to the top left.}
-  \label{fig:ablation_grid}
-\end{figure}
-
-Taken on their own, the encoder and the head matter about equally: averaged over every head it was
-paired with, the encoder moves accuracy from 0.858 to 0.937, and averaged over every encoder, the
-head moves it from 0.744 to 0.921 (\Cref{tab:ablation_pooling}, \Cref{tab:ablation_encoder}). Two
-ranges of a similar size, so neither half dominates. The more interesting result is that the best
-pair is \emph{not} made of the two best halves: the winner of \Cref{tab:web_main} pairs the Gated
-encoder, which averages 0.902, with Top-$k$ pooling, which averages 0.904 -- both mid-table. The
-gain is not the sum of two good parts, and I could only have found this pair by trying the
-combination. One caveat to keep visible: several groups in these averages contain very few models,
-and not every pair was trained, so the grid read cell by cell is the more trustworthy view.
+Finally, the gain is not the encoder alone nor the head alone. Averaged over every partner, the
+encoder choice moves \webtraffic{} accuracy across a range of 0.858--0.937 and the head choice across
+0.744--0.921, two spreads of similar size; and the best pair of all is not built from the two best
+halves. \Cref{app:ablations} has the encoder $\times$ head grid and the rest of the ablations.

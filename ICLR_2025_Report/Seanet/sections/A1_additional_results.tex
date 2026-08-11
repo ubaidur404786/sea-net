@@ -36,13 +36,77 @@ The \texttt{millet\_paper} row is the second case -- its \webtraffic{} result is
 mean is not (\Cref{sec:disc:reading}).
 
 % ---------------------------------------------------------------------
+\subsection{Model cost}
+\label{app:cost}
+
+Goal~G1 of \Cref{sec:arch:goals} was ``smaller''. \Cref{sec:res:web} states the headline of this
+table in two sentences; here are the numbers behind it, on the three quantities a device actually
+cares about -- how many weights the model has, how large the saved file is, and how long one
+prediction takes.
+
+% [htbp] and not [H]: forced here it collided with the wide leaderboard table above and
+% ran off the bottom of the page, over the page number.
+\begin{table}[htbp]
+\caption{Cost of each model, measured on the real \webtraffic{} input (series of length 1008,
+10 classes) on one GPU. ``One prediction'' is the time to classify one series. ``Training time'' is
+the wall-clock time to converge including early stopping, over the 3 \webtraffic{} seeds.}
+\label{tab:cost}
+\begin{center}
+\footnotesize
+\begin{tabular}{lrrrr}
+\toprule
+\textbf{Model} & \textbf{Parameters} & \textbf{Size (MB)} &
+\textbf{One prediction (ms)} & \textbf{Training (s)} \\
+\midrule
+\texttt{seanet\_bottleneck\_topk}     & \textbf{41{,}324}  & \textbf{1.43} & 0.131 & $117.3\pm14.0$ \\
+\texttt{seanet\_inputgate\_adaptive}  & 58{,}102  & 1.49 & 0.128 & $105.8\pm37.2$ \\
+\texttt{seanet\_gated\_mean\_topk}    & 61{,}740  & 1.50 & 0.128 & $91.3\pm25.9$ \\
+\millet{} re-trained by me            & 423{,}707 & 4.11 & 0.203 & $50.4\pm9.5$ \\
+ResNet + Conjunctive                  & 506{,}331 & 4.42 & 0.139 & 38.1 \\
+FCN + Conjunctive                     & 267{,}035 & 3.47 & \textbf{0.068} & 20.8 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+% Params / Size / inference time: results/SEA_NET/profile.csv, re-measured 2026-08-09 at
+% length 1008, 10 classes, batch 32. The FLOPs column of that file is deliberately not shown here
+% (it confused the reader); the same information is carried by parameters + prediction time.
+% Re-profiling at the real WebTraffic shape mattered: the earlier profile used a length-500,
+% 5-class dummy input and reported a misleading 2.594 ms for seanet_inputgate_adaptive.
+% Train time: the WebTraffic rows of each model's results.csv, mean +- std over seeds 0/1/2.
+
+The last column is the honest counterweight. My models take \emph{longer} to train than the
+baseline, roughly 2 to 3 times, on every seed. That is not a contradiction: training time here is
+wall-clock time until early stopping fires, so it measures how many epochs a model needed, not how
+expensive one epoch is. The baseline simply stops improving earlier. Prediction time is the fair
+per-step comparison, and there \seanet{} wins.
+
+% ---------------------------------------------------------------------
 \subsection{Extended ablation studies}
 \label{app:ablations}
 
+The question these ablations answer is: does the gain come from the encoder, from the pooling head,
+or from putting the two together?
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.82\linewidth]{results/paper_figures/02_ablation/ablation_encoder_pooling_grid}
+  \caption{Best \webtraffic{} accuracy for every encoder (rows) and every pooling head (columns).
+  Read one cell as ``what this pair achieved''; blank cells are pairs I never trained. Rows and
+  columns are sorted by their best value, so the strong components move to the top left.}
+  \label{fig:ablation_grid}
+\end{figure}
+
+The most interesting thing in \Cref{fig:ablation_grid} is that the best pair is \emph{not} made of
+the two best halves: the winner of \Cref{tab:web_main} pairs the Gated encoder, which averages
+0.902, with Top-$k$ pooling, which averages 0.904 -- both mid-table. The gain is not the sum of two
+good parts, and I could only have found this pair by trying the combination. One caveat to keep
+visible: several groups in the averages below contain very few models, and not every pair was
+trained, so the grid read cell by cell is the more trustworthy view.
+
 \paragraph{A. Effect of the pooling head, averaged over encoders.}
-\Cref{tab:ablation_pooling} is the full version of the by-head averages that
-\Cref{sec:res:ablation} only summarises in words. Averaged over every encoder it was paired with,
-the pooling head alone moves \webtraffic{} accuracy by almost 18 points.
+Averaged over every encoder it was paired with, the pooling head alone moves \webtraffic{} accuracy
+by almost 18 points.
 
 \begin{table}[H]
 \caption{\webtraffic{} accuracy, AOPCR and NDCG@$n$ averaged over every encoder each pooling head
@@ -79,8 +143,8 @@ Dual-stream conjunctive (\Cref{sec:pool:dsmil})     & 0.744 & 2.007 & 0.636 & 4 
 
 \paragraph{B. Effect of the encoder, averaged over pooling heads.}
 \Cref{tab:ablation_encoder} does the same on the encoder side. The spread (0.937 down to 0.771) is
-close in size to the pooling spread above, which is why \Cref{sec:res:ablation} treats the two
-choices as comparably important instead of saying one dominates.
+close in size to the pooling spread above, which is why \Cref{sec:res:ucr} treats the two choices as
+comparably important instead of saying one dominates.
 
 \begin{table}[H]
 \caption{\webtraffic{} accuracy, AOPCR and NDCG@$n$ averaged over every pooling head each encoder

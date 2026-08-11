@@ -40,7 +40,7 @@ predicts.
 \paragraph{The best pair was not the pair of the two best halves.}
 \texttt{seanet\_gated\_mean\_topk} is the best model of the sweep, but neither of its halves is the
 best of its kind: the Gated encoder averages 0.902 over its pairings and Top-$k$ pooling averages
-0.904, both mid-table (\Cref{sec:res:ablation}). Two ordinary-looking halves making the best whole
+0.904, both mid-table (\Cref{app:ablations}). Two ordinary-looking halves making the best whole
 is evidence of a real interaction. My reading is that the Gated encoder's channel gate
 (\Cref{eq:gate}) already suppresses the channels that carry no signal, and Top-$k$'s hard selection
 is the head best placed to use an encoder that has done that cleaning -- a smoother head would blend

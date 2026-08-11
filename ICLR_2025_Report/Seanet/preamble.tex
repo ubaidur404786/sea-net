@@ -19,6 +19,8 @@
 \usepackage{framed}         % shaded / leftbar boxes (guide + contribution boxes)
 \usepackage{comment}        % lets us switch the guide boxes off in one line
 \usepackage{microtype}      % small spacing tweaks, text looks cleaner
+\usepackage{tikz}           % draw diagrams directly in LaTeX (no external image file)
+\usetikzlibrary{positioning, arrows.meta, calc, fit, backgrounds}
 \usepackage{url}
 \usepackage{hyperref}       % clickable links, \ref and \cite
 \usepackage{cleveref}       % \cref{fig:x} prints "Figure 1" by itself
@@ -51,6 +53,15 @@
 % Do that once the section is written, so the final report is clean.
 \newif\ifshowguides
 \showguidestrue
+
+% The zoom-in diagram of ONE encoder block (Section 5.3) is a nice-to-have, not
+% something the text depends on. It is drawn in TikZ in figures/fig_block_tikz.tex
+% and wrapped in \ifshowblockfig ... \fi, so switching the line below to
+% \showblockfigfalse removes it and NOTHING else in the report breaks:
+% no paragraph refers to it, so no \Cref can go missing and no figure number moves
+% except its own. Flip it to false if the page count needs one more page.
+\newif\ifshowblockfig
+\showblockfigtrue
 
 \definecolor{shadecolor}{gray}{0.94}
 \definecolor{todored}{rgb}{0.80,0.10,0.10}

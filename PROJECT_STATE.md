@@ -31,13 +31,16 @@ Datasets: **WebTraffic** (our main one) + the **UCR 2018** archive
 - Branch: `report3` (created from `report2` on 2026-08-10).
 - **72 model variants** trained and ranked in `results/SEA_NET/leaderboard.csv`.
 - **The full first draft is DONE.** Every section 00-A2 is written, all numbers
-  come from the CSVs, and it builds with 0 undefined citations/references and
-  **0 live `\todo`, `\num`, `\tbd` or guide boxes** left.
-- **The one job left: the page count.** The PDF is **45 pages** and the examiner
-  limit is **20-30**. Cutting 15 pages is the next task, and it needs my
-  decision about what to drop, not a guess.
-- Still open besides that: 6 hand-drawn diagrams (see section 3), and one table
-  that runs ~1.3 inch into the margin.
+  come from the CSVs, and it builds with 0 errors, 0 undefined
+  citations/references and **0 live `\todo`, `\num`, `\tbd`, `\figph` or guide
+  boxes** left.
+- **All figures are real now** — no placeholders anywhere (2026-08-11).
+- **The one job left: the page count.** The PDF is **37 pages** and the examiner
+  limit is **20-30**. Cutting 7 more pages is the next task, and it needs my
+  decision about what to drop, not a guess. The cut order is written down in
+  `ICLR_2025_Report/Seanet/README.md` section 7.
+- Two blue `\missing{}` flags are still live on purpose: the `millet_paper` UCR
+  row (8.2) and the ensemble numbers (Appendix A).
 
 So: if I ask for something, assume it is about **writing/figures/tables/page
 count**, not about training. Do not suggest new training runs unless I ask.
@@ -71,11 +74,9 @@ ICLR_2025_Report/
   Template/                <- untouched original ICLR template, reference only
 ```
 
-Section files, in report order:
-
-All sections are **written**. 00-03 are in my own words and should not be
-rewritten — only factual errors get fixed there. 04-A2 were drafted with Claude
-from the real CSVs and code, with no invented explanation.
+Section files, in report order. All are **written**. 00-03 are in my own words
+and should not be rewritten — only factual errors get fixed there. 04-A2 were
+drafted with Claude from the real CSVs and code, with no invented explanation.
 
 | file | section | pages | state |
 |---|---|---|---|
@@ -83,29 +84,34 @@ from the real CSVs and code, with no invented explanation.
 | `01_introduction.tex` | Introduction | 2 | mine, done (teaser figure in) |
 | `02_context.tex` | Context | 0.5 | mine, done |
 | `03_objectives.tex` | What I had to do | 1.5 | mine, done |
-| `04_background.tex` | Background (MIL, AOPCR) | 3 | done — needs 2 diagrams |
-| `05_architecture.tex` | SEA-Net architecture | 5 | done — needs 2 diagrams |
-| `06_pooling.tex` | Pooling heads | 4 | done — needs 1 diagram |
-| `07_setup.tex` | Experimental setup | 3 | done — needs 1 diagram |
-| `08_results.tex` | Results | 7 | done, 5 real figures |
-| `09_discussion.tex` | Discussion | 2 | done |
+| `04_background.tex` | Background (MIL, AOPCR) | 3 | done |
+| `05_architecture.tex` | The SEA-Net **encoder** | 4 | done |
+| `06_pooling.tex` | Pooling heads | 4 | done |
+| `07_setup.tex` | Experimental setup | 2 | done |
+| `08_results.tex` | Results | 2 | done — 2 tables only, rest moved to A1 |
+| `09_discussion.tex` | Discussion | 3 | done |
 | `10_skills.tex` | Skills | 1.5 | done |
-| `11_conclusion.tex` | Conclusion | 2.5 | done |
-| `A1_additional_results.tex` | Appendix A | 9 | done — **biggest cut target** |
-| `A2_reproducibility.tex` | Appendix B | — | done |
+| `11_conclusion.tex` | Conclusion | 2 | done |
+| `A1_additional_results.tex` | Appendix A | 8 | done — **biggest cut target** |
+| `A2_reproducibility.tex` | Appendix B | 3 | done |
 
-Plus title + abstract + TOC = 3 pages and references = 2 pages. **Total 45.**
+**Total 37.** Page budget: **20–30 including appendix** (examiner rule,
+AIEDA400). The cut order is in `ICLR_2025_Report/Seanet/README.md` section 7.
 
-### The 6 diagrams I still have to draw myself
+### Figures — all 8 are real, no placeholders left
 
-They are the only `\figph{}` grey boxes left. Each already has a full drawing
-brief written as a `%` comment right above it in the `.tex` file (exact boxes,
-shapes, tensor sizes, colours):
+| where | figure | source |
+|---|---|---|
+| 01 | teaser | generated |
+| 04 | the MIL view | `figures/fig02_mil_view.png` (mine) |
+| 05 | the whole model | `figures/fig04_seanet_architecture.pdf` (mine) |
+| 05 | one encoder block + receptive field | `figures/fig_block_tikz.tex` — **TikZ, optional** |
+| 08 | top-5 quality vs cost | generated |
+| A1 | ablation grid, win/tie/loss, heatmap | generated |
 
-`fig:mil_view` · `fig:aopcr_curve` (04) — `fig:arch_overall` · `fig:arch_block`
-(05) — `fig:pooling_arch` (06) — `fig:pipeline` (07)
+The block figure is **switchable**: `\showblockfigfalse` in `preamble.tex`
+removes it, and no paragraph cites it, so nothing breaks. Keep it uncited.
 
-Page budget: **20–30 pages including appendix** (examiner rule, AIEDA400).
 The full writing guide, macro list, figure list and submission checklist are in
 `ICLR_2025_Report/Seanet/README.md` — read that file when working on the report.
 
@@ -129,10 +135,12 @@ LaTeX error, and the "root file" trap (VS Code used to compile
 file in `sections/` now starts with `% !TEX root = ../main.tex`; keep that line
 on any new section file.
 
-### Two drafting switches in `preamble.tex`
+### Switches in `preamble.tex`
 
 - `\showguidestrue` → grey "Writing guide" boxes are visible (drafting mode, now)
 - `\showguidesfalse` → hides them all (before submitting)
+- `\showblockfigtrue` / `\showblockfigfalse` → shows or hides the optional TikZ
+  block diagram in section 5.3
 
 Placeholders that must all be gone before submission: `\todo{...}` (red),
 `\num{...}`, `\figph{...}`, `\tabph{...}`, `\tbd`, `\ms`.

@@ -14,60 +14,52 @@
 \subsection{Time series classification}
 \label{sec:bg:tsc}
 
-A univariate time series of length $\nsteps$ is just a list of numbers in time order,
-$\bag = (\inst_1, \dots, \inst_{\nsteps})$. Time series classification (TSC) means giving the whole
-list one label $y \in \{1, \dots, \nclz\}$ -- for example ``this heartbeat is normal''. What happens
-at one point usually depends most on what happened just before and just after it, so a convolution
-filter fits well: it only looks at a small window around each point, called the \emph{receptive
-field}. A plain stack of convolutions needs many layers before it can see far back, so Temporal
-Convolutional Networks (TCNs) \citep{bai2018tcn} use \emph{dilated} convolutions, where the filter
-skips over some points and the window grows quickly for almost no extra cost. My encoder
-(\Cref{sec:architecture}) is built on this idea, together with depthwise-separable convolutions
-\citep{chollet2017xception, howard2017mobilenets}: instead of one convolution that mixes time and
-channels at once, a cheap step filters each channel on its own and a cheap $1\times1$ step mixes the
-channels, which needs far fewer weights for almost the same result.
-
-Three deep networks are the standard comparison point, and I use all three as baselines: FCN and
-ResNet \citep{wang2017fcn}, and InceptionTime \citep{fawaz2020inceptiontime}, which runs several
-kernel sizes in parallel so the model does not have to guess one ``right'' kernel size. For a full
-survey of this family the review of \citet{fawaz2019review} is the place to read. What matters here
-is one property all three share: they end with global average pooling, which averages every time
-step into a single vector before the classifier. That step throws away exactly the information
-needed to say \emph{which} time step mattered, which is why none of them can explain its own
-prediction.
+A univariate time series of length $\nsteps$ is a list of numbers in time order,
+$\bag = (\inst_1, \dots, \inst_{\nsteps})$, and time series classification (TSC) means giving that
+whole list one label $y \in \{1, \dots, \nclz\}$. A heartbeat recording is the easy example: the
+series is the recorded signal, and the label says ``normal'' or ``abnormal''. Two facts about deep
+TSC models matter for the rest of this report. First, what happens at one point depends mostly on
+its neighbours, so convolutions fit this data well, and the standard deep baselines are all
+convolutional: FCN and ResNet \citep{wang2017fcn} and InceptionTime \citep{fawaz2020inceptiontime},
+all three of which I re-train myself in \Cref{sec:setup:baselines}; \citet{fawaz2019review} survey
+the whole family. Second, all three end with \emph{global average pooling}, which averages every
+time step into one vector before the classifier. That single step throws away exactly the
+information needed to say \emph{which} time step mattered, which is why none of them can explain its
+own prediction. Building a convolutional encoder that never throws that information away is the job
+of \Cref{sec:architecture}.
 
 % ---------------------------------------------------------------------
 \subsection{Multiple instance learning}
 \label{sec:bg:mil}
 
-In multiple instance learning (MIL) \citep{dietterich1997mil}, the \emph{bag} carries the label and
-the \emph{instances} inside it do not. Applied to a time series, the bag is the whole series and
-each time step is one instance.
+In multiple instance learning (MIL) \citep{dietterich1997mil} the \emph{bag} carries the label and
+the \emph{instances} inside it do not. Think of a key ring with many keys: the ring opens the door if
+at least one key on it fits the lock, and you are told the ring works but never which key fitted.
+That is a bag label being known while the instance labels stay hidden, and it is exactly the shape
+of a time series problem. Applied to a series, the bag is the whole series and each time step is one
+instance: the series is labelled as a whole, but usually only a few time steps really carry the
+evidence for that label. \Cref{fig:mil_view} is the whole idea in one picture.
 
-A simple picture helps here. Think of a key ring with many keys. The ring opens the door if at
-least one key on it fits the lock. You are told the ring works, but never which key was the one
-that fitted. That is exactly a bag label being known while the instance labels stay hidden. It also
-explains why MIL suits time series so well: a series is labelled as a whole, but usually only a few
-time steps really carry the evidence for that label.
-
-A \emph{pooling function} is the rule that turns the $\nsteps$ instance embeddings of a bag into one
-bag embedding. The two simplest rules are too rigid. Mean pooling treats every time step as equally
-important. Max pooling keeps only the single strongest one and ignores everything else.
-Attention-based MIL \citep{ilse2018attention} fixes this by \emph{learning} a weight for every
-instance instead of fixing the rule in advance: a small neural network looks at each instance and
-outputs a number saying how much it should count, and the bag embedding is the weighted average.
-
-Because the network produces those weights itself, they can be read directly as an importance score
-for every instance. This is the property that \millet{} and every pooling head in this report reuse
-to get an explanation for free.
+The rule that turns the $\nsteps$ instance embeddings of a bag into one bag embedding is called the
+\emph{pooling function}, and it is where all the difficulty sits. The two simplest rules are too
+rigid: mean pooling treats every time step as equally important, and max pooling keeps only the
+single strongest one and ignores everything else. Attention-based MIL \citep{ilse2018attention}
+instead \emph{learns} a weight for every instance: a small network reads each instance and outputs a
+number saying how much it should count, and the bag embedding is the weighted average. Because the
+network produces those weights itself, they can be read straight off as an importance score for
+every time step. That is the property \millet{} and every pooling head in this report reuse to get
+an explanation for free, rather than computing one afterwards.
 
 \begin{figure}[t]
   \centering
   \includegraphics[width=\linewidth]{figures/fig02_mil_view.png}
-  \caption{The MIL view of a time series. The whole series is the bag, each time step is one
-  instance, the encoder turns every instance into an embedding, and the MIL pooling head combines those
-  embeddings into one class prediction while keeping one importance value per time step as the
-  explanation.}
+  \caption{The MIL view of a time series, read left to right. The series is the \emph{bag} and each
+  time step $\inst_i$ is one \emph{instance}. The same encoder is applied at every time step and
+  turns each instance into an embedding $\mathbf{h}_i$; the MIL pooling head weighs those embeddings
+  and sums them into one class prediction (right). The same weights, kept instead of discarded, give
+  the interpretation below: one importance value per time step, drawn on the original series (red =
+  pushed towards the predicted class, blue = pushed away). Both grey boxes are swappable, which is
+  what lets any encoder in \Cref{sec:architecture} be paired with any head in \Cref{sec:pooling}.}
   \label{fig:mil_view}
 \end{figure}
 
