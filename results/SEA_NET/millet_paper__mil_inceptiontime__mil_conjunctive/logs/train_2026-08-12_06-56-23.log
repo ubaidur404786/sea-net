@@ -311,3 +311,4 @@ Results -> results/SEA_NET/millet_paper__mil_inceptiontime__mil_conjunctive/resu
 Next: `python main.py report` to draw the figures for millet_paper__mil_inceptiontime__mil_conjunctive.
 
 [log] finished; full output saved to results/SEA_NET/millet_paper__mil_inceptiontime__mil_conjunctive/logs/train_2026-08-12_06-56-23.log
+python main.py teaser --models sv1/millet,sv4/seanet_bottleneck_topk
