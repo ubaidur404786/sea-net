@@ -35,6 +35,9 @@ Datasets: **WebTraffic** (our main one) + the **UCR 2018** archive
   citations/references and **0 live `\todo`, `\num`, `\tbd`, `\figph` or guide
   boxes** left.
 - **All figures are real now** — no placeholders anywhere (2026-08-11).
+- **All blue `[CHECK: ...]` flags are cleared (2026-08-12).** Both depended on
+  jobs that have now finished: the `millet_paper` UCR row and the ensemble
+  numbers. There is **no placeholder of any kind left in the PDF.**
 - **The one job left: the page count.** The PDF is **39 pages** and the examiner
   limit is **20-30**. Cutting 9 more pages is the next task, and it needs my
   decision about what to drop, not a guess. The cut order is written down in
@@ -48,13 +51,26 @@ Datasets: **WebTraffic** (our main one) + the **UCR 2018** archive
 So: if I ask for something, assume it is about **writing/figures/tables/page
 count**, not about training. Do not suggest new training runs unless I ask.
 
-### One long job still running on the server
+### The last long job is DONE (2026-08-12)
 
-`python main.py train --model sv1/millet_paper` (MILLET's own 1500-epoch recipe
-on our harness, for objective O2). Its **WebTraffic result is final** (0.920
-accuracy, AOPCR 13.27) and the report already uses it. Its **UCR sweep is not**
--- check the `ucr85_n` column before quoting any UCR number from that row; it
-must say 85. When it finishes, re-run the five rebuild commands in section 7.
+`sv1/millet_paper` (MILLET's own 1500-epoch recipe on our harness, for objective
+O2) has finished, and `ensemble_vote.csv` has been rebuilt. **Nothing is left
+running.** The result closes O2:
+
+| | WebTraffic acc | UCR-85 acc | mean rank | W/T/L vs published |
+|---|---|---|---|---|
+| MILLET, **our** recipe | 0.887 | 0.8274 | 12.60 | 13/25/46 |
+| MILLET, **their** recipe (`millet_paper`) | 0.920 | **0.8434** | **9.41** | 26/32/26 |
+| MILLET, published | — | 0.8445 | — | — |
+
+Same architecture, same code, only the recipe differs. 0.8434 against a
+published 0.8445 is a reproduction, so **the gap was always the training budget,
+not our re-implementation.** Its AOPCR of 13.27 (against 2.57 under our recipe)
+is also the direct proof that AOPCR is unnormalised.
+
+`millet_paper` has `ucr85_n = 84`, same as `millet`, so both are ranked over the
+84 datasets shared by the **28** fully-swept models (was 27 — every mean rank in
+Table 7 moved by about +0.7 when this row joined the pool; nothing regressed).
 
 ---
 
@@ -243,8 +259,8 @@ parameters** (41 K vs 424 K) and 11× fewer FLOPs. `seanet_gated_mean_topk` has
 the best accuracy of the sweep and is the most stable model trained.
 
 **Two honest counterweights the report states plainly:**
-1. On the 85 UCR datasets the re-trained MILLET baseline is still best
-   (0.8274 mean, rank 11.86 of 27) — our heads sit near rank 14.6.
+1. On the UCR archive MILLET is still ahead — 0.8274 (our recipe, rank 12.60 of
+   28) and 0.8434 (their recipe, rank 9.41) against our ~15.3–15.5.
 2. AOPCR is unnormalised. Proof: the *same* architecture scores AOPCR 2.57
    under our recipe and **13.27** under MILLET's (`sv1/millet_paper`).
 

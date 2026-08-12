@@ -79,7 +79,7 @@ best baseline.}
 \midrule
 
 O1. {Reproduce all the baselines} & {Compare their architecture and results, and select one for interpretation} & Yes, we selected the \millet{} paper as the baseline \\
-O2. {Match published results / Reproduce \millet{} results} & {Rerun the same \millet{} model and compare our accuracy to the published numbers} & Partly. Using their exact weights we get 0.922 in evaluation, but retraining the same architecture with our recipe gives 0.887 on \webtraffic{}. Running \emph{their} recipe on our code gives 0.920, so much of the gap is the recipe, not the architecture (\Cref{sec:disc:reading}). \\
+O2. {Match published results / Reproduce \millet{} results} & {Rerun the same \millet{} model and compare our accuracy to the published numbers} & Yes. Using their exact weights we get 0.922 in evaluation, and retraining the same architecture with our recipe gives 0.887 on \webtraffic{}. Running \emph{their} recipe on our code gives 0.920 on \webtraffic{} and 0.8434 over the \ucr{} datasets against a published 0.8445, so the gap was the recipe, not the architecture (\Cref{sec:disc:reading}). \\
 O3. {Design a smaller encoder} & {$\geq$ 50\,\% fewer parameters at
 equal accuracy} & Yes, we got a model 10 times smaller \\
 O4. {Improve explanation quality} & {e.g. higher AOPCR and NDCG@$n$ on

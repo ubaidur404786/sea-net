@@ -120,14 +120,15 @@ the shortest in the cost panels.
 One dataset proves nothing, so the next question is whether the result holds on the 85 \ucr{}
 datasets \millet{} published. A mean can hide a model that wins hugely on three datasets and loses
 everywhere else, so \Cref{tab:ucr_accuracy} reports the mean rank and the per-dataset record next to
-it, for my three headline models and the three re-trained baselines only. Every other model is in
-the full leaderboard, \Cref{app:leaderboard}.
+it, for my three headline models, the re-trained baselines, and \millet{} under both recipes. Every
+other model is in the full leaderboard, \Cref{app:leaderboard}.
 
 \begin{table}[tbp]
 \caption{Accuracy over the \ucr{} datasets published by \millet{}. ``Mean rank'' is the average
-accuracy rank over 84 datasets among the 27 models with a complete sweep (lower is better).
+accuracy rank over the 84 datasets shared by the 28 models with a complete sweep (lower is better).
 ``W/T/L'' is the win / tie / loss record per dataset against the \emph{published} \millet{}
-numbers, where a tie means the two accuracies are within 0.005.}
+numbers, where a tie means the two accuracies are within 0.005. The two \millet{} rows differ only
+in the training recipe -- the architecture and the code are identical.}
 \label{tab:ucr_accuracy}
 \begin{center}
 \footnotesize
@@ -136,35 +137,51 @@ numbers, where a tie means the two accuracies are within 0.005.}
 \textbf{Model} & \textbf{Mean accuracy} & \textbf{Mean rank} &
 \textbf{W/T/L vs published} \\
 \midrule
-\texttt{seanet\_gated\_mean\_topk}   & 0.8083 & 14.58 & 18 / 13 / 53 \\
-\texttt{seanet\_bottleneck\_topk}    & 0.8097 & 14.71 & 19 / 15 / 50 \\
-\texttt{seanet\_inputgate\_adaptive} & 0.8153 & 14.79 & 19 / 15 / 50 \\
-\millet{} re-trained by me   & \textbf{0.8274} & \textbf{11.86} & 13 / 25 / 46 \\
-ResNet + Conjunctive         & 0.8146 & 12.89 & 25 / 11 / 48 \\
-FCN + Conjunctive            & 0.8141 & 13.82 & 20 / 12 / 52 \\
+\texttt{seanet\_gated\_mean\_topk}   & 0.8083 & 15.29 & 18 / 13 / 53 \\
+\texttt{seanet\_bottleneck\_topk}    & 0.8097 & 15.40 & 19 / 15 / 50 \\
+\texttt{seanet\_inputgate\_adaptive} & 0.8153 & 15.47 & 19 / 15 / 50 \\
+ResNet + Conjunctive         & 0.8146 & 13.54 & 25 / 11 / 48 \\
+FCN + Conjunctive            & 0.8141 & 14.48 & 20 / 12 / 52 \\
+\midrule
+\millet{}, re-trained under \emph{my} recipe   & 0.8274 & 12.60 & 13 / 25 / 46 \\
+\millet{}, re-trained under \emph{their} recipe & \textbf{0.8434} & \textbf{9.41} &
+                                                  \textbf{26 / 32 / 26} \\
 \midrule
 \millet{} \citep{early2024millet}, published & 0.8445 & -- & -- \\
 \bottomrule
 \end{tabular}
 \end{center}
 \end{table}
-% Mean accuracy: leaderboard.csv, ucr85_acc column (already averaged over the 85 datasets and over
-% every seed the model has). Mean rank + W/T/L: results/paper_figures/tables/table_ranking_accuracy.csv,
-% regenerated 2026-08-10 -- computed over the 84 datasets every fully-swept model shares.
+% Mean accuracy: leaderboard.csv, ucr85_acc column (averaged over the datasets each model finished
+% and over every seed it has). Mean rank + W/T/L: results/paper_figures/tables/table_ranking_accuracy.csv,
+% regenerated 2026-08-12 after millet_paper finished -- computed over the 84 datasets every
+% fully-swept model shares. NOTE the ranks all moved by about +0.7 against the previous version of
+% this table: nothing regressed, the pool simply grew from 27 models to 28 when millet_paper landed
+% at the top of it.
+% millet_paper (their recipe): ucr85_n = 84, ucr85_acc = 0.8434, rank 9.41, W/T/L 26/32/26.
+% millet     (my recipe):      ucr85_n = 84, ucr85_acc = 0.8274, rank 12.60, W/T/L 13/25/46.
 % The published row: millet_acc = 0.8445 from leaderboard.csv. Mean rank and W/T/L are left blank
 % because the published per-dataset numbers needed to compute them were never carried through -
-% only the mean. Do not average this row with the "re-trained by me" row: different recipes.
+% only the mean.
 
 This table tells a different story from \Cref{tab:web_main}, and I want to say it plainly instead of
-hiding it. Over the 85 \ucr{} datasets my re-trained \millet{} baseline is the best of the six, and
-all three of my models lose more datasets than they win. That does not cancel the \webtraffic{}
-result, but it shows its limit: both headline models were chosen because they did well on
-\webtraffic{} (\Cref{sec:setup:data}), and one dataset cannot predict what happens on 85 very
-different ones. \seanet{} stays competitive -- within 1 to 2 accuracy points of the baseline at
-about a tenth of the parameters -- but ``better everywhere'' is a claim this table does not support.
-\missing{The full-fidelity \millet{} reproduction was still sweeping \ucr{} when this was written.
-Once it finishes, rebuild the results and add its \ucr{} row here -- that is the number that closes
-objective O2.}
+hiding it. Over the \ucr{} archive both \millet{} rows beat all three of my models, which lose more
+datasets than they win. That does not cancel the \webtraffic{} result, but it shows its limit: both
+headline models were chosen because they did well on \webtraffic{} (\Cref{sec:setup:data}), and one
+dataset cannot predict what happens on 85 very different ones. \seanet{} stays competitive -- within
+1 to 2 accuracy points of the baseline at about a tenth of the parameters -- but ``better
+everywhere'' is a claim this table does not support.
+
+The last two rows are the ones that close objective~O2, and they are worth reading carefully because
+they are the \emph{same architecture and the same code}, trained twice under two recipes. Under my
+recipe it reaches 0.8274; under \millet{}'s own recipe it reaches 0.8434 against a published 0.8445
+-- a gap of about one thousandth, and its per-dataset record against the published numbers is
+balanced at 26 wins, 32 ties and 26 losses. So the earlier shortfall was never a bug in my
+re-implementation: it was the training budget. That also settles how the rest of this table should
+be read. My models are trained under \emph{my} recipe, so the fair comparison for them is the 0.8274
+row, not the published one; the gap to 0.8434 measures the recipe, and every model in this report
+would move by some part of it under a four-times-longer budget I could not afford for 72 variants
+(\Cref{sec:setup:protocol}).
 
 Finally, the gain is not the encoder alone nor the head alone. Averaged over every partner, the
 encoder choice moves \webtraffic{} accuracy across a range of 0.858--0.937 and the head choice across

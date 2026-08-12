@@ -113,15 +113,23 @@ against 0.947) is decisive, because the second model's own spread is 0.016.
 For the rest of the sweep I only have one seed, so I cannot apply the same test there. Those
 numbers should be read as indicative, not exact.
 
-\paragraph{My training budget is not the published one.}
+\paragraph{My training budget is not the published one, and I measured exactly what that costs.}
 My recipe trains for at most 400 epochs with patience 60 (\Cref{sec:setup:protocol}). The published
-\millet{} numbers come from a recipe about four times longer, with different regularisation. I built
-a full-fidelity reproduction to measure exactly this gap by running their recipe on my own
-harness. On \webtraffic{} it is already informative -- 0.920 accuracy against 0.887 for my recipe,
-so a good part of the gap really is the budget and not the architecture. The full 85-dataset run was
-still going when this report was written, so I cannot yet split the \ucr{} gap the same way. Until
-it finishes, any comparison against the published column should be read as ``different recipe, not
-directly comparable''.
+\millet{} numbers come from a recipe about four times longer, with different regularisation. So I
+ran their recipe on my own harness, same architecture, same code, changing nothing else. The answer
+is clean on both datasets: \webtraffic{} accuracy goes from 0.887 to 0.920, and the \ucr{} mean goes
+from 0.8274 to \textbf{0.8434} against a published 0.8445 (\Cref{tab:ucr_accuracy}). One thousandth
+apart, with a 26/32/26 win/tie/loss record against the published per-dataset numbers -- that is a
+reproduction, not an approximation.
+
+Two things follow. First, my re-implementation was never the problem, so the earlier shortfall can
+be attributed to the budget with a number instead of a guess. Second, and this is the part that
+constrains how the rest of the report should be read: every \seanet{} model here was trained under
+the short recipe, so the honest baseline for them is the 0.8274 row and not the published one. The
+0.016 between those two rows is the size of the effect a longer budget had on \emph{one}
+architecture. I cannot assume my encoders would gain exactly the same amount, but it is the right
+order of magnitude to keep in mind when reading the \ucr{} gap in \Cref{sec:res:ucr}, and re-running
+\seanet{} under the long recipe is the first item of future work in \Cref{sec:conclusion}.
 
 % ---------------------------------------------------------------------
 \subsection{Limitations}

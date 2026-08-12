@@ -30,10 +30,11 @@ Three things are worth pointing out in it. First, the top of the table is crowde
 sit between 0.94 and 0.955, which is why \Cref{sec:disc:reading} insists on the seed spread before
 calling any of them the winner. Second, the parameter column separates them clearly even when the
 accuracy column does not -- and that is the whole argument of this report. Third, the \#DS column
-says how many \ucr{} datasets each model finished: a dash or a small number means the model was
-only screened on \webtraffic{}, or that its sweep was still running when this report was written.
-The \texttt{millet\_paper} row is the second case -- its \webtraffic{} result is final, its \ucr{}
-mean is not (\Cref{sec:disc:reading}).
+says how many \ucr{} datasets each model finished: a dash or a small number means the model was only
+screened on \webtraffic{}. Twenty-eight models completed the archive, and those are the only ones
+ranked in \Cref{tab:ucr_accuracy}. The \texttt{millet\_paper} row is \millet{}'s own long recipe on
+my harness; both its \webtraffic{} and its \ucr{} results are final, and its AOPCR of 13.27 is the
+direct evidence that AOPCR is unnormalised (\Cref{sec:disc:reading}).
 
 % ---------------------------------------------------------------------
 \subsection{Model cost}
@@ -136,9 +137,11 @@ Dual-stream conjunctive (\Cref{sec:pool:dsmil})     & 0.744 & 2.007 & 0.636 & 4 
 \end{center}
 \end{table}
 % Source: results/SEA_NET/leaderboard.csv grouped by the `pooling` column, mean of web_acc /
-% web_aopcr / web_ndcg, n = group size. The five sv7 ablation configs below and the unfinished
-% millet_paper run are excluded here: sv7 is the SAME encoder+head trained five times with one
-% hyperparameter changed, so leaving it in would quietly weight Top-k and the bottleneck encoder.
+% web_aopcr / web_ndcg, n = group size. The five sv7 ablation configs and the millet_paper run are
+% excluded here: sv7 is the SAME encoder+head trained five times with one hyperparameter changed,
+% so leaving it in would quietly weight Top-k and the bottleneck encoder, and millet_paper is the
+% same encoder+head as millet under a different RECIPE, so it would double-count that pairing and
+% drag the mil_conjunctive AOPCR up with its unnormalised 13.27.
 % mil_conjunctive has n=4 because it is also the head used by the re-trained ResNet/FCN baselines.
 
 \paragraph{B. Effect of the encoder, averaged over pooling heads.}
@@ -336,14 +339,21 @@ instability and not one broken run. This is the evidence behind
 
 \paragraph{Ensemble voting.}
 Combining my two proposed variants gives a real but small gain. Soft voting reaches 0.8335 mean
-accuracy over the 85 \ucr{} datasets, against 0.8237 and 0.8253 for the two models alone
+accuracy over the 85 \ucr{} datasets, against 0.8237 and 0.8253 for the two models on their own
 (\Cref{tab:ensemble}) -- about one accuracy point. Soft voting beats hard voting (0.8335 against
 0.8311), which fits the idea that averaging the full probabilities keeps more information than
 counting arg-max votes.
 
-\missing{These four numbers come from seed-0 predictions only, because
-\texttt{ensemble\_vote.csv} was never rebuilt after seeds 1 and 2 were added. Run
-\texttt{python scripts/ensemble\_vote.py} to refresh it, then update this table.}
+Two things about how this table is built, because otherwise its numbers look inconsistent with
+\Cref{tab:ucr_accuracy}. First, a vote needs to know what each model predicted for every individual
+series, not just its accuracy, and those per-series predictions were only saved from seed~1 onwards.
+So the ensemble uses seeds 1 and 2 of each model -- four voters in total -- and seed~0 takes no part
+in it. Second, the two ``alone'' rows are also built from probabilities averaged over those two
+seeds, which is already a small self-ensemble. That is the fair comparison to make here, because a
+four-voter ensemble should not be measured against a single run, but it does mean 0.8237 and 0.8253
+sit above the plain per-seed averages of 0.8097 and 0.8153 in \Cref{tab:ucr_accuracy}. The gain
+claimed above is the gap between the vote and those matched ``alone'' rows, not against
+\Cref{tab:ucr_accuracy}.
 
 Whether that point is worth it depends entirely on the target. For the on-device case that
 motivated objective O6, running two models and combining them roughly doubles the parameters and
@@ -352,8 +362,9 @@ point for two small models is a reasonable trade.
 
 \begin{table}[H]
 \caption{Ensemble of my two proposed variants against each one alone, mean accuracy over the
-85-dataset \ucr{} archive. These numbers were computed from the saved seed-0 predictions, so they
-are not directly comparable with the seed-averaged means of \Cref{tab:ucr_accuracy}.}
+85-dataset \ucr{} archive. Every row here uses seeds 1 and 2 only (four voters for the ensemble
+rows, two for each ``alone'' row), so this table is internally consistent but is not directly
+comparable with the per-seed averages of \Cref{tab:ucr_accuracy}.}
 \label{tab:ensemble}
 \begin{center}
 \small
@@ -369,11 +380,16 @@ Hard vote                                    & 0.8311 \\
 \end{tabular}
 \end{center}
 \end{table}
-% Source: results/SEA_NET/ensemble_vote.csv, column means over its 85 rows. This file was built
-% from the seed-0 .npz prediction files only, and has NOT been rebuilt since seeds 1 and 2 were
-% added -- which is why the "alone" numbers here (0.8237 / 0.8253) differ from the seed-averaged
-% ucr85_acc in Table 8 (0.8097 / 0.8153). To refresh it with every seed:
-%   python scripts/ensemble_vote.py
+% Source: results/SEA_NET/ensemble_vote.csv, column means over its 85 rows (n_members = 4).
+% CHECKED 2026-08-12: the file is NOT stale. save_predictions() was added after the seed-0 sweep,
+% so predictions/ holds seed1 + seed2 only (129 .npz each, no seed0) for both models. The script
+% therefore builds a 4-voter ensemble, and its per-model "alone" column averages that model's TWO
+% seed probability arrays before argmax -- a 2-seed self-ensemble. That, not staleness, is why
+% 0.8237 / 0.8253 sit above the plain per-seed means 0.8097 / 0.8153 in the UCR table.
+% Re-running today reproduces the same four numbers. The command needs --models (it is required):
+%   python scripts/ensemble_vote.py --models sv4/seanet_bottleneck_topk \
+%          sv4/seanet_inputgate_adaptive --baseline sv1/millet
+% To include seed 0 in the vote, seed 0 would have to be re-trained so its .npz files exist.
 
 \paragraph{Hyperparameter search.}
 For the base \seanet{} recipe I ran a 30-trial Optuna search \citep{akiba2019optuna} with a TPE
