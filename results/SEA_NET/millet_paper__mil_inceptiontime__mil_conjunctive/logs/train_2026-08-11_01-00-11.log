@@ -1,0 +1,101 @@
+[log] command 'train' started at 2026-08-11_01-00-11 for model 'millet_paper__mil_inceptiontime__mil_conjunctive'
+[log] a copy of everything below is being saved to: results/SEA_NET/millet_paper__mil_inceptiontime__mil_conjunctive/logs/train_2026-08-11_01-00-11.log
+
+=== train: model=millet_paper__mil_inceptiontime__mil_conjunctive (config sv1/millet_paper) device=cuda mode=full datasets=129 ===
+[params] using DEFAULT recipe (no Optuna record yet - run 'python main.py optuna --model sv1/millet_paper').
+  results  -> results/SEA_NET/millet_paper__mil_inceptiontime__mil_conjunctive/results.csv
+  resume   -> results/SEA_NET/millet_paper__mil_inceptiontime__mil_conjunctive/done_train_dataset.txt  (delete it to retrain everything; delete one line to retrain that dataset)
+
+  [mlflow] logging runs to experiment 'SEA-Net_millet_paper__mil_inceptiontime__mil_conjunctive_2026-08-11' at sqlite:///mlflow.db
+  [mlflow] browse later with:  mlflow ui --backend-store-uri sqlite:///mlflow.db
+[  1/129] WebTraffic                   already done -> skip
+[  2/129] Adiac                        already done -> skip
+[  3/129] ArrowHead                    already done -> skip
+[  4/129] Beef                         already done -> skip
+[  5/129] BeetleFly                    already done -> skip
+[  6/129] BirdChicken                  already done -> skip
+[  7/129] Car                          already done -> skip
+[  8/129] CBF                          already done -> skip
+[  9/129] ChlorineConcentration        already done -> skip
+[ 10/129] CinCECGTorso                 already done -> skip
+[ 11/129] Coffee                       already done -> skip
+[ 12/129] Computers                    already done -> skip
+[ 13/129] CricketX                     already done -> skip
+[ 14/129] CricketY                     already done -> skip
+[ 15/129] CricketZ                     already done -> skip
+[ 16/129] DiatomSizeReduction          already done -> skip
+[ 17/129] DistalPhalanxOutlineAgeGroup already done -> skip
+[ 18/129] DistalPhalanxOutlineCorrect  already done -> skip
+[ 19/129] DistalPhalanxTW              already done -> skip
+[ 20/129] Earthquakes                  already done -> skip
+[ 21/129] ECG200                       already done -> skip
+[ 22/129] ECG5000                      already done -> skip
+[ 23/129] ECGFiveDays                  already done -> skip
+[ 24/129] ElectricDevices              already done -> skip
+[ 25/129] FaceAll                      already done -> skip
+[ 26/129] FaceFour                     already done -> skip
+[ 27/129] FacesUCR                     already done -> skip
+[ 28/129] FiftyWords                   already done -> skip
+[ 29/129] Fish                         already done -> skip
+[ 30/129] FordA                        already done -> skip
+[ 31/129] FordB                        already done -> skip
+[ 32/129] GunPoint                     already done -> skip
+[ 33/129] Ham                          already done -> skip
+[ 34/129] HandOutlines                 already done -> skip
+[ 35/129] Haptics                      already done -> skip
+[ 36/129] Herring                      already done -> skip
+[ 37/129] InlineSkate                  already done -> skip
+[ 38/129] InsectWingbeatSound          already done -> skip
+[ 39/129] ItalyPowerDemand
+    stage 1/3: loading data ...
+    stage 2/3: training on 67 series (no val (train-loss early stop), C=2, T=24, batch=6) ...
+    stage 3/3: scoring on 1029 test series (accuracy + AOPCR) ...
+[ 39/129] ItalyPowerDemand             FAILED: RuntimeError: a Tensor with 16 elements cannot be converted to Scalar
+[ 40/129] LargeKitchenAppliances       already done -> skip
+[ 41/129] Lightning2                   already done -> skip
+[ 42/129] Lightning7                   already done -> skip
+[ 43/129] Mallat                       already done -> skip
+[ 44/129] Meat                         already done -> skip
+[ 45/129] MedicalImages                already done -> skip
+[ 46/129] MiddlePhalanxOutlineAgeGroup already done -> skip
+[ 47/129] MiddlePhalanxOutlineCorrect  already done -> skip
+[ 48/129] MiddlePhalanxTW              already done -> skip
+[ 49/129] MoteStrain                   already done -> skip
+[ 50/129] NonInvasiveFetalECGThorax1   already done -> skip
+[ 51/129] NonInvasiveFetalECGThorax2   already done -> skip
+[ 52/129] OliveOil                     already done -> skip
+[ 53/129] OSULeaf                      already done -> skip
+[ 54/129] PhalangesOutlinesCorrect     already done -> skip
+[ 55/129] Phoneme                      already done -> skip
+[ 56/129] Plane                        already done -> skip
+[ 57/129] ProximalPhalanxOutlineAgeGroup already done -> skip
+[ 58/129] ProximalPhalanxOutlineCorrect already done -> skip
+[ 59/129] ProximalPhalanxTW            already done -> skip
+[ 60/129] RefrigerationDevices         already done -> skip
+[ 61/129] ScreenType                   already done -> skip
+[ 62/129] ShapeletSim                  already done -> skip
+[ 63/129] ShapesAll                    already done -> skip
+[ 64/129] SmallKitchenAppliances
+    stage 1/3: loading data ...
+    stage 2/3: training on 375 series (no val (train-loss early stop), C=3, T=720, batch=16) ...
+    stage 3/3: scoring on 375 test series (accuracy + AOPCR) ...
+    [mlflow] versioned model 'millet_paper__mil_inceptiontime__mil_conjunctive' (id=m-67f8de82858c403994925328726047d0) params={'model_size_mb': '4.1064', 'n_model_params': '422804', 'name': 'millet_paper'}
+    [mlflow] logged run 'millet_paper_SmallKitchenAppliances'  (train_acc=1.0000 test_acc=0.7920 test_loss=2.6726)
+[ 64/129] SmallKitchenAppliances       DONE  acc=0.7920 loss=2.6726 AOPCR=  4.884 NDCG=  n/a C=  3 T=  720 (327s)  [1 trained / 1 failed so far]
+[ 65/129] SonyAIBORobotSurface1
+    stage 1/3: loading data ...
+    stage 2/3: training on 20 series (no val (train-loss early stop), C=2, T=70, batch=2) ...
+    stage 3/3: scoring on 601 test series (accuracy + AOPCR) ...
+    [mlflow] versioned model 'millet_paper__mil_inceptiontime__mil_conjunctive' (id=m-97b90d3e3b4d4a67ad07ba56e7750102) params={'model_size_mb': '4.1059', 'n_model_params': '422675', 'name': 'millet_paper'}
+    [mlflow] logged run 'millet_paper_SonyAIBORobotSurface1'  (train_acc=1.0000 test_acc=0.9750 test_loss=0.0991)
+[ 65/129] SonyAIBORobotSurface1        DONE  acc=0.9750 loss=0.0991 AOPCR=  1.774 NDCG=  n/a C=  2 T=   70 (105s)  [2 trained / 1 failed so far]
+[ 66/129] SonyAIBORobotSurface2
+    stage 1/3: loading data ...
+    stage 2/3: training on 27 series (no val (train-loss early stop), C=2, T=65, batch=2) ...
+    stage 3/3: scoring on 953 test series (accuracy + AOPCR) ...
+    [mlflow] versioned model 'millet_paper__mil_inceptiontime__mil_conjunctive' (id=m-51d55e845fd74f3e9693a26d9839795e) params={'model_size_mb': '4.1059', 'n_model_params': '422675', 'name': 'millet_paper'}
+    [mlflow] logged run 'millet_paper_SonyAIBORobotSurface2'  (train_acc=1.0000 test_acc=0.8825 test_loss=0.5636)
+[ 66/129] SonyAIBORobotSurface2        DONE  acc=0.8825 loss=0.5636 AOPCR=  1.017 NDCG=  n/a C=  2 T=   65 (148s)  [3 trained / 1 failed so far]
+[ 67/129] StarLightCurves
+    stage 1/3: loading data ...
+    stage 2/3: training on 1000 series (no val (train-loss early stop), C=3, T=1024, batch=16) ...

@@ -5,7 +5,7 @@ What this file is for:
     This is the command-line entry point for the whole project. You do not import the seanet
     modules yourself; you run "python main.py <command>" and this file calls the right functions.
     It parses the command, sets up the working directory, and prints the results.
-
+python main.py train --model sv1/millet_paper
 Commands (run "python main.py -h" to see them):
     python main.py summary [NAME|--all]     look at the data (shapes + a summary row per dataset)
     python main.py params                   print how much smaller SEA-Net is than the baseline
