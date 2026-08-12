@@ -28,7 +28,7 @@ rank,model,encoder,pooling,origin,web_acc,web_aopcr,web_ndcg,web_loss,ucr85_n,uc
 27,sea_channels…ea_topk_conj,sea_multiscale_channels,sea_topk_conjunctive,ours,0.926,2.2378,0.7774,0.3573,0,,47176,1.453
 28,sea_channels…ea_topk_conj,sea_multiscale_channels,sea_topk_conjunctive,ours,0.924,2.762,0.7346,0.3889,0,,43576,1.439
 29,sea_gated-la…_sea_sm_conj,sea_mstcn_sep_gated,sea_softmax_conjunctive,ours,0.92,1.9895,0.7378,0.3806,0,,61741,1.503
-30,mil_incept-paper__mil_conj,mil_inceptiontime,mil_conjunctive,millet,0.92,13.2684,0.6612,0.3715,22,0.8552,423707,4.11
+30,mil_incept-paper__mil_conj,mil_inceptiontime,mil_conjunctive,millet,0.92,13.2684,0.6612,0.3715,84,0.8434,423707,4.11
 31,sea_mstcn-ac…ea_adapt_cls,sea_mstcn_sep,sea_adaptive_classwise,ours,0.918,1.6081,0.6188,0.3601,85,0.8134,269174,3.539
 32,sea_gated__sea_gated_attn,sea_mstcn_sep_gated,sea_gated_attention,ours,0.918,1.3542,0.757,0.3653,85,0.8048,62260,1.505
 33,sea_mstcn-sl…sea_cls_conj,sea_mstcn_sep,sea_classwise_conjunctive,ours,0.916,2.4782,0.7185,0.3826,0,,57580,1.484

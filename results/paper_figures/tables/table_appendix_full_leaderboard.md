@@ -31,7 +31,7 @@
 | 27 | sea_channels…ea_topk_conj | sea_multiscale_channels | sea_topk_conjunctive | ours | 0.926 | 2.24 | 0.777 | 0.357 | 0 | -- | 47,176 | 1.45 |
 | 28 | sea_channels…ea_topk_conj | sea_multiscale_channels | sea_topk_conjunctive | ours | 0.924 | 2.76 | 0.735 | 0.389 | 0 | -- | 43,576 | 1.44 |
 | 29 | sea_gated-la…_sea_sm_conj | sea_mstcn_sep_gated | sea_softmax_conjunctive | ours | 0.920 | 1.99 | 0.738 | 0.381 | 0 | -- | 61,741 | 1.50 |
-| 30 | mil_incept-paper__mil_conj | mil_inceptiontime | mil_conjunctive | millet | 0.920 | 13.27 | 0.661 | 0.371 | 22 | 0.8552 | 423,707 | 4.11 |
+| 30 | mil_incept-paper__mil_conj | mil_inceptiontime | mil_conjunctive | millet | 0.920 | 13.27 | 0.661 | 0.371 | 84 | 0.8434 | 423,707 | 4.11 |
 | 31 | sea_mstcn-ac…ea_adapt_cls | sea_mstcn_sep | sea_adaptive_classwise | ours | 0.918 | 1.61 | 0.619 | 0.360 | 85 | 0.8134 | 269,174 | 3.54 |
 | 32 | sea_gated__sea_gated_attn | sea_mstcn_sep_gated | sea_gated_attention | ours | 0.918 | 1.35 | 0.757 | 0.365 | 85 | 0.8048 | 62,260 | 1.50 |
 | 33 | sea_mstcn-sl…sea_cls_conj | sea_mstcn_sep | sea_classwise_conjunctive | ours | 0.916 | 2.48 | 0.719 | 0.383 | 0 | -- | 57,580 | 1.48 |

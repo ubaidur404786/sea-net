@@ -1,0 +1,40 @@
+[log] command 'train' started at 2026-08-12_12-54-07 for model 'millet_paper__mil_inceptiontime__mil_conjunctive'
+[log] a copy of everything below is being saved to: results/SEA_NET/millet_paper__mil_inceptiontime__mil_conjunctive/logs/train_2026-08-12_12-54-07.log
+
+=== train: model=millet_paper__mil_inceptiontime__mil_conjunctive (config sv1/millet_paper) device=cuda mode=full datasets=3 ===
+[params] using DEFAULT recipe (no Optuna record yet - run 'python main.py optuna --model sv1/millet_paper').
+  results  -> results/SEA_NET/millet_paper__mil_inceptiontime__mil_conjunctive/results.csv
+  resume   -> results/SEA_NET/millet_paper__mil_inceptiontime__mil_conjunctive/done_train_dataset.txt  (delete it to retrain everything; delete one line to retrain that dataset)
+
+  [mlflow] logging runs to experiment 'SEA-Net_millet_paper__mil_inceptiontime__mil_conjunctive_2026-08-12' at sqlite:///mlflow.db
+  [mlflow] browse later with:  mlflow ui --backend-store-uri sqlite:///mlflow.db
+[  1/3] ItalyPowerDemand
+    stage 1/3: loading data ...
+    stage 2/3: training on 67 series (no val (train-loss early stop), C=2, T=24, batch=6) ...
+    stage 3/3: scoring on 1029 test series (accuracy + AOPCR) ...
+[  1/3] ItalyPowerDemand             FAILED: RuntimeError: The size of tensor a (21) must match the size of tensor b (20) at non-singleton dimension 1
+[  2/3] Chinatown
+    stage 1/3: loading data ...
+    stage 2/3: training on 20 series (no val (train-loss early stop), C=2, T=24, batch=2) ...
+    stage 3/3: scoring on 343 test series (accuracy + AOPCR) ...
+[  2/3] Chinatown                    FAILED: RuntimeError: The size of tensor a (21) must match the size of tensor b (20) at non-singleton dimension 1
+[  3/3] MelbournePedestrian
+    stage 1/3: loading data ...
+    stage 2/3: training on 1194 series (no val (train-loss early stop), C=10, T=24, batch=16) ...
+    stage 3/3: scoring on 2439 test series (accuracy + AOPCR) ...
+[  3/3] MelbournePedestrian          FAILED: RuntimeError: The size of tensor a (21) must match the size of tensor b (20) at non-singleton dimension 1
+
+Done: 0 trained, 0 skipped, 3 failed.
+Results -> results/SEA_NET/millet_paper__mil_inceptiontime__mil_conjunctive/results.csv
+
+=== millet_paper__mil_inceptiontime__mil_conjunctive vs MILLET ConjunctiveInceptionTime (mean of 5 reps) ===
+  UCR datasets evaluated: 124  (with MILLET baseline: 84, without: 40)
+  metric        ours    MILLET   win/tie/loss   (mean over the 84 datasets MILLET published)
+  acc         0.8434    0.8433       26/32/26   
+  loss        1.1704    1.2321       40/14/30   (lower is better)
+  aopcr       3.9264    4.5579        42/5/37   
+  wrote results/SEA_NET/millet_paper__mil_inceptiontime__mil_conjunctive/comparison_vs_millet.csv
+
+Next: `python main.py report` to draw the figures for millet_paper__mil_inceptiontime__mil_conjunctive.
+
+[log] finished; full output saved to results/SEA_NET/millet_paper__mil_inceptiontime__mil_conjunctive/logs/train_2026-08-12_12-54-07.log
