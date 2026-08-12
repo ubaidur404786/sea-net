@@ -80,7 +80,7 @@ everything else goes to Appendix A. That is why model cost and the ablation grid
 
 ## 3. The figures
 
-All eight are real — there are no grey `FIGURE PLACEHOLDER` boxes left.
+All ten are real — there are no grey `FIGURE PLACEHOLDER` boxes left.
 
 | # | figure | where | source |
 |---|---|---|---|
@@ -88,10 +88,29 @@ All eight are real — there are no grey `FIGURE PLACEHOLDER` boxes left.
 | 2 | the MIL view (bag / instance / pooling) | `04_background` | `figures/fig02_mil_view.png` |
 | 3 | the whole SEA-Net model | `05_architecture` | `figures/fig04_seanet_architecture.pdf` |
 | 4 | one encoder block + receptive field | `05_architecture` | `figures/fig_block_tikz.tex` (TikZ) |
-| 5 | top-5 models, quality vs cost | `08_results` | generated |
-| 6 | encoder × pooling ablation grid | `A1` | generated |
-| 7 | win / tie / loss per dataset | `A1` | generated |
-| 8 | dataset × model accuracy heatmap | `A1` | generated |
+| 5 | **all seven encoder variants**, with attach points A/B/C/D | `05_architecture` | `figures/fig_variants_tikz.tex` (TikZ) |
+| 6 | **all eight pooling heads**, with slots 1/2 | `06_pooling` | `figures/fig_pooling_tikz.tex` (TikZ) |
+| 7 | top-5 models, quality vs cost | `08_results` | generated |
+| 8 | encoder × pooling ablation grid | `A1` | generated |
+| 9 | win / tie / loss per dataset | `A1` | generated |
+| 10 | dataset × model accuracy heatmap | `A1` | generated |
+
+Figures 5 and 6 are the two "everything in one place" reference figures. Each draws the
+shared skeleton once and then shows only what each variant changes, so a variant can be
+located without re-reading its equation. `figures/fig_bottleneck_tikz.tex` is **kept but
+unused** — the bottleneck used to be its own figure and is now panel (a) of Figure 5.
+
+**Two known size limits**, both worth checking if you edit those files:
+
+- **Figure 3** is a wide drawing (1368 × 432 pt), so at text width its internal labels
+  print at about 3.5 pt. It is currently set to `1.22\linewidth` inside a `\makebox`,
+  which buys about 20 % and still leaves a 0.9 in margin. The real fix is to re-export
+  the drawing as **two stacked rows** (encoder on top, pooling head below) — that alone
+  would roughly double the label size at no page cost.
+- **Figures 5 and 6** are drawn wide and then shrunk by `\resizebox` to the text width.
+  Their natural width (about 17–18 cm) is chosen so the shrink lands near 0.8 and the
+  `\small` font stays around 7 pt. **If you add a wider box, everything else gets
+  smaller** — widen the drawing only if you also drop a column.
 
 **Figure 4 is optional on purpose.** It is drawn in TikZ, wrapped in
 `\ifshowblockfig ... \fi`, and **no paragraph cites it**, so hiding it cannot leave a broken
@@ -181,7 +200,7 @@ python main.py paper
 
 ## 7. Page count — the one job left
 
-**Now: 37 pages. Target: 20–30 including the appendix** (examiner rule, AIEDA400).
+**Now: 39 pages. Target: 20–30 including the appendix** (examiner rule, AIEDA400).
 
 Cut in this order, cheapest first:
 
@@ -190,6 +209,9 @@ Cut in this order, cheapest first:
    first; the full leaderboard and the ablations are the ones worth keeping.
 3. `04_background` — the MILLET recap can be shortened further with a pointer to the paper.
 4. The per-dataset and per-seed tables in Appendix A can become a sentence each.
+5. Last resort: Figures 5 and 6 are about ¾ of a page each. They are **cited**, so deleting
+   one means deleting the sentence that points at it as well — check the build for an
+   undefined reference afterwards.
 
 Check the count after every cut, and never cut something Section 8 or 9 cites — the build
 will tell you with an undefined reference, but only if you read the log.

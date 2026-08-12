@@ -1,0 +1,87 @@
+% !TEX root = ../main.tex
+% =====================================================================
+% NOT USED ANY MORE -- kept on purpose, do not delete.
+%
+% This was a standalone figure for the bottleneck. It is now panel (a) of
+% figures/fig_variants_tikz.tex, so that all seven encoder variants sit in
+% one figure. Keep this file in case the standalone version is ever wanted
+% back: \input{figures/fig_bottleneck_tikz} inside a figure environment is
+% all it needs.
+% =====================================================================
+% fig_bottleneck_tikz.tex -- the squeeze/expand trick, drawn.
+%
+% Source of truth: seanet/features.py, class MultiScaleSepBottleneckBlock
+%   "reduce":  nn.Conv1d(d, r, kernel_size=1)      d -> r
+%   "expand":  nn.Conv1d(r, d, kernel_size=1)      r -> d
+%   r = max(1, d // bottleneck_ratio), ratio = 4
+%
+% The point of the picture: input and output are IDENTICAL in both rows.
+% Only the middle is narrow. The box heights are drawn to scale (24 mm for
+% d, 6 mm for r = d/4), so "narrow middle" is something you can see and not
+% just something you read.
+% =====================================================================
+
+\begin{tikzpicture}[
+  font=\small,
+  >={Stealth[length=2mm]},
+  % a stack of channels: the height IS the channel count, drawn to scale
+  chan/.style    = {draw=black!55, fill=black!10, rounded corners=1pt, minimum width=7mm},
+  % a 1x1 convolution
+  convbox/.style = {draw=orange!65!black, fill=orange!18, rounded corners=2pt,
+                    minimum height=9mm, align=center, inner xsep=5pt},
+  cost/.style    = {black!75, align=center},
+]
+
+% =====================================================================
+% (a) the standard pointwise convolution: one big d -> d step
+% =====================================================================
+\node[chan, minimum height=24mm] (a1) at (0,0) {};
+\node[convbox]                   (ac) at (5,0) {$1{\times}1$ pointwise\\[-1pt]$\dmodel \to \dmodel$};
+\node[chan, minimum height=24mm] (a2) at (10,0) {};
+
+\draw[->] (a1.east) -- (ac.west);
+\draw[->] (ac.east) -- (a2.west);
+
+\node[anchor=east, black!70] at (a1.west) {$\dmodel = 64$\ };
+\node[anchor=west, black!70] at (a2.east) {\ $\dmodel = 64$};
+
+\node[anchor=south, black!80] at (5,1.55) {\textbf{(a) the standard block}};
+\node[cost, anchor=north] at (5,-1.5)
+     {cost $= \dmodel \cdot \dmodel = \dmodel^2 = 4096$ weights};
+
+% =====================================================================
+% (b) the bottleneck: squeeze down to r, then expand back up
+% =====================================================================
+\begin{scope}[yshift=-4.4cm]
+
+\node[chan, minimum height=24mm] (b1) at (0,0) {};
+\node[convbox]                   (bs) at (2.7,0) {squeeze\\[-1pt]$\dmodel \to r$};
+\node[chan, minimum height=6mm]  (bm) at (5,0) {};      % 6mm = 24mm / 4, drawn to scale
+\node[convbox]                   (be) at (7.3,0) {expand\\[-1pt]$r \to \dmodel$};
+\node[chan, minimum height=24mm] (b2) at (10,0) {};
+
+\draw[->] (b1.east) -- (bs.west);
+\draw[->] (bs.east) -- (bm.west);
+\draw[->] (bm.east) -- (be.west);
+\draw[->] (be.east) -- (b2.west);
+
+\node[anchor=east, black!70] at (b1.west) {$\dmodel = 64$\ };
+\node[anchor=west, black!70] at (b2.east) {\ $\dmodel = 64$};
+\node[anchor=south, black!70] at (bm.north) {$r = \dmodel/4 = 16$};
+
+\node[anchor=south, black!80] at (5,1.55)
+     {\textbf{(b) the bottleneck block} -- what \seanet{} uses};
+\node[cost, anchor=north] at (5,-1.5)
+     {cost $= \underbrace{\dmodel \cdot r}_{\text{squeeze}} +
+              \underbrace{r \cdot \dmodel}_{\text{expand}}
+             = 2\dmodel r = \dfrac{\dmodel^2}{2} = 2048$ weights};
+
+\end{scope}
+
+% ---- the take-away, tying the two rows together ----------------------
+\node[draw=black!45, fill=black!4, rounded corners=2pt, inner sep=5pt, align=center,
+      anchor=north] at (5,-7.5)
+     {Same input, same output -- only the middle is narrow.\\
+      \textbf{Half the weights, for any $\dmodel$.}};
+
+\end{tikzpicture}

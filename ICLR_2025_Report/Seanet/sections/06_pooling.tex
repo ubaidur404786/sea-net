@@ -80,6 +80,33 @@ two were computed separately,
 nothing would stop them from disagreeing, and the explanation would lose exactly the property that
 post-hoc explainers lack (\Cref{sec:bg:related}).
 
+Because the template is shared, a head is fully described by two choices: what goes in the attention
+branch, and how the $\nsteps$ evidence values are combined into one number. \Cref{fig:pooling} draws
+the template once and then gives one row per head, filling in those two slots. The last column of
+that figure is the one to look at first: it shows, on the same made-up evidence, \emph{which} time
+steps actually reach the bag score under each head. Reading the eight rows top to bottom is the
+short version of this whole section.
+
+% Drawn in TikZ in figures/fig_pooling_tikz.tex. Every row uses the SAME evidence profile,
+% so the rows differ only by the aggregator -- that is the point of the last column.
+\begin{figure}[htbp]
+  \centering
+  \input{figures/fig_pooling_tikz}
+  \caption{All eight pooling heads in one place. \textbf{Top:} the template every head shares --
+  the embedding $\emb_j$ feeds an attention branch (\textbf{slot 1}) and a per-time-step classifier,
+  their product is the evidence $g_j^k$, and an aggregator over time (\textbf{slot 2}) turns the
+  $\nsteps$ evidence values into the bag score. The interpretation is those same $g_j^k$ values, not
+  a second branch, which is why it can never disagree with the prediction. \textbf{Below:} one row
+  per head, saying only what it puts in the two slots. Five of my heads keep the class-wise gate in
+  slot 1 and change only slot 2; Softmax and Gated attention change slot 1 instead. The last column
+  applies each aggregator to the \emph{same} made-up evidence profile, so the rows can be compared
+  directly: the baseline and Class-wise count every time step equally, Softmax and Adaptive weight
+  them smoothly, Top-$k$ keeps a few and drops the rest outright, and Attention-max and Dual-stream
+  lean on one decisive step. That last column is the visual form of the ``evidence dilution''
+  argument: only Top-$k$ makes the interpretation exactly zero where the model used no evidence.}
+  \label{fig:pooling}
+\end{figure}
+
 % ---------------------------------------------------------------------
 \subsection{Class-wise conjunctive pooling}
 \label{sec:pool:classwise}
@@ -334,8 +361,10 @@ Property~\ref{prop:ds} says this head should never be worse than the baseline. \
 shows that it is, in fact, the worst head I tried, and explains why a safety net that nothing pushes
 the model towards is not a safety net at all.
 
-% NOTE: the "all heads at a glance" diagram was dropped. Table tab:pooling_summary below already
-% says the same thing in one page-cheap block, so the figure was pure duplication.
+% NOTE: the "all heads at a glance" diagram is now Figure fig:pooling, at the end of 6.1.
+% It and tab:pooling_summary below do NOT duplicate each other: the figure shows the mechanism
+% (what goes in the two slots, and which evidence survives the aggregator), the table gives the
+% cost (extra parameters) and the exact setting that returns the baseline.
 
 % ---------------------------------------------------------------------
 \subsection{Summary and cost}

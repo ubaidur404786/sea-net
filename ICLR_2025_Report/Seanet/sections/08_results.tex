@@ -103,11 +103,13 @@ the shortest in the cost panels.
 \begin{figure}[tbp]
   \centering
   \includegraphics[width=0.85\linewidth]{results/paper_figures/01_main_figures/topk5_multimetric}
-  \caption{The five best models by \webtraffic{} accuracy, compared on every metric I measure. All
-  panels keep the same model order, so one model can be followed from quality (accuracy, AOPCR,
-  NDCG@$n$, loss) across to cost (parameters, compute, prediction time). Blue marks the models I
-  propose. The point of the figure is that the leftmost bars in the quality panels are also among
-  the shortest bars in the cost panels.}
+  \caption{The five best models by \webtraffic{} accuracy on every metric I measure -- all five are
+  mine. One row is one model, and the row order is identical in every panel, so a single model can
+  be followed from the quality panels (accuracy, AOPCR, NDCG@$n$, loss) down to the cost panels
+  (\ucr{}-85 accuracy, parameters, compute, prediction time). The contrast between the two blocks is
+  the point: the models near the top of the quality panels sit at the cheap end of the cost panels.
+  The row to spot is \texttt{sea\_mstcn\_\_mil\_conj}, second on accuracy but roughly six times the
+  parameters of \texttt{sea\_bottleneck\ldots topk}, which is only five thousandths behind it.}
   \label{fig:web_bars}
 \end{figure}
 

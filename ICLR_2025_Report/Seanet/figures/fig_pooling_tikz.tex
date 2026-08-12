@@ -1,0 +1,184 @@
+% !TEX root = ../main.tex
+% =====================================================================
+% fig_pooling_tikz.tex -- all eight MIL pooling heads in one place.
+%
+% Source of truth: seanet/pooling.py, and Section 6 of this report.
+%
+% Every head shares the SAME template (Eq. common_template):
+%     z_j --> attention branch  A(z_j)        <- SLOT 1
+%     z_j --> classifier        p_j
+%     evidence  g_j^k = a_j^k p_j^k
+%     g  -->  aggregate over time             <- SLOT 2  --> Ybag^k
+%     g  -->  interpretation Phi (the SAME numbers, not a second branch)
+%
+% So a head is fully described by what it puts in slot 1 and slot 2.
+% The figure draws the template once, then one row per head: what goes in
+% slot 1, what goes in slot 2, and a small bar picture showing WHICH of the
+% T evidence values actually reach the bag score.
+%
+% The bar picture uses the same made-up evidence profile in every row, so
+% the rows differ only by the aggregator -- that is the whole point.
+% Dark orange = counts fully, pale = counts a little, grey = dropped.
+%
+% SIZING: keep the natural width near 17 cm and the height near 19 cm.
+% \resizebox then shrinks by about 0.82, so \small lands near 7.5 pt and
+% the whole thing still leaves room for the caption on one page. Widen the
+% drawing and every label gets smaller, so keep the columns where they are.
+%
+% Node names are global in tikz, so every row prefixes its nodes.
+% =====================================================================
+
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[
+  font=\small,
+  >={Stealth[length=1.8mm]},
+  blk/.style   = {draw=black!55, fill=black!7,  rounded corners=2pt, minimum height=6mm,
+                  align=center, inner xsep=3pt},
+  new/.style   = {draw=orange!65!black, fill=orange!18, rounded corners=2pt, minimum height=6mm,
+                  align=center, inner xsep=3pt},
+  io/.style    = {draw=black!45, fill=black!3, rounded corners=1pt, minimum height=5.5mm,
+                  minimum width=6mm, align=center},
+  op/.style    = {draw=black!65, circle, inner sep=0.5pt, minimum size=4.6mm},
+  slot/.style  = {draw=black!70, fill=white, circle, inner sep=0.5pt, minimum size=4.6mm,
+                  font=\small\bfseries},
+  hname/.style = {anchor=west, font=\small\bfseries, black!85, align=left},
+  cell/.style  = {anchor=west, black!80, align=left},
+  colh/.style  = {anchor=west, font=\small\bfseries, black!60},
+]
+
+% =====================================================================
+% THE SHARED TEMPLATE -- drawn once, because every head reuses it
+% =====================================================================
+\node[io]  (tz)   at ( 0.5, 0)    {$\emb_j$};
+\node[new] (tat)  at ( 3.7, 0.8)  {attention branch $\mathcal{A}(\emb_j)$};
+\node[blk] (tcl)  at ( 3.7,-0.8)  {classifier $\instpred_j = W_c\emb_j + \mathbf{b}_c$};
+\node[op]  (tmu)  at ( 7.4, 0)    {$\times$};
+\node[io]  (tg)   at ( 9.3, 0)    {$g_j^k$};
+\node[new] (tag)  at (12.6, 0)    {aggregate over time};
+\node[io]  (ty)   at (15.9, 0)    {$\bagpred^{\,k}$};
+\node[io]  (tphi) at (12.6,-1.7)  {interpretation $\interp_{k,j} = g_j^k$};
+
+\draw[->] (tz.east)  |- (tat.west);
+\draw[->] (tz.east)  |- (tcl.west);
+\draw[->] (tat.east) -| (tmu.north);
+\draw[->] (tcl.east) -| (tmu.south);
+\draw[->] (tmu.east) -- (tg.west);
+\draw[->] (tg.east)  -- (tag.west);
+\draw[->] (tag.east) -- (ty.west);
+\draw[->] (tg.south) |- (tphi.west);
+
+\node[slot] at (tat.north east) {1};
+\node[slot] at (tag.north east) {2};
+
+\node[anchor=west, black!70] at (-0.2,-2.8)
+  {A head is fully described by two choices: \textbf{1} the shape of the attention branch, and
+   \textbf{2} how the $\nsteps$ evidence values are combined. Everything else is shared.};
+\node[anchor=west, black!70] at (-0.2,-3.45)
+  {The interpretation is the same $g_j^k$ the bag score is built from -- never a second branch,
+   which is why it cannot disagree with the prediction.};
+
+% =====================================================================
+% COLUMN HEADINGS for the table of heads
+% =====================================================================
+\node[colh] at (-0.2,-4.7) {Head};
+\node[colh] at ( 3.5,-4.7) {\textbf{1} attention branch};
+\node[colh] at ( 8.2,-4.7) {\textbf{2} how the evidence is combined};
+\node[colh] at (13.5,-4.7) {which evidence reaches $\bagpred^{\,k}$};
+\draw[black!35] (-0.3,-5.05) -- (16.9,-5.05);
+
+% =====================================================================
+% A ROW PER HEAD. Rows are 1.55 apart.
+% The bar picture is a small \foreach over (index / height [/ fill]).
+% Same heights in every row; only the fill changes.
+% =====================================================================
+
+% ---- (1) Conjunctive, the MILLET baseline ----------------------------
+\node[hname] at (-0.2,-5.8) {Conjunctive\\[-2pt]\normalfont\itshape (baseline, reused)};
+\node[cell]  at ( 3.5,-5.8) {one \emph{shared} gate\\[-2pt]$a_j = \sig(\mathbf{w}_a^\top\tanh(W_a\emb_j))$};
+\node[cell]  at ( 8.2,-5.8) {plain mean over all $\nsteps$};
+\begin{scope}[shift={(13.9,-6.2)}]
+  \foreach \i/\hh in {0/0.15,1/0.30,2/0.20,3/0.55,4/0.85,5/0.45,6/0.25,7/0.60,8/0.20,9/0.15}
+    { \fill[orange!60!black] (\i*0.30,0) rectangle ++(0.20,\hh); }
+\end{scope}
+
+% ---- (2) Class-wise --------------------------------------------------
+\node[hname] at (-0.2,-7.35) {Class-wise};
+\node[cell]  at ( 3.5,-7.35) {one gate \emph{per class}\\[-2pt]$\mathbf{a}_j = \sig(W_2\tanh(W_1\emb_j))$};
+\node[cell]  at ( 8.2,-7.35) {plain mean over all $\nsteps$};
+\begin{scope}[shift={(13.9,-7.75)}]
+  \foreach \i/\hh in {0/0.15,1/0.30,2/0.20,3/0.55,4/0.85,5/0.45,6/0.25,7/0.60,8/0.20,9/0.15}
+    { \fill[orange!60!black] (\i*0.30,0) rectangle ++(0.20,\hh); }
+\end{scope}
+
+% ---- (3) Softmax + learnable temperature -----------------------------
+\node[hname] at (-0.2,-8.90) {Softmax\\[-2pt]+ temperature};
+\node[cell]  at ( 3.5,-8.90) {score per class, then\\[-2pt]$\softmaxt(s_j^k/\tau)$, weights sum to 1};
+\node[cell]  at ( 8.2,-8.90) {weighted sum; $\tau$ learns\\[-2pt]how peaked the weights are};
+\begin{scope}[shift={(13.9,-9.30)}]
+  \foreach \i/\hh/\op in {0/0.15/14,1/0.30/28,2/0.20/18,3/0.55/58,4/0.85/95,5/0.45/44,
+                          6/0.25/22,7/0.60/64,8/0.20/18,9/0.15/14}
+    { \fill[orange!\op!white!88!black] (\i*0.30,0) rectangle ++(0.20,\hh); }
+\end{scope}
+
+% ---- (4) Adaptive class-wise ----------------------------------------
+\node[hname] at (-0.2,-10.45) {Adaptive\\[-2pt]class-wise};
+\node[cell]  at ( 3.5,-10.45) {one gate per class\\[-2pt](same as class-wise)};
+\node[cell]  at ( 8.2,-10.45) {$\softmaxt(\beta_k\,g_j^k)$ weighted sum;\\[-2pt]$\beta_k$ learns mean $\leftrightarrow$ max \emph{per class}};
+\begin{scope}[shift={(13.9,-10.85)}]
+  \foreach \i/\hh/\op in {0/0.15/8,1/0.30/18,2/0.20/10,3/0.55/50,4/0.85/100,5/0.45/32,
+                          6/0.25/14,7/0.60/58,8/0.20/10,9/0.15/8}
+    { \fill[orange!\op!white!88!black] (\i*0.30,0) rectangle ++(0.20,\hh); }
+\end{scope}
+
+% ---- (5) Top-k -------------------------------------------------------
+\node[hname] at (-0.2,-12.00) {Top-$k$\\[-2pt]\normalfont\itshape (my best head)};
+\node[cell]  at ( 3.5,-12.00) {one gate per class\\[-2pt](same as class-wise)};
+\node[cell]  at ( 8.2,-12.00) {mean of the $k = \lceil\kappa\nsteps\rceil$ largest;\\[-2pt]everything else is dropped outright};
+\begin{scope}[shift={(13.9,-12.40)}]
+  \foreach \i/\hh in {0/0.15,1/0.30,2/0.20,5/0.45,6/0.25,8/0.20,9/0.15}
+    { \fill[black!22] (\i*0.30,0) rectangle ++(0.20,\hh); }
+  \foreach \i/\hh in {3/0.55,4/0.85,7/0.60}
+    { \fill[orange!70!black] (\i*0.30,0) rectangle ++(0.20,\hh); }
+\end{scope}
+
+% ---- (6) Attention-max ----------------------------------------------
+\node[hname] at (-0.2,-13.55) {Attention-max};
+\node[cell]  at ( 3.5,-13.55) {one gate per class\\[-2pt](same as class-wise)};
+\node[cell]  at ( 8.2,-13.55) {$(1-\lambda_k)\cdot$mean $+\ \lambda_k\cdot$max;\\[-2pt]a hard blend instead of a smooth one};
+\begin{scope}[shift={(13.9,-13.95)}]
+  \foreach \i/\hh in {0/0.15,1/0.30,2/0.20,3/0.55,5/0.45,6/0.25,7/0.60,8/0.20,9/0.15}
+    { \fill[orange!25!white!90!black] (\i*0.30,0) rectangle ++(0.20,\hh); }
+  \fill[orange!75!black] (4*0.30,0) rectangle ++(0.20,0.85);
+\end{scope}
+
+% ---- (7) Gated attention --------------------------------------------
+\node[hname] at (-0.2,-15.10) {Gated attention\\[-2pt]\normalfont\itshape (from pathology MIL)};
+\node[cell]  at ( 3.5,-15.10) {$\tanh(V\emb_j) \odot \sig(U\emb_j)$,\\[-2pt]then a per-class score and $\softmaxt$};
+\node[cell]  at ( 8.2,-15.10) {weighted sum. \textbf{No} setting of its\\[-2pt]weights returns the baseline};
+\begin{scope}[shift={(13.9,-15.50)}]
+  \foreach \i/\hh/\op in {0/0.15/14,1/0.30/28,2/0.20/18,3/0.55/58,4/0.85/95,5/0.45/44,
+                          6/0.25/22,7/0.60/64,8/0.20/18,9/0.15/14}
+    { \fill[orange!\op!white!88!black] (\i*0.30,0) rectangle ++(0.20,\hh); }
+\end{scope}
+
+% ---- (8) Dual-stream -------------------------------------------------
+\node[hname] at (-0.2,-16.65) {Dual-stream\\[-2pt]\normalfont\itshape (from pathology MIL)};
+\node[cell]  at ( 3.5,-16.65) {one gate per class, plus a query\\[-2pt]compared with the critical step};
+\node[cell]  at ( 8.2,-16.65) {blend $(1-\lambda)\cdot$mean $+\ \lambda\cdot$critical\\[-2pt]stream, with one learnable $\lambda$};
+\begin{scope}[shift={(13.9,-17.05)}]
+  \foreach \i/\hh in {0/0.15,1/0.30,2/0.20,3/0.55,5/0.45,6/0.25,7/0.60,8/0.20,9/0.15}
+    { \fill[orange!32!white!90!black] (\i*0.30,0) rectangle ++(0.20,\hh); }
+  \fill[orange!75!black] (4*0.30,0) rectangle ++(0.20,0.85);
+  \node[anchor=north, black!60, font=\scriptsize] at (4*0.30+0.10,-0.04) {critical step $m_k$};
+\end{scope}
+
+% ---- legend for the bar pictures ------------------------------------
+\draw[black!35] (-0.3,-17.85) -- (16.9,-17.85);
+\fill[orange!70!black]          (8.6,-18.55) rectangle ++(0.24,0.34);
+\node[anchor=west, black!70] at (8.95,-18.38) {counts fully};
+\fill[orange!32!white!90!black] (11.6,-18.55) rectangle ++(0.24,0.34);
+\node[anchor=west, black!70] at (11.95,-18.38) {counts a little};
+\fill[black!22]                 (14.8,-18.55) rectangle ++(0.24,0.34);
+\node[anchor=west, black!70] at (15.15,-18.38) {dropped};
+
+\end{tikzpicture}}

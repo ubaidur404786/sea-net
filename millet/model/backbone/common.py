@@ -49,11 +49,17 @@ def manual_pad(x: torch.Tensor, min_length: int) -> torch.Tensor:
     """
     # Calculate amount of padding required
     pad_amount = min_length - x.shape[-1]
+    if pad_amount <= 0:                       # already long enough, nothing to do
+        return x
     # Split either side
     pad_left = pad_amount // 2
     pad_right = pad_amount - pad_left
-    # Pad left (replicate first value)
-    pad_x = F.pad(x, [pad_left, 0], mode="constant", value=x[:, :, 0].item())
-    # Pad right (replicate last value)
-    pad_x = F.pad(pad_x, [0, pad_right], mode="constant", value=x[:, :, -1].item())
-    return pad_x
+    # SEA-Net fix (see workflow.md "Adjustments to millet"): the original used
+    #   F.pad(x, ..., mode="constant", value=x[:, :, 0].item())
+    # and .item() only works on a tensor holding ONE number. x is (batch, channels, time),
+    # so x[:, :, 0] holds one value PER SERIES -> it crashed for any batch bigger than 1.
+    # Copying the edge column instead does the same replicate padding, but each series in
+    # the batch gets its own first/last value. For batch = 1 the result is identical.
+    left = x[:, :, :1].expand(-1, -1, pad_left)     # first value of each series, repeated
+    right = x[:, :, -1:].expand(-1, -1, pad_right)  # last value of each series, repeated
+    return torch.cat([left, x, right], dim=-1)

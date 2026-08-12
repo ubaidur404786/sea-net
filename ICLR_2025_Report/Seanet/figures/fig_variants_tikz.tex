@@ -1,0 +1,246 @@
+% !TEX root = ../main.tex
+% =====================================================================
+% fig_variants_tikz.tex -- ALL SEVEN encoder variants in one place.
+%
+% Source of truth: seanet/features.py
+%   (a) MSTCNSepBottleneckEncoder  reduce d->r, expand r->d   -> INSIDE every block
+%   (b) MSTCNSepGatedEncoder       gate(backbone(x))          -> after the blocks
+%   (c) MSTCNSepInputGateEncoder   input_gate(x, backbone(x)) -> after the blocks, gate from x
+%   (d) MSTCNSepSpikeTrendEncoder  trend + spike -> mix -> gate
+%   (e) MSTCNSepReconEncoder       h -> rebuild -> x-xhat -> phi -> mix
+%   (f) MultiScaleChannelEncoder   channels -> BN -> base     -> BEFORE the stem
+%   (g) MultiScalePyramid          downsample -> shared base -> fuse -> AROUND everything
+%
+% The top strip is the reference pipeline with four attach zones A, B, C, D.
+% Every panel carries the letter of the zone it plugs into, so a reader can
+% place the variant inside Figure 3 without reading the equations again.
+%
+% Deliberately NOT drawn: kernel sizes, widths, BatchNorm/ReLU/dropout.
+% Only the main path, so the seven can be compared at a glance.
+%
+% Node names must be unique across the WHOLE picture (tikz names are global,
+% \begin{scope} does not hide them), so every panel prefixes its nodes.
+%
+% Keep the natural width near 18 cm. \resizebox then shrinks it by about 0.77,
+% so the \small font lands near 7 pt and stays readable. Make the drawing wider
+% and the text gets shrunk further -- that is what made the first version tiny.
+% =====================================================================
+
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[
+  font=\small,
+  >={Stealth[length=1.8mm]},
+  blk/.style   = {draw=black!55, fill=black!7,  rounded corners=2pt, minimum height=6mm,
+                  align=center, inner xsep=3pt},
+  new/.style   = {draw=orange!65!black, fill=orange!18, rounded corners=2pt, minimum height=6mm,
+                  align=center, inner xsep=3pt},
+  io/.style    = {draw=black!45, fill=black!3, rounded corners=1pt, minimum height=5.5mm,
+                  minimum width=6mm, align=center},
+  chan/.style  = {draw=black!55, fill=black!10, rounded corners=1pt, minimum width=4mm},
+  op/.style    = {draw=black!65, circle, inner sep=0.5pt, minimum size=4.6mm},
+  zone/.style  = {draw=black!70, fill=white, circle, inner sep=0.5pt, minimum size=4.6mm,
+                  font=\small\bfseries},
+  ptitle/.style= {anchor=west, font=\small\bfseries, black!85},
+  side/.style  = {anchor=east, black!70},
+]
+
+% =====================================================================
+% THE REFERENCE PIPELINE, with the four places a variant can plug in
+% =====================================================================
+\node[io]  (mx)    at ( 0.6,0) {$\bag$};
+\node[blk] (mstem) at ( 3.0,0) {stem};
+\node[blk] (mblk)  at ( 5.9,0) {blocks};
+\node[io]  (mh)    at ( 8.6,0) {$\mathbf{h}$};
+\node[blk, dashed] (mpool) at (11.6,0) {pooling head};
+
+\draw[->] (mx.east)    -- (mstem.west);
+\draw[->] (mstem.east) -- (mblk.west);
+\draw[->] (mblk.east)  -- (mh.west);
+\draw[->] (mh.east)    -- (mpool.west);
+
+\node[zone] at (1.85, 0) {A};
+\node[zone] at (7.35, 0) {B};
+% nudged clear of the "blocks" label; D changes what is INSIDE a block
+\node[zone] at ($(mblk.north east)+(0.12,0.10)$) {D};
+
+\begin{scope}[on background layer]
+  \node[draw=black!60, dashed, rounded corners=3pt, inner sep=5pt,
+        fit=(mstem)(mblk)(mh)] (cbox) {};
+\end{scope}
+\node[zone] at (cbox.north west) {C};
+
+\node[anchor=west, black!70] at (-0.2,-1.35)
+  {\textbf{A} = before the stem \quad\textbullet\quad
+   \textbf{B} = after the blocks, acting on $\mathbf{h}$ \quad\textbullet\quad
+   \textbf{C} = wraps the whole encoder \quad\textbullet\quad
+   \textbf{D} = inside every block};
+
+% =====================================================================
+% (a) BOTTLENECK -- zone D, full width, box heights drawn TO SCALE
+% =====================================================================
+\begin{scope}[shift={(0,-3.6)}]
+  \node[ptitle] at (0,1.05) {(a) Bottleneck -- the smallest encoder, and the one in the headline result};
+  \node[zone]   at (11.9,1.10) {D};
+
+  % --- the standard pointwise, for comparison ---
+  \node[side] (aL1) at (1.2, 0) {standard:\ };
+  \node[chan, minimum height=12mm] (ac1) at (1.8, 0) {};
+  \node[blk]                       (ap)  at (5.5, 0) {$1{\times}1$ pointwise, $\dmodel \to \dmodel$};
+  \node[chan, minimum height=12mm] (ac2) at (9.2, 0) {};
+  \node[anchor=west, black!75]     (acost1) at (10.0, 0)
+        {cost $=\dmodel^2 = 4096$ weights};
+
+  \draw[->] (ac1.east) -- (ap.west);
+  \draw[->] (ap.east)  -- (ac2.west);
+  % say what the tall stacks are, or "drawn to scale" means nothing
+  \node[anchor=south, black!70, font=\scriptsize] at (ac1.north) {$\dmodel = 64$};
+  \node[anchor=south, black!70, font=\scriptsize] at (ac2.north) {$\dmodel = 64$};
+
+  % --- the bottleneck: same in, same out, narrow middle ---
+  \node[side] (aL2) at (1.2,-2.0) {bottleneck:\ };
+  \node[chan, minimum height=12mm] (ac3) at (1.8,-2.0) {};
+  \node[new]                       (asq) at (3.7,-2.0) {squeeze\\[-1pt]$\dmodel \to r$};
+  \node[chan, minimum height=3mm]  (ann) at (5.5,-2.0) {};   % 3mm = 12mm / 4, to scale
+  \node[new]                       (aex) at (7.3,-2.0) {expand\\[-1pt]$r \to \dmodel$};
+  \node[chan, minimum height=12mm] (ac4) at (9.2,-2.0) {};
+  \node[anchor=west, black!75]     (acost2) at (10.0,-2.0)
+        {cost $=2\dmodel r = \dmodel^2/2 = 2048$ weights};
+
+  \draw[->] (ac3.east) -- (asq.west);
+  \draw[->] (asq.east) -- (ann.west);
+  \draw[->] (ann.east) -- (aex.west);
+  \draw[->] (aex.east) -- (ac4.west);
+
+  \node[anchor=south, black!70, font=\scriptsize] at (ac3.north) {$\dmodel = 64$};
+  \node[anchor=south, black!70, font=\scriptsize] at (ac4.north) {$\dmodel = 64$};
+  \node[anchor=south, black!70] at (5.5,-1.72) {$r = \dmodel/4 = 16$};
+  \node[anchor=north, black!70, align=center] at (5.5,-2.75)
+        {same input, same output -- only the middle is narrow (heights drawn to scale)};
+\end{scope}
+
+% =====================================================================
+% (b) GATED  -- zone B, gate built from h
+% =====================================================================
+\begin{scope}[shift={(0,-8.4)}]
+  \node[ptitle] at (0,1.05) {(b) Gated};
+  \node[zone]   at (2.5,1.10) {B};
+
+  \node[io]  (bh)  at (0.3,0) {$\mathbf{h}$};
+  \node[new] (bsm) at (2.7,-1.15) {summary over time\\[-1pt](max / mean / last)};
+  \node[new] (bsg) at (5.2,-1.15) {$\sig(W_g\,\mathbf{s})$};
+  \node[op]  (bmu) at (6.6,0) {$\odot$};
+  \node[io]  (bho) at (7.7,0) {$\mathbf{h}'$};
+
+  \draw[->] (bh.east)  -- (bmu.west);            % the main path stays straight
+  \draw[->] (bh.south) |- (bsm.west);
+  \draw[->] (bsm.east) -- (bsg.west);
+  \draw[->] (bsg.east) -| (bmu.south);
+  \draw[->] (bmu.east) -- (bho.west);
+  \node[anchor=south, black!60] at (6.6,0.30) {$(1{+}\mathbf{g})$};
+\end{scope}
+
+% =====================================================================
+% (c) INPUT GATE -- zone B, gate built from the raw input
+% =====================================================================
+\begin{scope}[shift={(8.9,-8.4)}]
+  \node[ptitle] at (0,1.05) {(c) Input gate};
+  \node[zone]   at (3.1,1.10) {B};
+
+  \node[io]  (ch)  at (0.3, 0)    {$\mathbf{h}$};
+  \node[io]  (cx)  at (0.3,-1.15) {$\bag$};
+  \node[new] (ccv) at (3.3,-1.15) {conv $k{=}7$, then $\sig$\\[-1pt]one gate \emph{per time step}};
+  \node[op]  (cmu) at (6.3, 0)    {$\odot$};
+  \node[io]  (cho) at (7.4, 0)    {$\mathbf{h}'$};
+
+  \draw[->] (ch.east)  -- (cmu.west);
+  \draw[->] (cx.east)  -- (ccv.west);
+  \draw[->] (ccv.east) -| (cmu.south);
+  \draw[->] (cmu.east) -- (cho.west);
+  \node[anchor=south, black!60] at (6.3,0.30) {$(1{+}\mathbf{g}_j)$};
+\end{scope}
+
+% =====================================================================
+% (d) SPIKE / TREND -- branch off the raw input, merges at B
+% =====================================================================
+\begin{scope}[shift={(0,-12.4)}]
+  \node[ptitle] at (0,1.05) {(d) Spike / trend};
+  \node[zone]   at (3.2,1.10) {B};
+
+  \node[io]  (dx)  at (0.3,-0.5)  {$\bag$};
+  \node[blk] (dtr) at (2.5, 0.20) {blocks \emph{(trend)}};
+  \node[new] (dsp) at (2.5,-1.25) {$\bag - \operatorname{avg}_5$, conv$_3$ \emph{(spike)}};
+  \node[new] (dmx) at (5.2,-0.5)  {mix $1{\times}1$};
+  \node[new] (dg)  at (7.0,-0.5)  {gate (b)};
+  \node[io]  (do)  at (8.3,-0.5)  {$\mathbf{h}'$};
+
+  \draw[->] (dx.east)  |- (dtr.west);
+  \draw[->] (dx.east)  |- (dsp.west);
+  \draw[->] (dtr.east) -| (dmx.north);
+  \draw[->] (dsp.east) -| (dmx.south);
+  \draw[->] (dmx.east) -- (dg.west);
+  \draw[->] (dg.east)  -- (do.west);
+\end{scope}
+
+% =====================================================================
+% (e) RECONSTRUCTION RESIDUAL -- branch off h, merges at B
+% =====================================================================
+\begin{scope}[shift={(8.9,-12.4)}]
+  \node[ptitle] at (0,1.05) {(e) Reconstruction residual};
+  \node[zone]   at (4.7,1.10) {B};
+
+  \node[io]  (eh)  at (0.3, 0.20) {$\mathbf{h}$};
+  \node[new] (erb) at (2.2,-1.25) {rebuild $\widehat{\bag}$};
+  \node[op]  (emn) at (3.9,-1.25) {$-$};
+  \node[io]  (ex)  at (3.9,-2.30) {$\bag$};
+  \node[new] (eph) at (6.0,-1.25) {$\phi$};
+  \node[new] (emx) at (7.6, 0.20) {mix $1{\times}1$};
+  \node[io]  (eo)  at (8.9, 0.20) {$\mathbf{h}'$};
+
+  \draw[->] (eh.east)  -- (emx.west);
+  \draw[->] (eh.south) |- (erb.west);
+  \draw[->] (erb.east) -- (emn.west);
+  \draw[->] (ex.north) -- (emn.south);
+  \draw[->] (emn.east) -- node[above, black!60, inner sep=1pt] {$\bag-\widehat{\bag}$} (eph.west);
+  \draw[->] (eph.east) -| (emx.south);
+  \draw[->] (emx.east) -- (eo.west);
+\end{scope}
+
+% =====================================================================
+% (f) MULTI-SCALE CHANNELS -- zone A, a wrapper in front of the stem
+% =====================================================================
+\begin{scope}[shift={(0,-16.4)}]
+  \node[ptitle] at (0,1.05) {(f) Multi-scale channels \emph{(wrapper)}};
+  \node[zone]   at (5.9,1.10) {A};
+
+  % three short lines instead of two long ones, so the box stays narrow
+  \node[io]  (fx)  at (0.3,0) {$\bag$};
+  \node[new] (frl) at (2.8,0) {rolling max / min / std\\[-1pt]$w \in \{3,7,15,31\}$\\[-1pt]$+\ \operatorname{sign}(\Delta\bag)$};
+  \node[new] (fbn) at (5.8,0) {14 channels\\[-1pt]+ BatchNorm};
+  \node[blk] (fst) at (7.8,0) {stem \dots};
+
+  \draw[->] (fx.east)  -- (frl.west);
+  \draw[->] (frl.east) -- (fbn.west);
+  \draw[->] (fbn.east) -- (fst.west);
+\end{scope}
+
+% =====================================================================
+% (g) MULTI-SCALE PYRAMID -- zone C, wraps the whole encoder
+% =====================================================================
+\begin{scope}[shift={(8.9,-16.4)}]
+  \node[ptitle] at (0,1.05) {(g) Multi-scale pyramid \emph{(wrapper)}};
+  \node[zone]   at (6.2,1.10) {C};
+
+  % "stretch back" and "fuse" share one box: four boxes in a row was too wide
+  \node[io]  (gx)  at (0.3,0) {$\bag$};
+  \node[new] (gds) at (2.0,0) {downsample\\[-1pt]$1,2,4,8$};
+  \node[blk] (gbe) at (4.6,0) {the \emph{same} encoder\\[-1pt](shared weights)};
+  \node[new] (gfu) at (7.6,0) {stretch back to $\nsteps$,\\[-1pt]softmax over \emph{scale},\\[-1pt]then fuse};
+  \node[io]  (go)  at (9.5,0) {$\mathbf{h}$};
+
+  \draw[->] (gx.east)  -- (gds.west);
+  \draw[->] (gds.east) -- (gbe.west);
+  \draw[->] (gbe.east) -- (gfu.west);
+  \draw[->] (gfu.east) -- (go.west);
+\end{scope}
+
+\end{tikzpicture}}

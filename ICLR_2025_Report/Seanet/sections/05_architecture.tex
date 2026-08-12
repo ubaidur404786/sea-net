@@ -71,7 +71,11 @@ goal~G5.
 % d=64, n_blocks=4.
 \begin{figure}[t]
   \centering
-  \includegraphics[width=\linewidth]{figures/fig04_seanet_architecture.pdf}
+  % The source drawing is 1368 x 432 pt, so at \linewidth every label inside it is
+  % scaled to 0.29 and prints at about 3.5 pt. Letting it run a little past the text
+  % block buys ~20% and still leaves a 0.9 in margin on an ICLR page. The real fix is
+  % to re-export the drawing as two stacked rows -- see README section 5.
+  \makebox[\linewidth][c]{\includegraphics[width=1.22\linewidth]{figures/fig04_seanet_architecture.pdf}}
   \caption{The \seanet{} model, read left to right, with the tensor shape written under each stage.
   \textbf{Left (the part I propose):} the raw series $(B,1,\nsteps)$ goes through a stem convolution
   to $(B,\dmodel,\nsteps)$, then through six multi-scale separable residual blocks. The dilation
@@ -196,7 +200,37 @@ parameter count, so this section can stay about the ideas.
 
 Two symbols are shared by all of them. $\odot$ multiplies element by element, and $[\,\cdot\,;\,
 \cdot\,]$ stacks two sets of channels on top of each other. Every equation below is written in the
-same order the code runs it, so a reader who opens the implementation finds the same steps.
+same order as I implemented in code.
+
+\Cref{fig:variants} draws the main path of each variant next to the place it plugs into
+\Cref{fig:arch_overall}. It is worth a look before the equations: most of these variants are a small
+addition at one point of the pipeline, and knowing \emph{where} that point is makes the equation
+that follows much shorter to read.
+
+% Drawn in TikZ in figures/fig_variants_tikz.tex. Main path only -- no kernel sizes, no
+% BatchNorm/ReLU/dropout -- so the six can be compared at a glance.
+\begin{figure}[htbp]
+  \centering
+  \input{figures/fig_variants_tikz}
+  \caption{All seven encoder variants, main path only, each tagged with where it plugs into
+  \Cref{fig:arch_overall}. \textbf{Top:} the reference pipeline with the four attach points --
+  \textbf{A} before the stem, \textbf{B} after the blocks acting on $\mathbf{h}$, \textbf{C} wrapping
+  the whole encoder, \textbf{D} inside every block. \textbf{(a)} is the bottleneck: the standard
+  block mixes channels with one $1\times1$ convolution costing $\dmodel^2$ weights, while the
+  bottleneck squeezes to $r = \dmodel/4$ and expands back, costing $2\dmodel r = \dmodel^2/2$. Both
+  rows start and end identically -- only the middle is narrow, and the heights are drawn to scale so
+  that is visible rather than merely stated. \textbf{(b)} and \textbf{(c)} are the same gate at two
+  grains, differing only in where the gate is read from: (b) from a whole-series summary of
+  $\mathbf{h}$, (c) from the raw input, so it can change at every time step. In both, the straight
+  line through $\odot$ is the main path and the gate is a side branch, which is why neither can
+  flatten the time axis. \textbf{(d)} and \textbf{(e)} both add a second branch that merges back at
+  B: (d) branches off the raw input to catch spikes, (e) branches off $\mathbf{h}$ to catch what the
+  features failed to rebuild. \textbf{(f)} and \textbf{(g)} are wrappers, not encoders -- (f) widens
+  the input before the stem, (g) runs the same encoder at four scales and fuses them. Orange marks
+  what the variant adds, grey is the unchanged encoder; kernel sizes, widths and the
+  BatchNorm/ReLU/dropout inside each box are left out on purpose.}
+  \label{fig:variants}
+\end{figure}
 
 \paragraph{Bottleneck.}
 The pointwise convolution dominates the parameter count, because it alone costs $\dmodel^2$. So I
@@ -210,9 +244,12 @@ $r = \dmodel / 4$: first squeeze $\dmodel \to r$, then expand $r \to \dmodel$,
   \label{eq:bottleneck}
 \end{equation}
 With $r = \dmodel/4$ the pointwise cost becomes $2\dmodel(\dmodel/4) = \dmodel^2/2$ -- exactly half,
-whatever $\dmodel$ is. At the size used in the experiments ($\dmodel = 64$, 4 blocks) this cuts the
-whole model from 57{,}580 to 41{,}324 parameters, a real 28\,\% saving on the entire encoder and not
-just on the pointwise step. This is the cheapest encoder I built and the one in my headline result.
+whatever $\dmodel$ is. Panel~(a) of \Cref{fig:variants} draws the two side by side, to scale. At the
+size used in the experiments ($\dmodel = 64$, 4 blocks) this cuts the whole model from 57{,}580 to
+41{,}324 parameters, a real 28\,\% saving on the entire encoder and not just on the pointwise step.
+Note what does \emph{not} change: the block still takes and returns $(B, \dmodel, \nsteps)$, so
+goals~G3 and~G5 hold and the substitution is free. This is the cheapest encoder I built and the one
+in my headline result.
 
 \paragraph{Gated.}
 Not every feature channel matters for every series. Here one summary of the whole series decides

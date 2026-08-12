@@ -35,10 +35,13 @@ Datasets: **WebTraffic** (our main one) + the **UCR 2018** archive
   citations/references and **0 live `\todo`, `\num`, `\tbd`, `\figph` or guide
   boxes** left.
 - **All figures are real now** — no placeholders anywhere (2026-08-11).
-- **The one job left: the page count.** The PDF is **37 pages** and the examiner
-  limit is **20-30**. Cutting 7 more pages is the next task, and it needs my
+- **The one job left: the page count.** The PDF is **39 pages** and the examiner
+  limit is **20-30**. Cutting 9 more pages is the next task, and it needs my
   decision about what to drop, not a guess. The cut order is written down in
   `ICLR_2025_Report/Seanet/README.md` section 7.
+- **Known figure problem:** the generated `topk5_multimetric` figure (Figure 7,
+  Section 8.1) has overlapping value labels and axis ticks. Fixing it means
+  editing the plotting code under `seanet/` and re-running `python main.py paper`.
 - Two blue `\missing{}` flags are still live on purpose: the `millet_paper` UCR
   row (8.2) and the ensemble numbers (Appendix A).
 
@@ -98,7 +101,7 @@ drafted with Claude from the real CSVs and code, with no invented explanation.
 **Total 37.** Page budget: **20–30 including appendix** (examiner rule,
 AIEDA400). The cut order is in `ICLR_2025_Report/Seanet/README.md` section 7.
 
-### Figures — all 8 are real, no placeholders left
+### Figures — all 10 are real, no placeholders left
 
 | where | figure | source |
 |---|---|---|
@@ -106,8 +109,13 @@ AIEDA400). The cut order is in `ICLR_2025_Report/Seanet/README.md` section 7.
 | 04 | the MIL view | `figures/fig02_mil_view.png` (mine) |
 | 05 | the whole model | `figures/fig04_seanet_architecture.pdf` (mine) |
 | 05 | one encoder block + receptive field | `figures/fig_block_tikz.tex` — **TikZ, optional** |
+| 05 | all 7 encoder variants + attach points | `figures/fig_variants_tikz.tex` — TikZ |
+| 06 | all 8 pooling heads + the 2 slots | `figures/fig_pooling_tikz.tex` — TikZ |
 | 08 | top-5 quality vs cost | generated |
 | A1 | ablation grid, win/tie/loss, heatmap | generated |
+
+`figures/fig_bottleneck_tikz.tex` is kept but **unused** — the bottleneck is now
+panel (a) of the encoder-variants figure. Do not delete it.
 
 The block figure is **switchable**: `\showblockfigfalse` in `preamble.tex`
 removes it, and no paragraph cites it, so nothing breaks. Keep it uncited.
