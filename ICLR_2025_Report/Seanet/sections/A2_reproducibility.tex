@@ -91,6 +91,11 @@ python main.py interpret --model sv4/seanet_bottleneck_topk
 python main.py teaser \
        --models sv1/millet,sv4/seanet_bottleneck_topk
 
+# seed spread, paired Wilcoxon test and the ensemble of Table 16
+python scripts/ensemble_vote.py \
+       --models sv4/seanet_bottleneck_topk sv4/seanet_inputgate_adaptive \
+       --baseline sv1/millet
+
 # rebuild every derived file, in this order
 python main.py leaderboard
 python main.py results
@@ -112,7 +117,7 @@ on Grid'5000 \citep{balouek2013grid5000}, split across two sites so a queue on o
 whole study. \Cref{tab:environment} gives the two environments separately, because they are not the
 same and only the Grid'5000 column produced the numbers in this report.
 
-\begin{table}[H]
+\begin{table}[htbp]
 \caption{The two environments. Only the Grid'5000 column produced the results in this report.}
 \label{tab:environment}
 \begin{center}

@@ -38,13 +38,34 @@ Datasets: **WebTraffic** (our main one) + the **UCR 2018** archive
 - **All blue `[CHECK: ...]` flags are cleared (2026-08-12).** Both depended on
   jobs that have now finished: the `millet_paper` UCR row and the ensemble
   numbers. There is **no placeholder of any kind left in the PDF.**
-- **The one job left: the page count.** The PDF is **39 pages** and the examiner
-  limit is **20-30**. Cutting 9 more pages is the next task, and it needs my
+- **The one job left: the page count.** The PDF is **40 pages** and the examiner
+  limit is **20-30**. Cutting 10 more pages is the next task, and it needs my
   decision about what to drop, not a guess. The cut order is written down in
   `ICLR_2025_Report/Seanet/README.md` section 7.
-- **Known figure problem:** the generated `topk5_multimetric` figure (Figure 7,
-  Section 8.1) has overlapping value labels and axis ticks. Fixing it means
-  editing the plotting code under `seanet/` and re-running `python main.py paper`.
+
+### Two known problems in the GENERATED figures
+
+Both need a change in the plotting code under `seanet/` plus a re-run of
+`python main.py paper`. Neither can be fixed by editing the report.
+
+1. `topk5_multimetric` (Figure 7, Section 8.1) — value labels sit on top of the
+   dashed reference lines and get clipped ("2.23" prints as "(.23"), and the
+   x-tick labels and panel titles collide.
+2. `fig5_win_tie_loss_accuracy` and `appendix_dataset_model_heatmap_accuracy`
+   (Figures 9 and 10) — the two MILLET rows both truncate to the same label
+   `mil_incep..._mil_conj`, so the reader cannot tell which is our recipe and
+   which is theirs. The names are distinct in the CSV
+   (`mil_incept-paper__mil_conj` vs `mil_incept-millet__mil_conj`); only the
+   display truncation is too aggressive.
+
+### Float placement rule learned the hard way (2026-08-12)
+
+**Never use `[H]` on a tall float.** `[H]` (from the `float` package) means
+"stay exactly here even if there is no room", so it silently runs off the
+bottom of the page and the overflow is *lost* — no error, no warning. It ate
+the whole encoder x pooling grid figure and half of Table 10. Every float in
+`A1_`/`A2_` is now `[htbp]`, and the full leaderboard has a `\clearpage` before
+it so it gets a page to itself.
 - Two blue `\missing{}` flags are still live on purpose: the `millet_paper` UCR
   row (8.2) and the ensemble numbers (Appendix A).
 

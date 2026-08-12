@@ -200,7 +200,14 @@ python main.py paper
 
 ## 7. Page count — the one job left
 
-**Now: 39 pages. Target: 20–30 including the appendix** (examiner rule, AIEDA400).
+**Now: 40 pages. Target: 20–30 including the appendix** (examiner rule, AIEDA400).
+
+> **Float rule — do not break this.** Never put `[H]` on a tall figure or table.
+> `[H]` means "stay exactly here even if there is no room", so the overflow runs off
+> the bottom of the page and is **silently lost** — no error, no warning, the caption
+> just disappears from the PDF. Use `[htbp]` and let it move. Every float in `A1_`
+> and `A2_` is `[htbp]` for this reason, and the full leaderboard has a `\clearpage`
+> before it so it gets a page to itself.
 
 Cut in this order, cheapest first:
 
