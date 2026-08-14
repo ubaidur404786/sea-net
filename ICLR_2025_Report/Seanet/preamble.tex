@@ -105,14 +105,12 @@
 \newif\ifshowguides
 \showguidesfalse
 
-% The zoom-in diagram of ONE encoder block (Section 5.3) is a nice-to-have, not
-% something the text depends on. It is drawn in TikZ in figures/fig_block_tikz.tex
-% and wrapped in \ifshowblockfig ... \fi, so switching the line below to
-% \showblockfigfalse removes it and NOTHING else in the report breaks:
-% no paragraph refers to it, so no \Cref can go missing and no figure number moves
-% except its own. Flip it to false if the page count needs one more page.
+% The zoom-in diagram of ONE encoder block (Section 3.2). It is drawn in TikZ in
+% figures/fig_block_tikz.tex and wrapped in \ifshowblockfig ... \fi. The text of
+% Section 3.2 now cites it twice, so switching this to \showblockfigfalse would
+% leave two dangling references -- remove those \Cref{fig:arch_block} first.
 \newif\ifshowblockfig
-\showblockfigfalse
+\showblockfigtrue
 
 \definecolor{shadecolor}{gray}{0.94}
 \definecolor{todored}{rgb}{0.80,0.10,0.10}

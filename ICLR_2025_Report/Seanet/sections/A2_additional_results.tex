@@ -234,6 +234,74 @@ rather than one failed run, which is the evidence behind \Cref{sec:disc:reading}
 advantage as unreliable.
 
 % ---------------------------------------------------------------------
+\subsection{Relation to the published \millet{} results}
+\label{app:published}
+
+The main body of this report compares only models re-trained here, under the single configuration of
+\Cref{tab:protocol} (\Cref{sec:setup:baselines}). This subsection answers the separate question that
+choice raises: how do those re-trained numbers relate to the accuracies \millet{} published, and was
+the difference caused by the re-implementation or by the training configuration?
+
+\Cref{tab:published} answers it on \webtraffic{}, where four measurements are available for one and
+the same architecture. \citet{early2024millet} report 0.924 averaged over five seeds, and 0.940 for
+their five-model ensemble. Loading their released weights and evaluating them on this pipeline gives
+0.922, which is within the spread of their own five seeds and confirms that the evaluation code
+agrees. Re-training the architecture from scratch under \millet{}'s published hyperparameters --
+1500 epochs, no weight decay, no label smoothing -- gives 0.920, again inside that spread. Under the
+configuration of \Cref{tab:protocol}, which trains for at most 400 epochs, the same architecture
+reaches 0.887.
+
+\begin{table}[htbp]
+\caption{The \millet{} baseline (InceptionTime $+$ conjunctive pooling) measured four ways on
+\webtraffic{}, and on the 85 \ucr{} datasets where a published mean exists. Only the last row is
+used anywhere in the main body of this report.}
+\label{tab:published}
+\begin{center}
+\footnotesize
+\begin{tabular}{p{0.48\linewidth}cc}
+\toprule
+\textbf{How the number was obtained} & \textbf{\webtraffic{} acc.} & \textbf{\ucr{}-85 mean acc.} \\
+\midrule
+Published \citep{early2024millet}, mean of 5 seeds  & 0.924 & 0.8445 \\
+Published \citep{early2024millet}, 5-model ensemble & 0.940 & -- \\
+Their released weights, evaluated on this pipeline  & 0.922 & -- \\
+Re-trained here under \emph{their} published hyperparameters & 0.920 & 0.8434 \\
+\midrule
+\textbf{Re-trained here under \Cref{tab:protocol}} (the value used throughout this report)
+                                                    & \textbf{0.887} & \textbf{0.8274} \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+% Published WebTraffic: results/WebTraffic/InceptionTime/test_acc.csv, columns
+% ConjunctiveInceptionTime 0..4 = 0.914 / 0.924 / 0.924 / 0.932 / 0.926, mean 0.924; and
+% ConjunctiveInceptionTimeEnsemble 0 = 0.940. Published UCR-85 mean: leaderboard.csv millet_acc
+% = 0.8445. Their weights evaluated here: 0.922 (own measurement, see Table 6, objective O2).
+% Their hyperparameters re-trained here: the sv1/millet_paper row, web_acc 0.9200,
+% ucr85_acc 0.8434 over 84 datasets. Our configuration: the sv1/millet row, 0.8873 / 0.8274.
+
+Two conclusions follow, and they are the reason objective~O2 in \Cref{tab:objectives} is counted as
+reached. First, the re-implementation is correct: under their own hyperparameters it reproduces
+their \ucr{} mean to within about one thousandth (0.8434 against 0.8445), with a balanced
+per-dataset record of 26 wins, 32 ties and 26 losses against the published numbers. Second, the
+remaining difference is therefore the training budget, not the architecture and not the code. The
+gap it accounts for is about 0.016 on the \ucr{} mean and 0.033 on \webtraffic{}. That figure cannot
+simply be added to the \seanet{} models -- a longer schedule does not have to help every
+architecture by the same amount -- but it is the right order of magnitude to keep in mind when
+reading the \ucr{} results of \Cref{sec:res:ucr}, and it is why re-training \seanet{} under a longer
+schedule is the first item of future work in \Cref{sec:future}.
+
+\paragraph{The same comparison shows that AOPCR is unnormalised.}
+The two re-trained rows of \Cref{tab:published} are the same encoder, the same pooling head, the
+same metric code and the same dataset, differing only in the training configuration. Their AOPCR
+values are 2.57 and \textbf{13.27}. A factor of five, from the configuration alone, on a metric that
+is supposed to measure explanation quality. AOPCR is built from raw confidence differences, so its
+scale follows the scale of the model's logits, and this is what that looks like when it is measured
+rather than argued. It is the reason the AOPCR column of \Cref{tab:web_main} is only ever read
+across its own rows, and never against an AOPCR printed in another paper -- including \millet{}'s
+own published 4.55.
+
+% ---------------------------------------------------------------------
 \subsection{Full hyperparameters}
 \label{app:hparams}
 

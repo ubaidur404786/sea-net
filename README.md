@@ -33,6 +33,7 @@ to follow them was moved here instead of being printed in the PDF:
 | Moved out of the report | Where it is now |
 |---|---|
 | Complete 72-model leaderboard | [Full leaderboard](#full-leaderboard-all-72-models) |
+| The four-way comparison against published MILLET | [UCR accuracy](#accuracy-over-the-85-ucr-datasets) (summarised in report Appendix B.4) |
 | Encoder × pooling head grid | [Encoder × pooling grid](#encoder--pooling-head-grid) |
 | Per-dataset UCR results | [Per-dataset results](#per-dataset-ucr-results) |
 | Ensemble voting, Optuna search, the dropped Transformer | [Further experiments](#further-experiments) |
@@ -142,6 +143,11 @@ parameter count, so nothing was traded away for the better explanation.
 
 Mean rank is over the 84 datasets shared by the 28 models that finished the whole archive (lower is
 better). W/T/L counts each dataset against the **published** MILLET numbers, ties within 0.005.
+
+> The report's main body deliberately shows **only the re-trained rows** of this table, so that
+> every comparison in it is between models trained under one identical configuration. The two
+> published-MILLET rows and what they mean are kept together in Appendix B.4 of the report, and in
+> full below.
 
 | Model | Mean accuracy | Mean rank | W/T/L vs published |
 |---|---|---|---|

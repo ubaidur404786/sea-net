@@ -36,10 +36,17 @@ Datasets: **WebTraffic** (our main one) + the **UCR 2018** archive
   Conclusion → References → Appendices. The internship context, objectives,
   constraints and skills now live in **Appendix A**, after the references, so
   they no longer interrupt the scientific story.
-- **The PDF is 28 pages** (was 40) — inside the 20-30 examiner budget. It builds
+- **The PDF is 29 pages** (was 40) — inside the 20-30 examiner budget. It builds
   with **0 errors, 0 undefined references/citations, 0 overfull boxes**, no
   placeholders and no guide boxes. Title + abstract are on page 1 and the table
-  of contents is exactly page 2.
+  of contents is exactly page 2. 10 figures, 14 tables, all numbered contiguously.
+- **The main body compares only models re-trained here** under one identical
+  configuration. The published \millet{} numbers, their released weights, and
+  their own recipe re-run on this harness are all kept together in **Appendix
+  B.4** (`\label{app:published}`, Table 13), after the references, so the main
+  results cannot be confused with numbers copied from the paper. Table 13 is the
+  place where 0.924 published / 0.940 their ensemble / 0.922 their weights /
+  0.920 their recipe here / 0.887 our configuration all sit side by side.
 - Page count came down through structure and formatting first: wider text block
   (6.4 in instead of ICLR's 5.5 in), tighter float/list/caption spacing,
   deduplicated prose, two redundant tables removed.
@@ -141,9 +148,9 @@ in `sections/_superseded/` — nothing was deleted, they are just no longer
 | `06_discussion.tex` | 6 Discussion | 3 |
 | `07_conclusion.tex` | 7 Conclusion + Future work | 2 |
 | `A1_internship.tex` | App. A internship: team, mission, objectives table, constraints, skills | 2 |
-| `A2_additional_results.tex` | App. B supporting results: cost, ablations, seeds, hyperparameters | 3 |
+| `A2_additional_results.tex` | App. B supporting results: cost, ablations, seeds, published-MILLET comparison, hyperparameters | 4 |
 
-**Total 28** including the title page, the one-page contents and 2 pages of
+**Total 29** including the title page, the one-page contents and 2 pages of
 references — inside the 20-30 examiner budget (AIEDA400). Nothing was thrown
 away to get there: everything cut from the report is in the repo README.
 
@@ -164,8 +171,8 @@ The old combined diagrams (`fig_variants_tikz.tex`, `fig_pooling_tikz.tex`) and
 `fig_bottleneck_tikz.tex` are kept but **unused** — they were split into the
 small per-variant files above so each diagram is readable on its own. Do not
 delete them. `fig_block_tikz.tex` is still switchable
-(`\showblockfigtrue/false` in `preamble.tex`) and is currently **off** to save a
-page; nothing cites it, so turning it back on breaks nothing. The
+(`\showblockfigtrue/false` in `preamble.tex`) and is currently **on** -- Section
+3.2 cites it twice, so switching it off would leave two dangling references. The
 `appendix_dataset_model_heatmap_accuracy` figure was removed from the report on
 2026-08-13 (it did not add enough over the win/tie/loss figure); the image file
 is still in `results/paper_figures/`.

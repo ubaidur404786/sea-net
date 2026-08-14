@@ -17,18 +17,20 @@ encoder, then pooling head -- and the same tensor interface as \millet{}, so tha
 in \Cref{sec:results} isolates one component at a time.
 \end{contribution}
 
-I refer to the proposed architecture as \seanet{}, for \emph{Selective Evidence Aggregation
+The architecture proposed here is called \seanet{}, for \emph{Selective Evidence Aggregation
 Network}, because it combines multi-scale temporal feature extraction with selective, class-specific
-aggregation of the evidence found at each time step. A complete \seanet{} model is always the pair
-\emph{encoder $+$ pooling head}. Five design goals, fixed before implementation, motivate the
-choices that follow. \textbf{G1, small}: substantially fewer parameters than InceptionTime, at a
-scale compatible with a microcontroller target. \textbf{G2, at least as accurate}, under an
-identical training configuration. \textbf{G3, length-preserving}: one embedding per time step at
-every stage, because the interpretation has one value per time step and AOPCR masks individual time
-steps, so $\nsteps$ must never change inside the encoder. \textbf{G4, local}: each embedding must
-depend on a bounded window of the input, otherwise the importance map becomes diffuse and
-uninformative. \textbf{G5, modular}: encoder and pooling head selectable from a configuration file,
-so any pair can be trained without modifying code.
+aggregation of the evidence found at each time step. It is introduced in this report and is not an
+existing model. A complete \seanet{} model is always the pair
+\emph{encoder $+$ pooling head}. Five \textbf{design goals}, fixed before implementation, motivate
+the choices that follow. The encoder has to be \textbf{small}, with substantially fewer parameters
+than InceptionTime and at a scale compatible with a microcontroller target. It has to be
+\textbf{at least as accurate} as that baseline under an identical training configuration. It has to
+be \textbf{length-preserving}, producing one embedding per time step at every stage, because the
+interpretation has one value per time step and AOPCR masks individual time steps, so $\nsteps$ must
+never change inside the encoder. It has to be \textbf{local}: each embedding must depend on a
+bounded window of the input, otherwise the importance map becomes diffuse and uninformative.
+Finally, the design has to be \textbf{modular}, with the encoder and the pooling head selectable
+from a configuration file, so that any pair can be trained without modifying code.
 
 % =====================================================================
 \subsection{The \seanet{} encoder}
@@ -41,14 +43,16 @@ The encoder is a stem convolution, which lifts the single input channel to $\dmo
 followed by a stack of \emph{multi-scale separable residual blocks} (\Cref{sec:arch:block}). Three
 choices matter. Every convolution uses ``same'' zero padding with no stride and no pooling, so the
 time axis is preserved end to end and the encoder returns exactly the per-time-step embeddings
-$\emb_j$ that \Cref{eq:encoder_generic} requires (goal~G3). The dilation grows geometrically from
+$\emb_j$ that \Cref{eq:encoder_generic} requires, which is the \textbf{length-preserving} goal. The
+dilation grows geometrically from
 block to block, $\delta_i = \min(2^i, \delta_{\max})$, but is capped at $\delta_{\max} = 16$, so the
 receptive field widens quickly in the early blocks and then stops, keeping each embedding tied to a
-bounded window (goal~G4). Finally, encoder and head communicate through one fixed contract: the
+bounded window, which is the \textbf{local} goal. Finally, encoder and head communicate through one
+fixed contract: the
 encoder consumes $(B, 1, \nsteps)$ and returns $(B, \dmodel, \nsteps)$, and the head returns the
 prediction $(B, \nclz)$ and the interpretation $(B, \nclz, \nsteps)$. Every variant and every head
 below respects that contract, which is what makes the combinations of \Cref{sec:results} possible
-from configuration alone (goal~G5).
+from configuration alone -- the \textbf{modular} goal.
 
 % Source of truth for the figure: seanet/features.py (MSTCNSepEncoder, MultiScaleSepBlock),
 % seanet/model.py (EncoderPoolNet), configs/models/sv2/seanet.yaml (d=128, n_blocks=6,
@@ -95,13 +99,16 @@ and one block runs two units and adds the input back:
   \label{eq:block}
 \end{equation}
 
-\Cref{eq:unit} examines the same signal at three time scales simultaneously: a kernel of size 5
-covers a narrow local pattern, a kernel of size 23 reaches about four times further, and their
-outputs are summed, so the block never has to commit to one scale in advance. The pointwise
-convolution $P$ then combines what the three kernels found, BatchNorm \citep{ioffe2015batchnorm}
-keeps activations on a stable scale, ReLU provides the non-linearity and dropout regularises. The
-residual connection in \Cref{eq:block} makes the block an identity plus a correction, which keeps
-deep stacks trainable.
+\Cref{fig:arch_block} draws both parts of this. \Cref{eq:unit} examines the same signal at three
+time scales at once: a kernel of size 5 covers a narrow local pattern, a kernel of size 23 reaches
+about four times further, and their outputs are summed, so the block never has to commit to one
+scale in advance. The pointwise convolution $P$ then combines what the three kernels found,
+BatchNorm \citep{ioffe2015batchnorm} keeps activations on a stable scale, ReLU provides the
+non-linearity and dropout regularises. The residual connection in \Cref{eq:block} makes the block an
+identity plus a correction, which keeps deep stacks trainable. The lower panel of
+\Cref{fig:arch_block} shows what the dilation buys: the same five taps of the $k=5$ filter span five
+neighbouring time steps at $\delta = 1$ and 65 of them at $\delta = 16$, at no extra parameter
+cost.
 
 \paragraph{Why the block is small.}
 A standard convolution with $\dmodel$ input and output channels and kernel size $k$ costs
@@ -118,13 +125,14 @@ three depthwise convolutions combined. With BatchNorm's $2\dmodel$, one unit cos
 parameters, one block $44{,}288$, and the six-block encoder with its stem about $266{,}752$,
 consistent with the $269{,}083$ measured for the wide base model. A non-separable convolution
 covering the same three kernel sizes would cost $\dmodel^2(5{+}11{+}23) = 638{,}976$ weights for the
-same step, roughly $29\times$ more. Two consequences follow: goal~G1 becomes reachable at all, and
+same step, roughly $29\times$ more. Two consequences follow: the \textbf{small} goal becomes
+reachable at all, and
 the pointwise convolution now dominates the parameter count, which is what \Cref{sec:var:bottleneck}
 attacks.
 
-% This figure is OPTIONAL. It is drawn in TikZ in figures/fig_block_tikz.tex and switched by
-% \showblockfigtrue / \showblockfigfalse in preamble.tex. Nothing in the running text cites
-% \Cref{fig:arch_block} on purpose, so hiding it cannot leave a dangling reference.
+% Drawn in TikZ in figures/fig_block_tikz.tex, switched by \showblockfigtrue /
+% \showblockfigfalse in preamble.tex. The text above DOES cite it now, so switching it off
+% would leave a dangling reference -- remove the two \Cref{fig:arch_block} first.
 \ifshowblockfig
 \begin{figure}[t]
   \centering
@@ -177,7 +185,8 @@ middle layer of width $r = \dmodel/4$ -- squeeze $\dmodel \to r$, then expand $r
 independently of $\dmodel$. At the setting used in the experiments ($\dmodel = 64$, 4 blocks) this
 reduces the complete model from 57{,}580 to 41{,}324 parameters -- a 28\,\% saving on the whole
 encoder, not only on the pointwise step. The block still consumes and returns
-$(B, \dmodel, \nsteps)$, so goals~G3 and~G5 are unaffected. This is the smallest encoder built here
+$(B, \dmodel, \nsteps)$, so the \textbf{length-preserving} and \textbf{modular} goals are
+unaffected. This is the smallest encoder built here
 and the one used in the headline result.
 
 \begin{figure}[htbp]
@@ -402,7 +411,8 @@ automatically.
 A \textbf{Transformer encoder} was rejected on two grounds: full self-attention costs
 $\mathcal{O}(\nsteps^2)$ in time and memory, prohibitive for series of 1{,}000--1{,}500 points on
 the target hardware, and unrestricted attention lets any output position draw on any input position,
-contradicting goal~G4. \textbf{Pruning or quantising InceptionTime} would reduce size but not address
+contradicting the \textbf{local} goal. \textbf{Pruning or quantising InceptionTime} would reduce
+size but not address
 the structural problem of \Cref{sec:bg:tsc}: the model still ends in global average pooling, so it
 would still require a post-hoc explainer -- which is also why \textbf{keeping a large backbone and
 explaining it afterwards} was rejected (\Cref{sec:intro:sota}).
@@ -413,8 +423,8 @@ explaining it afterwards} was rejected (\Cref{sec:intro:sota}).
 
 \begin{contribution}
 The seven pooling heads below were designed and implemented by me. Five
-(\Cref{sec:pool:classwise}--\Cref{sec:pool:attnmax}) follow directly from limitations L1--L3 of
-\Cref{sec:bg:millet}. The last two adapt mechanisms published for whole-slide image classification
+(\Cref{sec:pool:classwise}--\Cref{sec:pool:attnmax}) follow directly from the three limitations of
+conjunctive pooling identified in \Cref{sec:bg:millet}. The last two adapt mechanisms published for whole-slide image classification
 \citep{ilse2018attention, li2021dsmil}; the transfer to time series, the per-class formulation and
 the implementation are mine.
 \end{contribution}
@@ -443,10 +453,10 @@ implementation follows the same rule, deriving both outputs from one intermediat
 them independently would allow them to disagree, which is precisely the weakness of post-hoc
 explainers (\Cref{sec:intro:sota}).
 
-The heads are presented in the order of the limitations they address: \Cref{sec:pool:classwise}
-addresses~L1, \Cref{sec:pool:softmax} addresses~L2, and
-\Cref{sec:pool:adaptive}--\Cref{sec:pool:dsmil} address~L3 through five different aggregation
-strategies.
+The heads are presented in the order of the limitations they address (\Cref{sec:bg:millet}):
+\Cref{sec:pool:classwise} takes on the shared attention gate, \Cref{sec:pool:softmax} the
+unnormalised weights, and \Cref{sec:pool:adaptive}--\Cref{sec:pool:dsmil} the fixed mean, through
+five different aggregation strategies.
 
 % The two pooling diagrams (figures/fig_pool_template.tex and
 % figures/fig_pool_aggregators.tex) were moved to the repository documentation: they cost most of
@@ -457,7 +467,8 @@ strategies.
 \subsubsection{Class-wise conjunctive pooling}
 \label{sec:pool:classwise}
 
-\textbf{Limitation addressed: L1.} The single gate of \Cref{eq:conj_gate} must serve all classes.
+\textbf{Limitation addressed: the shared attention gate.} The single gate of \Cref{eq:conj_gate}
+must serve all classes at once.
 
 \textbf{Change.} Produce one gate per class from the same attention network, giving it $\nclz$
 outputs instead of one:
@@ -488,8 +499,8 @@ only add capacity: in the worst case it reproduces the baseline exactly.
 \subsubsection{Softmax conjunctive pooling with a learnable sharpness}
 \label{sec:pool:softmax}
 
-\textbf{Limitation addressed: L2.} The unnormalised sigmoid gate makes the bag score depend on the
-series length.
+\textbf{Limitation addressed: the unnormalised weights.} The sigmoid gate makes the bag score depend
+on the series length.
 
 \textbf{Change.} Replace the sigmoid gate by a distribution over time, normalised by a softmax whose
 sharpness is controlled by a learnable parameter $\tau > 0$:
@@ -522,7 +533,7 @@ on the \ucr{} archive, and the model learns how concentrated its attention shoul
 \subsubsection{Adaptive class-wise pooling}
 \label{sec:pool:adaptive}
 
-\textbf{Limitation addressed: L3.} The fixed mean is appropriate only when the evidence is spread
+\textbf{Limitation addressed: the fixed mean.} It is appropriate only when the evidence is spread
 out; where it is a single short event a max-like aggregator is better, and no fixed operator can be
 right for both.
 
@@ -553,7 +564,8 @@ optimiser sharpens it only where that reduces the loss.
 \subsubsection{Top-$k$ conjunctive pooling}
 \label{sec:pool:topk}
 
-\textbf{Limitation addressed: L3, directly.} On a series of hundreds of time steps most positions
+\textbf{Limitation addressed: the fixed mean, directly.} On a series of hundreds of time steps most
+positions
 are background, and averaging over all of them dilutes the few decisive ones.
 
 \textbf{Change.} Average only the $k$ largest evidence values of each class, with $k$ a fixed
@@ -588,7 +600,8 @@ Property~\ref{prop:topk} by varying $\kappa$, and this is the head used in the b
 \subsubsection{Attention-max pooling}
 \label{sec:pool:attnmax}
 
-\textbf{Limitation addressed: L3, as a control.} Adaptive class-wise pooling also removes the fixed
+\textbf{Limitation addressed: the fixed mean, as a control.} Adaptive class-wise pooling also
+removes the fixed
 mean, but its soft-argmax still mixes in every time step to some degree. This head is the simplest
 hard alternative, to test whether the smoother learned aggregator is justified.
 
@@ -620,7 +633,8 @@ pipeline of \citet{hashimoto2020msdamil}, where a bag is a whole-slide image and
 image patch (\Cref{sec:bg:mil}).
 \end{priorwork}
 
-\textbf{Limitation addressed: L1 and L3, through a stronger attention branch.} The baseline gate is
+\textbf{Limitation addressed: the shared gate and the fixed mean, through a stronger attention
+branch.} The baseline gate is
 a single $\tanh$ layer, which limits how selective it can be.
 
 \textbf{Change.} Transfer gated attention to time series (bag = series, instance = time step) and
@@ -655,7 +669,8 @@ stream aggregates all instances, a second focuses on the most critical instance 
 resembling it (\Cref{sec:bg:mil}).
 \end{priorwork}
 
-\textbf{Limitation addressed: L3, when the evidence is scattered.} A single decisive time step
+\textbf{Limitation addressed: the fixed mean, when the evidence is scattered.} A single decisive
+time step
 should be able to dominate without the surrounding evidence being discarded.
 
 \textbf{Change.} I removed the contrastive pre-training of \citet{li2021dsmil}, made the critical

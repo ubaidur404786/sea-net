@@ -54,20 +54,21 @@ as well so that no conclusion rests on one convenient subset.
 \label{sec:setup:pipeline}
 
 The baseline is \millet{}'s own model: an \textbf{InceptionTime encoder with conjunctive pooling},
-423{,}707 parameters, which reaches \textbf{0.887 accuracy} on \webtraffic{} when re-trained here.
-Its published accuracy is not quoted; it was re-trained through this pipeline under exactly the
-configuration of \Cref{tab:protocol}, and the \seanet{} models are trained under that same
-configuration with only the encoder and the pooling head changed -- the best of them being the
-\seanet{} bottleneck encoder with Top-$k$ conjunctive pooling at 41{,}324 parameters. This is the
-central methodological decision of the internship: a published number combines the effect of the
-architecture with that of the training configuration its authors used, and the two cannot be
-separated afterwards, whereas under one identical configuration any difference in \Cref{sec:results}
-is attributable to the model. The size of that configuration effect was measured rather than
-assumed -- running \millet{}'s own published hyperparameters on this pipeline lifts the identical
-architecture from 0.887 to 0.920 on \webtraffic{} (\Cref{sec:disc:reading}) -- so published
-\millet{} numbers always occupy a separate row in \Cref{sec:results}. FCN and ResNet
+423{,}707 parameters. Re-trained here under the configuration of \Cref{tab:protocol} it reaches
+\textbf{0.887 accuracy} on \webtraffic{}, and that re-trained value is the one every comparison in
+this report uses. The \seanet{} models are trained under exactly the same configuration, with only
+the encoder and the pooling head changed -- the smallest of them being the \seanet{} bottleneck
+encoder with Top-$k$ conjunctive pooling at 41{,}324 parameters. FCN and ResNet
 \citep{wang2017fcn}, each with the same conjunctive head, were re-trained the same way as secondary
 reference points.
+
+Re-training the baseline rather than quoting it is the central methodological decision of this work.
+A published accuracy combines the effect of the architecture with the effect of the training
+configuration its authors used, and the two cannot be separated after the fact. Under one identical
+configuration they can: any difference in \Cref{sec:results} is then attributable to the model
+alone. The price is that the numbers in this report are not directly comparable with the ones
+\millet{} published, and that comparison is a separate question with its own answer, so it is kept
+out of the main results and treated on its own in \Cref{app:published}.
 
 \begin{table}[h]
 \caption{Training configuration, identical for every model in this study. The complete
@@ -102,8 +103,8 @@ added afterwards for the four models on which the main claims rest, so variance 
 exactly where the claims are made. Classification is measured by accuracy and test loss, explanation
 quality by AOPCR and NDCG@$n$ (\Cref{sec:bg:metrics}), and cost by parameter count, saved model size
 and time per prediction; over the \ucr{} archive the mean accuracy is reported together with the
-mean rank and the win/tie/loss record, following \citet{demsar2006statistical}, because a mean over
-heterogeneous datasets can be dominated by a few of them.
+mean accuracy rank across datasets, following \citet{demsar2006statistical}, because a mean over
+datasets as different as these can be dominated by a few of them while a rank cannot.
 
 \begin{contribution}
 The experimental pipeline is my own work, and it is what made 72 variants over 129 datasets possible

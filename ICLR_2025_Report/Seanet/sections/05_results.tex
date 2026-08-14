@@ -15,10 +15,10 @@
 
 Seventy-two model variants were compared: the \seanet{} encoders paired with the proposed pooling
 heads and with \millet{}'s heads, plus the FCN, ResNet and InceptionTime baselines re-trained here,
-each run on \webtraffic{} and on the \ucr{} archive -- up to 129 datasets per model. Two conventions
-hold throughout: starred rows were trained with 3 seeds and report the mean, every other row is a
-single seed (\Cref{sec:setup:protocol}); and a number produced here never shares a column with a
-number copied from \citet{early2024millet}, because the two use different training configurations.
+each run on \webtraffic{} and on the \ucr{} archive -- up to 129 datasets per model. Every number in
+this section was produced here, under the single configuration of \Cref{tab:protocol}; no accuracy is
+copied from another paper. Rows marked with a star were trained with 3 seeds and report the mean,
+every other row is a single seed (\Cref{sec:setup:protocol}).
 
 % ---------------------------------------------------------------------
 \subsection{Main comparison on \webtraffic{}}
@@ -47,7 +47,7 @@ a value printed in another paper.}
 \textbf{NDCG@$n$} & \textbf{Params} \\
 \midrule
 1  & \seanet{} gated (mean) $+$ Top-$k$$^\ast$        & \textbf{0.955} & 2.225 & 0.750 & 61{,}740 \\
-2  & \seanet{} base $+$ conjunctive \reused           & 0.954 & 1.502 & 0.698 & 269{,}083 \\
+2  & \seanet{} base $+$ conjunctive (\millet{} head)  & 0.954 & 1.502 & 0.698 & 269{,}083 \\
 3  & \seanet{} gated (max) $+$ Top-$k$                & 0.952 & 2.268 & 0.719 & 61{,}740 \\
 4  & \seanet{} spike/trend $+$ Top-$k$                & 0.950 & 2.316 & 0.756 & 67{,}020 \\
 5  & \seanet{} multi-scale channels (input-gated base) $+$ Top-$k$ & 0.948 & 2.316 & 0.757 & 69{,}768 \\
@@ -115,63 +115,45 @@ counterpart: the \seanet{} models take two to three times \emph{longer to train}
 
 A single dataset cannot support a general claim, so the same models were evaluated on the 85 \ucr{}
 datasets for which \millet{} results are published. \Cref{tab:ucr_accuracy} reports the mean accuracy
-with the mean rank and the per-dataset record beside it, because a mean alone can be dominated by a
-few datasets (\Cref{sec:setup:protocol}).
+with the mean rank beside it, because a mean alone can be dominated by a few datasets
+(\Cref{sec:setup:protocol}).
 
 \begin{table}[tbp]
-\caption{Accuracy over the \ucr{} datasets published by \millet{}. ``Mean rank'' is the average
-accuracy rank over the 84 datasets shared by the 28 models evaluated on the complete archive
-(lower is better). ``W/T/L'' is the win / tie / loss record per dataset against the \emph{published}
-\millet{} numbers, a tie meaning the two accuracies are within 0.005. The two \millet{} rows differ
-only in the training configuration; the architecture and the code are identical.}
+\caption{Accuracy over the 85 \ucr{} datasets, for models re-trained here under the configuration of
+\Cref{tab:protocol}. ``Mean rank'' is the average accuracy rank over the 84 datasets shared by the
+28 models that completed the whole archive, so a lower value is better. How these numbers relate to
+the accuracies \millet{} published is a separate question and is treated in \Cref{app:published}.}
 \label{tab:ucr_accuracy}
 \begin{center}
 \footnotesize
-\begin{tabular}{lccc}
+\begin{tabular}{lcc}
 \toprule
-\textbf{Model} & \textbf{Mean accuracy} & \textbf{Mean rank} &
-\textbf{W/T/L vs published} \\
+\textbf{Model} & \textbf{Mean accuracy} & \textbf{Mean rank} \\
 \midrule
-\mgat{}                      & 0.8083 & 15.29 & 18 / 13 / 53 \\
-\mbot{}                      & 0.8097 & 15.40 & 19 / 15 / 50 \\
-\minp{}                      & 0.8153 & 15.47 & 19 / 15 / 50 \\
-ResNet $+$ conjunctive       & 0.8146 & 13.54 & 25 / 11 / 48 \\
-FCN $+$ conjunctive          & 0.8141 & 14.48 & 20 / 12 / 52 \\
+\mgat{}                      & 0.8083 & 15.29 \\
+\mbot{}                      & 0.8097 & 15.40 \\
+\minp{}                      & 0.8153 & 15.47 \\
+ResNet $+$ conjunctive       & 0.8146 & 13.54 \\
+FCN $+$ conjunctive          & 0.8141 & 14.48 \\
 \midrule
-\millet{}, re-trained (configuration of \Cref{tab:protocol}) & 0.8274 & 12.60 & 13 / 25 / 46 \\
-\millet{}, re-trained (\emph{their} own configuration) & \textbf{0.8434} & \textbf{9.41} &
-                                                  \textbf{26 / 32 / 26} \\
-\midrule
-\millet{} \citep{early2024millet}, published & 0.8445 & -- & -- \\
+\millet{} (InceptionTime $+$ conjunctive), re-trained here & \textbf{0.8274} & \textbf{12.60} \\
 \bottomrule
 \end{tabular}
 \end{center}
 \end{table}
 % Mean accuracy: leaderboard.csv, ucr85_acc column (averaged over the datasets each model finished
-% and over every seed it has). Mean rank + W/T/L: results/paper_figures/tables/table_ranking_accuracy.csv,
-% regenerated 2026-08-12 after millet_paper finished -- computed over the 84 datasets every
-% fully-swept model shares.
-% millet_paper (their recipe): ucr85_n = 84, ucr85_acc = 0.8434, rank 9.41, W/T/L 26/32/26.
-% millet     (my recipe):      ucr85_n = 84, ucr85_acc = 0.8274, rank 12.60, W/T/L 13/25/46.
-% The published row: millet_acc = 0.8445 from leaderboard.csv. Mean rank and W/T/L are left blank
-% because the published per-dataset numbers needed to compute them were never carried through.
+% and over every seed it has). Mean rank: results/paper_figures/tables/table_ranking_accuracy.csv,
+% computed over the 84 datasets every fully-swept model shares. The pool of 28 still contains
+% millet_paper, which is why no rank here is close to 1 -- that row is shown in Appendix B.5.
+% millet (our configuration): ucr85_n = 84, ucr85_acc = 0.8274, rank 12.60.
 
-This table tells a different story from \Cref{tab:web_main}. Over the \ucr{} archive both \millet{}
-rows are ahead of all three \seanet{} models, which lose more datasets than they win. This does not
+This table tells a different story from \Cref{tab:web_main}. Over the \ucr{} archive the re-trained
+\millet{} baseline is ahead of all three \seanet{} models, on the mean and on the rank. This does not
 invalidate the \webtraffic{} result but it bounds it: both headline models were selected because they
 performed well on \webtraffic{} (\Cref{sec:setup:data}), and one dataset does not predict behaviour
 on 85 heterogeneous ones. \seanet{} remains competitive -- within one to two accuracy points of the
 baseline at about a tenth of the parameters -- but the results do not support a claim of general
 superiority.
-
-The last two rows close objective~O2, and they are the \emph{same architecture and the same code}
-trained twice under two configurations. Under \Cref{tab:protocol} the model reaches 0.8274; under
-\millet{}'s own published configuration it reaches 0.8434 against a published 0.8445, a difference of
-about one thousandth, with a balanced record of 26 wins, 32 ties and 26 losses. The earlier shortfall
-was therefore a difference in training budget, not a defect in the re-implementation. This also
-determines how the rest of the table is read: the \seanet{} models were trained under
-\Cref{tab:protocol}, so their correct point of comparison is the 0.8274 row rather than the published
-one.
 
 Finally, neither component alone accounts for the result. Averaged over every partner, the encoder
 choice moves \webtraffic{} accuracy over a range of 0.858--0.937 and the pooling head choice over

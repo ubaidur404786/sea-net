@@ -163,29 +163,22 @@ same terms that are summed to produce $\bagpred^{\,k}$: the explanation cannot d
 prediction, because it is the prediction, decomposed.
 
 \paragraph{Limitations of conjunctive pooling.}
-Three properties of \Cref{eq:conj_gate}--\Cref{eq:conj_bag} restrict what the head can express.
-Each one motivates a corresponding family of pooling heads in \Cref{sec:methods:pooling}, which are
-presented in the same order and each labelled with the limitation it addresses.
-
-\begin{enumerate}\itemsep3pt
-  \item[\textbf{L1}] \textbf{A single attention gate is shared across classes.} The gate $a_j$ in
-        \Cref{eq:conj_gate} is one scalar per time step, used unchanged for all $\nclz$ classes.
-        Consequently the head cannot represent a time step whose evidence is class-dependent -- one
-        that is highly relevant to one class and irrelevant to another -- because a single value
-        must serve every class simultaneously.
-  \item[\textbf{L2}] \textbf{The attention weights are not normalised over time.} The gate is a
-        sigmoid, so the weights lie in $[0,1]$ individually but do not sum to a fixed quantity, and
-        the aggregation divides by $\nsteps$. The magnitude of $\bagpred^{\,k}$ therefore depends on
-        the length of the series: two series carrying identical evidence but of different lengths do
-        not receive comparable scores. This is a practical concern on the \ucr{} archive, whose
-        series lengths range from 15 to 2{,}844.
-  \item[\textbf{L3}] \textbf{The aggregation is a fixed mean, so evidence is diluted on long
-        series.} \Cref{eq:conj_bag} averages over all $\nsteps$ time steps with equal weight, and
-        this operator is fixed rather than learned. When the evidence is concentrated in a few
-        decisive time steps and the series is long, those steps contribute a vanishing share of the
-        mean and are diluted by the surrounding background. The mean has no mechanism to counteract
-        this, and no ability to adapt to datasets where the evidence is instead spread out.
-\end{enumerate}
+Three properties of \Cref{eq:conj_gate}--\Cref{eq:conj_bag} restrict what the head can express, and
+each one motivates a family of pooling heads in \Cref{sec:methods:pooling}. First,
+\textbf{a single attention gate is shared across classes}: the gate $a_j$ is one scalar per time
+step, used unchanged for all $\nclz$ classes, so the head cannot represent a time step whose
+evidence is class-dependent -- highly relevant to one class and irrelevant to another -- because one
+value has to serve every class at once. Second, \textbf{the attention weights are not normalised
+over time}: the gate is a sigmoid, so the weights lie in $[0,1]$ individually but do not sum to a
+fixed quantity, and the aggregation divides by $\nsteps$; the magnitude of $\bagpred^{\,k}$
+therefore depends on the length of the series, so two series carrying identical evidence but of
+different lengths do not receive comparable scores. This matters on the \ucr{} archive, whose series
+lengths range from 15 to 2{,}844. Third, \textbf{the aggregation is a fixed mean, so evidence is
+diluted on long series}: \Cref{eq:conj_bag} averages over all $\nsteps$ time steps with equal weight
+and that operator is fixed rather than learned, so when the evidence sits in a few decisive time
+steps of a long series those steps contribute a vanishing share of the mean and are swamped by the
+background. The mean cannot counteract this, and it cannot adapt to the datasets where the evidence
+is spread out instead.
 
 % ---------------------------------------------------------------------
 \subsection{Measuring the quality of an explanation}

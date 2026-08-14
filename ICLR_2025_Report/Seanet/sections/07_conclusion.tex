@@ -46,11 +46,11 @@ six were reached, and the sixth -- deployment on a physical microcontroller -- w
 \label{sec:future}
 
 \begin{itemize}\itemsep3pt
-  \item \textbf{Re-train \seanet{} under the long training configuration.} \millet{}'s own
-        configuration recovers the published \ucr{} accuracy on this pipeline
-        (\Cref{tab:ucr_accuracy}), so applying the same four-times-longer budget to the \seanet{}
-        encoders would determine whether the \ucr{} gap of \Cref{sec:res:ucr} is architectural or
-        merely a budget effect. This is the single most informative experiment left.
+  \item \textbf{Re-train \seanet{} under a longer training configuration.} On the baseline
+        architecture, a four-times-longer schedule is worth about 0.016 of \ucr{} accuracy
+        (\Cref{app:published}). Giving the \seanet{} encoders the same budget would show whether the
+        \ucr{} gap of \Cref{sec:res:ucr} is architectural or only a budget effect. This is the single
+        most informative experiment left.
 
   \item \textbf{Adapt further MIL pooling methods from the histopathology literature.} The two heads
         transferred here (\Cref{sec:pool:gated}, \Cref{sec:pool:dsmil}) come from that literature,

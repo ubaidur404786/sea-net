@@ -88,26 +88,22 @@ known-good configuration to fall back on, a poorly trained gate has nothing to r
 head settles in the middle of the ranking rather than either winning or failing outright.
 
 \paragraph{What both cases indicate.}
-A mechanism that is safe or expressive by construction only pays off if the training procedure
-reaches the regime in which that property applies. Neither head reached it under the single generic
-configuration used across the whole study (\Cref{sec:setup:protocol}). Two concrete remedies follow:
-initialise $\lambda$ near 0 so the model has to earn its way up, or add a penalty that keeps a
-blended head close to its safe branch early in training.
+A property that holds by construction is only useful if training actually puts the model in the
+state where it applies. Neither head got there under the single configuration used across the whole
+study (\Cref{sec:setup:protocol}). Two fixes follow directly: start $\lambda$ near 0 so the model has
+to move away from the safe branch on purpose, or add a penalty that holds a blended head close to
+that branch early in training.
 
 % ---------------------------------------------------------------------
 \subsection{How the numbers should be read}
 \label{sec:disc:reading}
 
-\paragraph{AOPCR is unnormalised, with direct measured evidence.}
+\paragraph{AOPCR compares rows of one table, and nothing else.}
 AOPCR is an area under a curve of raw confidence differences, so its scale follows the scale of the
-model's logits and has no fixed range (\Cref{sec:bg:metrics}). The same architecture was trained
-twice, changing only the training configuration: once under \Cref{tab:protocol} and once under
-\millet{}'s published one (1500 epochs, no weight decay, no label smoothing). On \webtraffic{} the
-first scores AOPCR 2.57 and the second 13.27 -- same encoder, same pooling head, same metric code,
-same dataset, a factor of five from the training configuration alone. This is a measurement artefact
-rather than a difference in explanation quality, and it is why the AOPCR column of
-\Cref{tab:web_main} must never be compared with an AOPCR published elsewhere, including \millet{}'s
-own 4.55.
+model's logits and has no fixed range (\Cref{sec:bg:metrics}). Every model in \Cref{tab:web_main}
+was trained under one configuration, so its AOPCR column is internally comparable; an AOPCR produced
+under a different configuration is not on the same scale and must not be placed beside it.
+\Cref{app:published} measures how large that effect is on one architecture, and it is large.
 
 \paragraph{Differences smaller than the seed spread are not results.}
 Where three seeds are available the spread is not negligible: accuracy standard deviation ranges
@@ -119,39 +115,31 @@ as noise, not as a result; equally, \mgat{}'s accuracy lead over \mbot{} (0.955 
 be called decisive, because the second model's spread is 0.016. For the single-seed models no such
 test is possible, and those numbers are indicative rather than exact.
 
-\paragraph{The training budget, and what it costs.}
-The configuration of \Cref{tab:protocol} trains for at most 400 epochs with patience 60, whereas the
-published \millet{} numbers come from a configuration roughly four times longer with different
-regularisation. Running their configuration on this pipeline, identical architecture and code, raises
-\webtraffic{} accuracy from 0.887 to 0.920 and the \ucr{} mean from 0.8274 to 0.8434 against a
-published 0.8445 (\Cref{tab:ucr_accuracy}) -- a reproduction rather than an approximation. So the
-re-implementation was never the source of the shortfall, and the gap can be attributed to the budget
-with a measured number. Since every \seanet{} model here was trained under the short configuration,
-the 0.016 between the two \millet{} rows is the right order of magnitude to keep in mind when reading
-the \ucr{} gap of \Cref{sec:res:ucr}; it cannot simply be transferred to the \seanet{} encoders,
-which is why re-training them under the long configuration is the first item of future work.
+\paragraph{The training budget was the same for everyone, and it was short.}
+The configuration of \Cref{tab:protocol} trains for at most 400 epochs with patience 60. That was
+the budget 72 variants over 129 datasets allowed (\Cref{app:constraints}), and it applies equally to
+the baselines and to the \seanet{} models, so it does not favour either. It does mean the absolute
+accuracies here are lower than what a longer schedule would produce, on both sides.
+\Cref{app:published} quantifies that on one architecture, and re-training the \seanet{} encoders
+under a longer schedule is the first item of future work.
 
 % ---------------------------------------------------------------------
 \subsection{Limitations}
 \label{sec:disc:limitations}
 
-\begin{itemize}\itemsep2pt
-  \item \textbf{Explanation correctness is measured on one dataset.} NDCG@$n$ requires
-        per-time-step ground truth, which only \webtraffic{} provides, and \webtraffic{} is
-        synthetic: its important regions are generated rather than observed. How the result holds on
-        real, noisier data is unknown.
-  \item \textbf{The headline models were selected on that same dataset.} \Cref{sec:res:ucr} shows
-        the cost directly: over the 85 \ucr{} datasets the re-trained baseline is ahead of both.
-  \item \textbf{Most models have a single seed.} Four models have 3 seeds on \webtraffic{} and two
-        of them also over the \ucr{} archive; the other 68 have one. Where repeats exist the spread
-        was large enough to change how a claim is phrased (\Cref{sec:disc:reading}), which is a
-        reason for caution about the single-seed numbers.
-  \item \textbf{Only univariate series were tested.} The encoder is indifferent to the number of
-        input channels, so multivariate input should work mechanically, but this was not verified.
-  \item \textbf{Faithfulness is not usefulness.} AOPCR and NDCG@$n$ both measure whether the stated
-        explanation matches what the model used. Neither establishes that a person would find the
-        highlighted time steps informative, which would require a human study.
-  \item \textbf{Nothing has run on a real microcontroller.} The cost measurements indicate that it
-        should fit (\Cref{tab:cost}), but that is not the same as a working deployment
-        (objective~O6, \Cref{tab:objectives}).
-\end{itemize}
+Six limitations bound what the results above support. \textbf{Explanation correctness is measured on
+one dataset}: NDCG@$n$ needs per-time-step ground truth, which only \webtraffic{} provides, and
+\webtraffic{} is synthetic, so its important regions are generated rather than observed and it is
+not known how the result holds on real, noisier data. \textbf{The headline models were selected on
+that same dataset}, and \Cref{sec:res:ucr} shows what that costs: over the 85 \ucr{} datasets the
+re-trained baseline is ahead of both. \textbf{Most models have a single seed} -- four have 3 seeds
+on \webtraffic{} and two of those also over the \ucr{} archive, while the other 68 have one; where
+repeats exist the spread was large enough to change how a claim is phrased
+(\Cref{sec:disc:reading}), which is a reason for caution about the single-seed numbers rather than a
+reason to trust them. \textbf{Only univariate series were tested}: the encoder is indifferent to the
+number of input channels, so multivariate input should work mechanically, but that was not verified.
+\textbf{Faithfulness is not usefulness}, because AOPCR and NDCG@$n$ both measure whether the stated
+explanation matches what the model used, and neither establishes that a person would find the
+highlighted time steps informative -- that needs a human study. Finally, \textbf{nothing has run on
+a real microcontroller}: the cost measurements indicate that it should fit (\Cref{tab:cost}), but
+that is not the same as a working deployment (objective~O6, \Cref{tab:objectives}).
