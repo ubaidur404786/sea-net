@@ -36,12 +36,24 @@ Datasets: **WebTraffic** (our main one) + the **UCR 2018** archive
   Conclusion → References → Appendices. The internship context, objectives,
   constraints and skills now live in **Appendix A**, after the references, so
   they no longer interrupt the scientific story.
-- **The PDF is 34 pages** (was 40), builds with **0 errors, 0 undefined
-  references/citations, 0 overfull boxes**, no placeholders, no guide boxes.
-  Title + abstract are on page 1 and the table of contents is exactly page 2.
-- Page count came down through structure and formatting, not by deleting
-  results: wider text block (6.4 in instead of ICLR's 5.5 in), tighter float and
-  list spacing, deduplicated prose, and removal of two redundant tables.
+- **The PDF is 28 pages** (was 40) — inside the 20-30 examiner budget. It builds
+  with **0 errors, 0 undefined references/citations, 0 overfull boxes**, no
+  placeholders and no guide boxes. Title + abstract are on page 1 and the table
+  of contents is exactly page 2.
+- Page count came down through structure and formatting first: wider text block
+  (6.4 in instead of ICLR's 5.5 in), tighter float/list/caption spacing,
+  deduplicated prose, two redundant tables removed.
+- **The last 6 pages came from moving material to the repository README**, not
+  from deleting it. `README.md` at the repo root now carries the full 72-model
+  leaderboard, the encoder x pooling grid, the per-dataset UCR table, the
+  ensemble / Optuna / Transformer experiments, the win/tie/loss and
+  accuracy-vs-length analyses, the pooling-head slot table, the commands and the
+  environment table. The report points at it from Section 4.2, and the branch
+  named there is `report4`. **If the branch name changes, update
+  `\repobranch` in `preamble.tex` and the header of `README.md`.**
+- Appendix C (reproducibility) was folded into Appendix B and the file moved to
+  `sections/_superseded/A3_reproducibility.tex`. The two pooling diagrams are no
+  longer `\input` but their `.tex` files are still in `figures/`.
 
 ### Two code changes that need `python main.py paper` to take effect
 
@@ -52,25 +64,22 @@ after the figures and tables are regenerated:
    characters (the two MILLET rows both collapsed to `mil_incep..._mil_conj`),
    and the win/tie/loss figure now prefixes each bar with a **competition rank**,
    so two models with the same number of wins visibly share a rank and are marked
-   with `=`. Appendix B.6 of the report already describes this.
-2. `seanet/paper/tables.py` — the appendix leaderboard's Model column now prints
-   the **configuration identifier** (`seanet_gated_mean_topk`) instead of an
+   with `=`. The README's "Additional figures" section already describes this.
+2. `seanet/paper/tables.py` — the full leaderboard's Model column now prints the
+   **configuration identifier** (`seanet_gated_mean_topk`) instead of an
    abbreviated label. Two different models used to shorten to the same string, so
-   the table could not be used for lookup. Appendix B.1 already describes this.
+   the table could not be used for lookup. The README's "Full leaderboard"
+   section already describes this.
 
-Still open in the generated figures: `topk5_multimetric` (Figure 8) has value
-labels that collide with the dashed reference lines.
+Still open in the generated figures: `topk5_multimetric` (Figure 6 of the report)
+has value labels that collide with the dashed reference lines.
 
 ### Float placement rule learned the hard way (2026-08-12)
 
 **Never use `[H]` on a tall float.** `[H]` (from the `float` package) means
 "stay exactly here even if there is no room", so it silently runs off the
-bottom of the page and the overflow is *lost* — no error, no warning. It ate
-the whole encoder x pooling grid figure and half of Table 10. Every float in
-`A1_`/`A2_` is now `[htbp]`, and the full leaderboard has a `\clearpage` before
-it so it gets a page to itself.
-- Two blue `\missing{}` flags are still live on purpose: the `millet_paper` UCR
-  row (8.2) and the ensemble numbers (Appendix A).
+bottom of the page and the overflow is *lost* — no error, no warning. Every
+float in the report is `[htbp]` or `[tbp]` now; keep it that way.
 
 So: if I ask for something, assume it is about **writing/figures/tables/page
 count**, not about training. Do not suggest new training runs unless I ask.
@@ -132,16 +141,11 @@ in `sections/_superseded/` — nothing was deleted, they are just no longer
 | `06_discussion.tex` | 6 Discussion | 3 |
 | `07_conclusion.tex` | 7 Conclusion + Future work | 2 |
 | `A1_internship.tex` | App. A internship: team, mission, objectives table, constraints, skills | 2 |
-| `A2_additional_results.tex` | App. B additional results | 6 |
-| `A3_reproducibility.tex` | App. C reproducibility | 3 |
+| `A2_additional_results.tex` | App. B supporting results: cost, ablations, seeds, hyperparameters | 3 |
 
-**Total 34** including the title page, the one-page contents and 2 pages of
-references. Page budget: **20–30 including appendix** (examiner rule, AIEDA400),
-so it is still about 4 pages over. Getting to 30 now means dropping content, and
-that is my decision, not a guess: the candidates, cheapest first, are the 72-row
-leaderboard table (B.1, one full page), the encoder × pooling grid figure (B.3),
-the ensemble / Optuna / Transformer paragraphs (B.5), and the per-dataset table
-(B.4).
+**Total 28** including the title page, the one-page contents and 2 pages of
+references — inside the 20-30 examiner budget (AIEDA400). Nothing was thrown
+away to get there: everything cut from the report is in the repo README.
 
 ### Figures — 13, all real, no placeholders left
 

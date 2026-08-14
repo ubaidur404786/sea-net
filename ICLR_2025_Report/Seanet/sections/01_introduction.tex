@@ -18,18 +18,14 @@ classification} (TSC) is the task of assigning one label to a complete sequence:
 for a heartbeat recording, healthy or faulty for a machine sensor, one traffic pattern or another
 for a web server log. Deep learning models solve this task well, and convolutional architectures in
 particular are its standard baselines. Accuracy alone, however, is not enough in the applications
-that motivate this work, which impose three requirements \emph{at the same time}:
-
-\begin{enumerate}\itemsep2pt
-  \item \textbf{Accurate classification.} The model must remain competitive with the strong
-        convolutional baselines used in the TSC literature.
-  \item \textbf{Interpretable predictions.} The model must indicate \emph{which time steps} caused
-        its decision, and that indication must be the quantity the decision was actually computed
-        from, not a reconstruction produced afterwards by a separate tool.
-  \item \textbf{A small parameter budget.} The model must be small enough to be a realistic
-        candidate for deployment on an edge device or a microcontroller unit (MCU), where memory is
-        measured in hundreds of kilobytes.
-\end{enumerate}
+that motivate this work, which impose three requirements \emph{at the same time}. The first is
+\textbf{accurate classification}: the model must remain competitive with the strong convolutional
+baselines used in the TSC literature. The second is \textbf{interpretable predictions}: the model
+must indicate \emph{which time steps} caused its decision, and that indication must be the quantity
+the decision was actually computed from, not a reconstruction produced afterwards by a separate
+tool. The third is \textbf{a small parameter budget}: the model must be small enough to be a
+realistic candidate for deployment on an edge device or a microcontroller unit (MCU), where memory
+is measured in hundreds of kilobytes.
 
 Each requirement is well studied on its own. The difficulty, and the subject of this internship, is
 that satisfying all three together normally means trading one against the others: accurate models
@@ -175,5 +171,7 @@ baseline and its limitations, and the two explanation-quality metrics. \Cref{sec
 the proposed encoders, pooling heads and training objective; \Cref{sec:setup} the experimental
 methodology; \Cref{sec:results} the results and \Cref{sec:discussion} their analysis.
 \Cref{sec:conclusion} concludes and lists future work. Appendix~\ref{app:internship} covers the
-internship itself -- host team, objectives, constraints and skills --
-Appendix~\ref{app:additional} additional results, and Appendix~\ref{app:repro} reproducibility.
+internship itself -- host team, objectives, constraints and skills -- and
+Appendix~\ref{app:additional} the supporting results. The material that supports those results
+without being needed to follow them is published with the code
+(\Cref{sec:setup:baselines}).

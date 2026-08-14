@@ -33,7 +33,7 @@ not have predicted it.
 Top-$k$ pooling produced the best NDCG@$n$ of every model with complete seed data, and the mechanism
 can be identified rather than inferred. Averaging only the $\kappa \nsteps$ largest evidence values
 makes $\interp_{k,j}$ exactly zero everywhere the model did not use, instead of a small weight that
-never quite reaches zero (\Cref{fig:pool_aggregators}); since NDCG@$n$ scores whether the truly
+never quite reaches zero; since NDCG@$n$ scores whether the truly
 modified steps appear at the top of the ranking, removing the background from that ranking is
 directly what the metric rewards.
 

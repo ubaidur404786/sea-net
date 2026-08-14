@@ -66,10 +66,11 @@ six were reached, and the sixth -- deployment on a physical microcontroller -- w
         of instances per bag while these series contain around a thousand time steps, so the
         transfer is not automatic.
 
-  \item \textbf{Make the dilation cap depend on the series length.} \Cref{app:figures} shows
-        accuracy falling with series length (correlation $-0.34$; 0.857 on the short half of the
-        archive against 0.755 on the long half), which is what a fixed cap of 16 predicts. Adapting
-        the cap is a small change with a clear hypothesis behind it.
+  \item \textbf{Make the dilation cap depend on the series length.} Over all 128 \ucr{} datasets,
+        accuracy falls with series length (correlation $-0.34$; 0.857 on the short half of the
+        archive against 0.755 on the long half), which is what a fixed cap of 16 predicts and an
+        effect far larger than any seed-to-seed spread measured (\Cref{tab:seeds}). Adapting the cap
+        is a small change with a clear hypothesis behind it.
 
   \item \textbf{Correct the two heads that failed for optimisation reasons.} Initialising the
         dual-stream blend $\lambda$ near zero, or penalising it away from the safe branch early in

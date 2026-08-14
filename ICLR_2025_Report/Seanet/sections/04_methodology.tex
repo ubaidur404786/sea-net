@@ -2,9 +2,11 @@
 % =====================================================================
 % 4. EXPERIMENTAL METHODOLOGY
 %
-% Only what a reader needs in order to judge the results. The full
-% hyperparameter list, the commands and the environment are in
-% Appendix C; the engineering details are kept short here.
+% Deliberately short: only what a reader needs in order to judge the
+% results. Two subsections, the second of them at most two and a half
+% paragraphs plus the configuration table. Everything else -- the full
+% hyperparameter list, the commands, the environment, the per-dataset
+% tables -- is in the repository README.
 % =====================================================================
 
 \section{Experimental Methodology}
@@ -36,49 +38,40 @@
 % published; the other 43 are the rest of the archive).
 
 \webtraffic{} \citep{early2024millet} is synthetic, so its generator records which time steps it
-modified to create each class -- the last column of \Cref{tab:datasets}, and the reason \webtraffic{}
-is the only dataset on which NDCG@$n$ can be computed; on the \ucr{} archive \citep{dau2019ucr} only
-AOPCR is available. \webtraffic{} is also small and fast to train on, so it was the screening set:
-every new encoder and pooling head was evaluated there first and only the strongest combinations went
-on to the full \ucr{} experiments, a choice whose cost \Cref{sec:res:ucr} quantifies.
-\citet{early2024millet} published \millet{} results on 85 of the 128 \ucr{} datasets, so those 85
-make a dataset-by-dataset comparison possible; the remaining 43 are run as well so that no conclusion
-rests on one convenient subset.
+modified to create each class -- the last column of \Cref{tab:datasets}, and the reason
+\webtraffic{} is the only dataset on which NDCG@$n$ can be computed; on the \ucr{} archive
+\citep{dau2019ucr} only AOPCR is available. \webtraffic{} is also small and fast to train on, so it
+was the screening set: every new encoder and pooling head was evaluated there first and only the
+strongest combinations went on to the full \ucr{} experiments, a choice whose cost
+\Cref{sec:res:ucr} quantifies. \citet{early2024millet} published \millet{} results on 85 of the 128
+\ucr{} datasets, so those 85 make a dataset-by-dataset comparison possible; the remaining 43 are run
+as well so that no conclusion rests on one convenient subset.
 
 % ---------------------------------------------------------------------
-\subsection{Baselines and training configuration}
+\subsection{Baseline, training configuration and pipeline}
 \label{sec:setup:baselines}
-
-The baselines are FCN, ResNet \citep{wang2017fcn} and InceptionTime \citep{fawaz2020inceptiontime},
-each paired with \millet{}'s conjunctive head. Their published accuracies are not quoted; all three
-were re-trained through the same pipeline under the same training configuration as \seanet{}. This
-was the most important methodological decision of the internship, because a published number combines
-the effect of the architecture with that of the training configuration its authors used, and the two
-cannot be separated afterwards. Re-training makes the comparison controlled: any difference between
-\seanet{} and a re-trained baseline is attributable to the architecture. The size of the
-configuration effect was measured rather than assumed -- a further run applies \millet{}'s own
-published hyperparameters on this pipeline, and on \webtraffic{} the identical architecture scores
-0.887 under the configuration of \Cref{tab:protocol} against 0.920 under theirs
-(\Cref{sec:disc:reading}). Published \millet{} numbers therefore always occupy a separate row in
-\Cref{sec:results}.
-
 \label{sec:setup:protocol}
-Every model, proposed and baseline alike, is trained with the identical configuration listed in
-\Cref{tab:protocol}, so that differences in \Cref{sec:results} originate in the model. Two settings
-adapt to the dataset rather than being fixed, because the \ucr{} archive spans 40 to 24{,}000
-series: a 20\,\% validation split is held out only when a dataset has at least 100 training series,
-below which the split would be too small to be informative and the training loss is monitored
-instead; and the batch size scales with the training set size, since a fixed batch of 16 would
-exceed half of the smallest \ucr{} datasets.
+\label{sec:setup:pipeline}
 
-The number of seeds changed during the internship and the report distinguishes the two cases
-throughout. The initial experiments were single-seed, because 72 variants over 129 datasets was
-already close to the available compute budget (\Cref{app:constraints}); once the strongest models
-were identified, two further seeds were added for the four models on which the main claims rest.
-Variance estimates therefore exist exactly where the claims are made.
+The baseline is \millet{}'s own model: an \textbf{InceptionTime encoder with conjunctive pooling},
+423{,}707 parameters, which reaches \textbf{0.887 accuracy} on \webtraffic{} when re-trained here.
+Its published accuracy is not quoted; it was re-trained through this pipeline under exactly the
+configuration of \Cref{tab:protocol}, and the \seanet{} models are trained under that same
+configuration with only the encoder and the pooling head changed -- the best of them being the
+\seanet{} bottleneck encoder with Top-$k$ conjunctive pooling at 41{,}324 parameters. This is the
+central methodological decision of the internship: a published number combines the effect of the
+architecture with that of the training configuration its authors used, and the two cannot be
+separated afterwards, whereas under one identical configuration any difference in \Cref{sec:results}
+is attributable to the model. The size of that configuration effect was measured rather than
+assumed -- running \millet{}'s own published hyperparameters on this pipeline lifts the identical
+architecture from 0.887 to 0.920 on \webtraffic{} (\Cref{sec:disc:reading}) -- so published
+\millet{} numbers always occupy a separate row in \Cref{sec:results}. FCN and ResNet
+\citep{wang2017fcn}, each with the same conjunctive head, were re-trained the same way as secondary
+reference points.
 
 \begin{table}[h]
-\caption{Training configuration, identical for every model in this study.}
+\caption{Training configuration, identical for every model in this study. The complete
+hyperparameter list, including the head-specific initial values, is in \Cref{tab:hparams}.}
 \label{tab:protocol}
 \begin{center}
 \small
@@ -86,6 +79,7 @@ Variance estimates therefore exist exactly where the claims are made.
 \toprule
 \textbf{Setting} & \textbf{Value} \\
 \midrule
+Encoder size (every \seanet{} model) & width $\dmodel = 64$, 4 blocks; 41{,}324--69{,}768 parameters \\
 Optimiser              & Adam \citep{kingma2015adam}, lr $=1.25\times10^{-3}$, weight decay $=1.2\times10^{-4}$ \\
 Epochs / early stopping& max 400 epochs; stop after 60 epochs with no improvement \\
 Batch size             & $\min(\lfloor n_{\text{train}}/10 \rfloor, 16)$, floor of 2 \\
@@ -99,38 +93,34 @@ Hardware               & Grid'5000 GPU nodes (Lille, Sophia) \\
 \end{center}
 \end{table}
 
-\paragraph{Metrics reported.}
-Classification is measured by accuracy and test loss, explanation quality by AOPCR and NDCG@$n$
-(\Cref{sec:bg:metrics}), and cost by the parameter count, the saved model size and the time for one
-prediction. Cost is reported next to accuracy deliberately: without it, an improvement caused by a
-better design cannot be distinguished from one caused by additional capacity. Over the \ucr{}
-archive, results are summarised by the mean accuracy rank across datasets and by the win/tie/loss
-record per dataset rather than by the mean accuracy alone, following the recommendation of
-\citet{demsar2006statistical}, because a mean over heterogeneous datasets can be dominated by a
-small number of them.
-
-% ---------------------------------------------------------------------
-\subsection{Experimental pipeline}
-\label{sec:setup:pipeline}
+Two settings adapt to the dataset rather than being fixed, because the \ucr{} archive spans 40 to
+24{,}000 series: the validation split is held out only when a dataset has at least 100 training
+series, and the batch size scales with the training set. The number of seeds also changed during the
+internship: the initial experiments were single-seed, because 72 variants over 129 datasets was
+already close to the available compute budget (\Cref{app:constraints}), and two further seeds were
+added afterwards for the four models on which the main claims rest, so variance estimates exist
+exactly where the claims are made. Classification is measured by accuracy and test loss, explanation
+quality by AOPCR and NDCG@$n$ (\Cref{sec:bg:metrics}), and cost by parameter count, saved model size
+and time per prediction; over the \ucr{} archive the mean accuracy is reported together with the
+mean rank and the win/tie/loss record, following \citet{demsar2006statistical}, because a mean over
+heterogeneous datasets can be dominated by a few of them.
 
 \begin{contribution}
-The experimental pipeline -- configuration system, model registry, resumable multi-dataset runs,
-results store, and automatic figure and table generation -- is my own work. It is what made it
-possible to train and compare 72 model variants over 129 datasets within the internship.
+The experimental pipeline is my own work, and it is what made 72 variants over 129 datasets possible
+within the internship. A model is always \emph{encoder $+$ pooling head}, both selected by name in a
+small YAML file rather than hardcoded, so every additional row in the results tables is a new
+configuration file and not a new script. Each model writes into its own results directory, one row
+per dataset per seed, runs are resumable after a job hits the cluster wall-clock limit, and every
+figure and table in this report is regenerated from the stored results by a single command --
+which is why no number reported here was transcribed by hand. The stack is PyTorch
+\citep{paszke2019pytorch}, MLflow for tracking and Optuna \citep{akiba2019optuna} for the
+hyperparameter search.
 \end{contribution}
 
-A model is always defined as \emph{encoder $+$ pooling head}, and both are selected by name in a
-small configuration file rather than being hardcoded. Two registries, one for encoders and one for
-heads, map a name to the corresponding class, and a builder connects the two. This is what allowed
-72 variants to exist without 72 near-identical copies of the training code: every additional row in
-the results tables is a new configuration file, not a new script, and each ablation of
-\Cref{app:ablations} is a copy of an existing configuration with one line changed.
-
-Two properties matter for the validity of the results. Each model writes into its own results
-directory, one row per dataset per seed, so no two models can overwrite each other. And every figure
-and \LaTeX{} table in this report is generated from those stored results by a single command
-(\Cref{app:commands}), which is why no number reported here was transcribed by hand. The stack is
-PyTorch \citep{paszke2019pytorch}, MLflow for tracking and Optuna \citep{akiba2019optuna} for the
-search of \Cref{app:extra}. Development and small tests were local; every result reported here was
-produced on Grid'5000 Linux GPU nodes. The remaining engineering details are in
-Appendix~\ref{app:repro}.
+\paragraph{Supplementary material.}
+To keep this report readable, the material that supports the results without being needed to follow
+them is published with the code rather than printed here: the complete 72-model leaderboard, the
+encoder $\times$ pooling head grid, the per-dataset \ucr{} results, the ensemble and Optuna
+experiments, the win/tie/loss and accuracy-versus-length analyses, the pooling-head diagrams, the
+exact commands and the software environment. All of it, together with the implementation, is in the
+repository README at \repolink{}, on branch \repobranch{}, which is the branch matching this report.

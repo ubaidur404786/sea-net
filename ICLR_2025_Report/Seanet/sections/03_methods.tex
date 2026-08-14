@@ -21,20 +21,14 @@ I refer to the proposed architecture as \seanet{}, for \emph{Selective Evidence 
 Network}, because it combines multi-scale temporal feature extraction with selective, class-specific
 aggregation of the evidence found at each time step. A complete \seanet{} model is always the pair
 \emph{encoder $+$ pooling head}. Five design goals, fixed before implementation, motivate the
-choices that follow.
-
-\begin{enumerate}\itemsep1pt
-  \item[\textbf{G1}] \textbf{Small.} Substantially fewer parameters than InceptionTime, at a scale
-        compatible with a microcontroller target.
-  \item[\textbf{G2}] \textbf{At least as accurate}, under an identical training configuration.
-  \item[\textbf{G3}] \textbf{Length-preserving.} One embedding per time step at every stage: the
-        interpretation has one value per time step and AOPCR masks individual time steps, so
-        $\nsteps$ must never change inside the encoder.
-  \item[\textbf{G4}] \textbf{Local.} Each embedding must depend on a bounded window of the input,
-        otherwise the importance map becomes diffuse and uninformative.
-  \item[\textbf{G5}] \textbf{Modular.} Encoder and pooling head selectable from a configuration
-        file, so any pair can be trained without modifying code.
-\end{enumerate}
+choices that follow. \textbf{G1, small}: substantially fewer parameters than InceptionTime, at a
+scale compatible with a microcontroller target. \textbf{G2, at least as accurate}, under an
+identical training configuration. \textbf{G3, length-preserving}: one embedding per time step at
+every stage, because the interpretation has one value per time step and AOPCR masks individual time
+steps, so $\nsteps$ must never change inside the encoder. \textbf{G4, local}: each embedding must
+depend on a bounded window of the input, otherwise the importance map becomes diffuse and
+uninformative. \textbf{G5, modular}: encoder and pooling head selectable from a configuration file,
+so any pair can be trained without modifying code.
 
 % =====================================================================
 \subsection{The \seanet{} encoder}
@@ -436,8 +430,11 @@ argues for,
 \end{equation}
 so a head is fully specified by two choices: the shape of the attention branch $\mathcal{A}$
 (slot~1) and the operator combining the $\nsteps$ evidence values $g_j^k$ into $\bagpred^{\,k}$
-(slot~2). \Cref{fig:pool_template} draws that template and \Cref{fig:pool_aggregators} applies each
-head's slot-2 operator to the same evidence profile.
+(slot~2). Only slot~2 distinguishes five of the seven heads: they keep the class-wise attention
+branch and change how the $\nsteps$ evidence values are reduced to one number -- a plain mean, a
+smooth weighting, a hard selection of the largest few, or a blend with the maximum. The two
+diagrams that draw the shared template and compare the seven aggregators side by side on the same
+evidence profile are in the repository documentation (\Cref{sec:setup:pipeline}).
 
 For every head, $\interp$ is not produced by a separate branch: it is exactly the per-time-step,
 per-class quantity that $\bagpred$ is built from -- \Cref{eq:cw_bag}, for instance, sets
@@ -451,28 +448,10 @@ addresses~L1, \Cref{sec:pool:softmax} addresses~L2, and
 \Cref{sec:pool:adaptive}--\Cref{sec:pool:dsmil} address~L3 through five different aggregation
 strategies.
 
-\begin{figure}[htbp]
-  \centering
-  \input{figures/fig_pool_template}
-  \caption{The template shared by every MIL pooling head. The embedding $\emb_j$ feeds an attention
-  branch (\textbf{slot 1}) and a per-time-step classifier; their product is the evidence $g_j^k$,
-  and an aggregator over time (\textbf{slot 2}) reduces the $\nsteps$ evidence values to the bag
-  score. The interpretation consists of those same $g_j^k$ values rather than a second branch, which
-  is why it cannot disagree with the prediction.}
-  \label{fig:pool_template}
-\end{figure}
-
-\begin{figure}[htbp]
-  \centering
-  \input{figures/fig_pool_aggregators}
-  \caption{What each pooling head does in slot~2, applied to the \emph{same} evidence profile
-  $g_j^k$ so that the panels differ only by the aggregator. Conjunctive and class-wise pooling count
-  every time step equally; softmax and adaptive pooling weight them smoothly; Top-$k$ keeps a few
-  and discards the rest outright; attention-max and dual-stream concentrate on one decisive step.
-  Only Top-$k$ makes the interpretation exactly zero where the model used no evidence, which is the
-  mechanism behind its NDCG@$n$ advantage in \Cref{sec:results}.}
-  \label{fig:pool_aggregators}
-\end{figure}
+% The two pooling diagrams (figures/fig_pool_template.tex and
+% figures/fig_pool_aggregators.tex) were moved to the repository documentation: they cost most of
+% a page each and the prose above already says what each head puts in the two slots. The files are
+% kept, so putting either back is one \input away.
 
 % ---------------------------------------------------------------------
 \subsubsection{Class-wise conjunctive pooling}
