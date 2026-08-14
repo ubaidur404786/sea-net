@@ -1,0 +1,32 @@
+% !TEX root = ../main.tex
+% The reference pipeline with the four places an encoder variant can plug in.
+% Drawn once; every variant panel carries the letter of the zone it uses.
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[seavar]
+  \node[io]  (mx)    at ( 0.6,0) {$\bag$};
+  \node[blk] (mstem) at ( 3.0,0) {stem};
+  \node[blk] (mblk)  at ( 5.9,0) {blocks};
+  \node[io]  (mh)    at ( 8.6,0) {$\mathbf{h}$};
+  \node[blk, dashed] (mpool) at (11.6,0) {pooling head};
+
+  \draw[->] (mx.east)    -- (mstem.west);
+  \draw[->] (mstem.east) -- (mblk.west);
+  \draw[->] (mblk.east)  -- (mh.west);
+  \draw[->] (mh.east)    -- (mpool.west);
+
+  \node[zone] at (1.85, 0) {A};
+  \node[zone] at (7.35, 0) {B};
+  \node[zone] at ($(mblk.north east)+(0.12,0.10)$) {D};
+
+  \begin{scope}[on background layer]
+    \node[draw=black!60, dashed, rounded corners=3pt, inner sep=5pt,
+          fit=(mstem)(mblk)(mh)] (cbox) {};
+  \end{scope}
+  \node[zone] at (cbox.north west) {C};
+
+  \node[anchor=west, black!70] at (-0.2,-1.35)
+    {\textbf{A} = before the stem \quad\textbullet\quad
+     \textbf{B} = after the blocks, acting on $\mathbf{h}$ \quad\textbullet\quad
+     \textbf{C} = wraps the whole encoder \quad\textbullet\quad
+     \textbf{D} = inside every block};
+\end{tikzpicture}}

@@ -1,0 +1,157 @@
+% !TEX root = ../main.tex
+% =====================================================================
+% 6. DISCUSSION
+%
+% Section 5 says WHAT happened; this section says WHAT IT MEANS.
+% Only conclusions the tables and figures actually support, and no
+% repetition of the results themselves.
+% =====================================================================
+
+\section{Discussion}
+\label{sec:discussion}
+
+% ---------------------------------------------------------------------
+\subsection{Why the parameter reduction did not cost accuracy}
+\label{sec:disc:worked}
+
+The bottleneck encoder removes parameters from one specific place, and the results indicate it was
+the right place. After a convolution is split into a depthwise and a pointwise step, the pointwise
+step dominates: at $\dmodel = 128$ it costs three times as much as all three depthwise convolutions
+combined (\Cref{sec:arch:block}). The depthwise step looks along time; the pointwise step only mixes
+channels. \Cref{eq:bottleneck} halves the second and leaves the first untouched, which is why the
+encoder can lose 28\,\% of its weights without losing the mechanism that extracts temporal patterns.
+What the results add is that most of the channel-mixing capacity was not being used productively:
+\mbot{} matches or exceeds the re-trained \millet{} baseline on accuracy, AOPCR and NDCG@$n$
+simultaneously with 90\,\% fewer parameters (\Cref{tab:web_main}). That is a claim about the
+baseline's capacity as much as about the proposed encoder, and the parameter arithmetic alone could
+not have predicted it.
+
+% ---------------------------------------------------------------------
+\subsection{Why Top-$k$ pooling improved the explanations}
+\label{sec:disc:topk}
+
+Top-$k$ pooling produced the best NDCG@$n$ of every model with complete seed data, and the mechanism
+can be identified rather than inferred. Averaging only the $\kappa \nsteps$ largest evidence values
+makes $\interp_{k,j}$ exactly zero everywhere the model did not use, instead of a small weight that
+never quite reaches zero (\Cref{fig:pool_aggregators}); since NDCG@$n$ scores whether the truly
+modified steps appear at the top of the ranking, removing the background from that ranking is
+directly what the metric rewards.
+
+The $\kappa$ ablation (\Cref{tab:ablation_topk}) confirms this and bounds it. NDCG@$n$ is highest at
+$\kappa = 0.1$ (0.777) and falls monotonically as $\kappa$ grows towards 1 (0.722, the value of
+class-wise conjunctive pooling), exactly the behaviour the design predicts. Accuracy is not
+monotone: it peaks between $\kappa = 0.1$ and $0.25$ and collapses to 0.888 at $\kappa = 0.05$, so
+selecting too few time steps discards evidence the classifier needs and the mechanism has an optimum
+rather than improving without limit. The complementary effect appears in the attention entropy term:
+switching it off raises accuracy from 0.938 to 0.950 while lowering AOPCR from 2.778 to 2.303 and
+NDCG@$n$ from 0.777 to 0.765 (\Cref{tab:ablation_focus}). Both experiments point the same way --
+concentrating the evidence improves the explanation and costs about one accuracy point.
+
+% ---------------------------------------------------------------------
+\subsection{Encoder and pooling head interact}
+\label{sec:disc:interaction}
+
+The best model of the study, \mgat{}, is not built from the individually best encoder and the
+individually best pooling head: averaged over their pairings, the gated encoder reaches 0.902 and
+Top-$k$ pooling 0.904, both mid-table (\Cref{tab:ablation_encoder}, \Cref{tab:ablation_pooling}).
+Two ordinary components producing the best combination is evidence of an interaction. A plausible
+mechanism is that the gated encoder's channel gate (\Cref{eq:gate}) already suppresses the channels
+carrying no signal, making a hard-selection head the natural partner, whereas a smoother head would
+reintroduce the neighbouring evidence the gate has just attenuated. This is consistent with the grid
+but not established by it: the one-factor-at-a-time experiment that would separate this mechanism
+from alternatives was not run. The practical consequence is that encoder and pooling head cannot be
+optimised independently, and since neither component's spread dominates the other's
+(\Cref{sec:res:ucr}), the combination has to be searched rather than composed.
+
+% ---------------------------------------------------------------------
+\subsection{Where the approach failed}
+\label{sec:disc:negative}
+
+\paragraph{Dual-stream pooling: a safety property that training never exercises.}
+This is the clearest negative result. Property~\ref{prop:ds} states that dual-stream pooling cannot
+be worse than the conjunctive baseline, because its blend $\lambda$ can reach 0 and recover it
+exactly. In practice it is the weakest head tested by a wide margin: mean \webtraffic{} accuracy
+0.744 over its four encoder pairings against 0.90 and above for class-wise, softmax conjunctive and
+Top-$k$ pooling, with one pairing collapsing to 0.556 (\Cref{tab:ablation_pooling}).
+
+The property is about representational capacity, while the failure is one of optimisation. No term
+in \Cref{eq:loss} pushes $\lambda$ towards 0, so if the critical-instance stream of
+\Cref{eq:ds_query} learns a poor query early in training, gradient descent has no incentive to return
+to the safe mean. The model \emph{can} represent the baseline; it never finds it.
+
+\paragraph{Per-class gated attention: no fallback at all.}
+Gated attention is a weaker version of the same problem: it is the only proposed head with no blend
+parameter, so no setting of its weights reduces it to conjunctive pooling (\Cref{sec:pool:gated}).
+Its mean \webtraffic{} accuracy of 0.918 is respectable, but it is never the best partner for any
+encoder, unlike Top-$k$ and class-wise pooling which each produce a top-ten model. Without a
+known-good configuration to fall back on, a poorly trained gate has nothing to recover to, and the
+head settles in the middle of the ranking rather than either winning or failing outright.
+
+\paragraph{What both cases indicate.}
+A mechanism that is safe or expressive by construction only pays off if the training procedure
+reaches the regime in which that property applies. Neither head reached it under the single generic
+configuration used across the whole study (\Cref{sec:setup:protocol}). Two concrete remedies follow:
+initialise $\lambda$ near 0 so the model has to earn its way up, or add a penalty that keeps a
+blended head close to its safe branch early in training.
+
+% ---------------------------------------------------------------------
+\subsection{How the numbers should be read}
+\label{sec:disc:reading}
+
+\paragraph{AOPCR is unnormalised, with direct measured evidence.}
+AOPCR is an area under a curve of raw confidence differences, so its scale follows the scale of the
+model's logits and has no fixed range (\Cref{sec:bg:metrics}). The same architecture was trained
+twice, changing only the training configuration: once under \Cref{tab:protocol} and once under
+\millet{}'s published one (1500 epochs, no weight decay, no label smoothing). On \webtraffic{} the
+first scores AOPCR 2.57 and the second 13.27 -- same encoder, same pooling head, same metric code,
+same dataset, a factor of five from the training configuration alone. This is a measurement artefact
+rather than a difference in explanation quality, and it is why the AOPCR column of
+\Cref{tab:web_main} must never be compared with an AOPCR published elsewhere, including \millet{}'s
+own 4.55.
+
+\paragraph{Differences smaller than the seed spread are not results.}
+Where three seeds are available the spread is not negligible: accuracy standard deviation ranges
+from 0.003 for \mgat{} to 0.030 for \minp{}, and AOPCR is proportionally noisier still -- 0.437 for
+\minp{}, about a sixth of its own mean, and 0.884 for the re-trained \millet{} baseline
+(\Cref{tab:web_main}). This was applied as a rule in both directions. \minp{}'s AOPCR advantage over
+\mbot{} (2.651 against 2.621) is far smaller than either model's standard deviation and is reported
+as noise, not as a result; equally, \mgat{}'s accuracy lead over \mbot{} (0.955 against 0.947) cannot
+be called decisive, because the second model's spread is 0.016. For the single-seed models no such
+test is possible, and those numbers are indicative rather than exact.
+
+\paragraph{The training budget, and what it costs.}
+The configuration of \Cref{tab:protocol} trains for at most 400 epochs with patience 60, whereas the
+published \millet{} numbers come from a configuration roughly four times longer with different
+regularisation. Running their configuration on this pipeline, identical architecture and code, raises
+\webtraffic{} accuracy from 0.887 to 0.920 and the \ucr{} mean from 0.8274 to 0.8434 against a
+published 0.8445 (\Cref{tab:ucr_accuracy}) -- a reproduction rather than an approximation. So the
+re-implementation was never the source of the shortfall, and the gap can be attributed to the budget
+with a measured number. Since every \seanet{} model here was trained under the short configuration,
+the 0.016 between the two \millet{} rows is the right order of magnitude to keep in mind when reading
+the \ucr{} gap of \Cref{sec:res:ucr}; it cannot simply be transferred to the \seanet{} encoders,
+which is why re-training them under the long configuration is the first item of future work.
+
+% ---------------------------------------------------------------------
+\subsection{Limitations}
+\label{sec:disc:limitations}
+
+\begin{itemize}\itemsep2pt
+  \item \textbf{Explanation correctness is measured on one dataset.} NDCG@$n$ requires
+        per-time-step ground truth, which only \webtraffic{} provides, and \webtraffic{} is
+        synthetic: its important regions are generated rather than observed. How the result holds on
+        real, noisier data is unknown.
+  \item \textbf{The headline models were selected on that same dataset.} \Cref{sec:res:ucr} shows
+        the cost directly: over the 85 \ucr{} datasets the re-trained baseline is ahead of both.
+  \item \textbf{Most models have a single seed.} Four models have 3 seeds on \webtraffic{} and two
+        of them also over the \ucr{} archive; the other 68 have one. Where repeats exist the spread
+        was large enough to change how a claim is phrased (\Cref{sec:disc:reading}), which is a
+        reason for caution about the single-seed numbers.
+  \item \textbf{Only univariate series were tested.} The encoder is indifferent to the number of
+        input channels, so multivariate input should work mechanically, but this was not verified.
+  \item \textbf{Faithfulness is not usefulness.} AOPCR and NDCG@$n$ both measure whether the stated
+        explanation matches what the model used. Neither establishes that a person would find the
+        highlighted time steps informative, which would require a human study.
+  \item \textbf{Nothing has run on a real microcontroller.} The cost measurements indicate that it
+        should fit (\Cref{tab:cost}), but that is not the same as a working deployment
+        (objective~O6, \Cref{tab:objectives}).
+\end{itemize}

@@ -560,7 +560,7 @@
       "section": "main",
       "folder": "01_main_figures",
       "title": "Win / tie / loss against MILLET (accuracy)",
-      "caption": "Per-dataset accuracy record of each fully-swept model against the published MILLET results, over the 84 datasets both report. Differences within 0.005 count as ties, since that is below the resolution of these test sets. Sorted by number of wins.",
+      "caption": "Per-dataset accuracy record of each fully-swept model against the published MILLET results, over the 84 datasets both report. Differences within 0.005 count as ties, since that is below the resolution of these test sets. Sorted by number of wins; the rank prefix uses competition ranking, so models with an equal number of wins share a rank and are marked with '='.",
       "question": "How often does each model actually beat the published baseline on accuracy?",
       "label": "fig:fig5_win_tie_loss_accuracy",
       "placement": "t",
@@ -660,7 +660,7 @@
     },
     {
       "name": "table_appendix_full_leaderboard",
-      "caption": "Complete leaderboard: all 72 evaluated models, ranked by WebTraffic accuracy. Encoder and pooling names are prefixed sea\\_ for components introduced in this work and mil\\_ for components reused unchanged from MILLET. A dash marks a model screened on WebTraffic only.",
+      "caption": "Complete leaderboard: all 72 evaluated models, ranked by WebTraffic accuracy. The Model column is the configuration identifier under configs/models/, so any model named in the report can be looked up here. Encoder and pooling names are prefixed sea\\_ for components introduced in this work and mil\\_ for components reused unchanged from MILLET. A dash marks a model screened on WebTraffic only.",
       "label": "tab:full_leaderboard",
       "rows": 72,
       "files": {

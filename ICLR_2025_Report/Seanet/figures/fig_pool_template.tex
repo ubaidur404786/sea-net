@@ -1,0 +1,26 @@
+% !TEX root = ../main.tex
+% The template every MIL pooling head in this report shares.
+% Slot 1 = the attention branch, slot 2 = the aggregator over time.
+\resizebox{0.98\linewidth}{!}{%
+\begin{tikzpicture}[seavar]
+  \node[io]  (tz)   at ( 0.5, 0)    {$\emb_j$};
+  \node[new] (tat)  at ( 3.7, 0.8)  {attention branch $\mathcal{A}(\emb_j)$};
+  \node[blk] (tcl)  at ( 3.7,-0.8)  {classifier $\instpred_j = W_c\emb_j + \mathbf{b}_c$};
+  \node[op]  (tmu)  at ( 7.4, 0)    {$\times$};
+  \node[io]  (tg)   at ( 9.3, 0)    {$g_j^k$};
+  \node[new] (tag)  at (12.6, 0)    {aggregate over time};
+  \node[io]  (ty)   at (15.9, 0)    {$\bagpred^{\,k}$};
+  \node[io]  (tphi) at (12.6,-1.7)  {interpretation $\interp_{k,j} = g_j^k$};
+
+  \draw[->] (tz.east)  |- (tat.west);
+  \draw[->] (tz.east)  |- (tcl.west);
+  \draw[->] (tat.east) -| (tmu.north);
+  \draw[->] (tcl.east) -| (tmu.south);
+  \draw[->] (tmu.east) -- (tg.west);
+  \draw[->] (tg.east)  -- (tag.west);
+  \draw[->] (tag.east) -- (ty.west);
+  \draw[->] (tg.south) |- (tphi.west);
+
+  \node[zone] at (tat.north east) {1};
+  \node[zone] at (tag.north east) {2};
+\end{tikzpicture}}

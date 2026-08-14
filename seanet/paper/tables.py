@@ -200,11 +200,22 @@ def leaderboard_table(lb: pd.DataFrame) -> Dict:
                            "web_ndcg", "web_loss", "ucr85_n", "ucr85_acc", "params", "size_mb"]
                if c in lb.columns]
     show = lb[columns].copy()
-    show["model"] = show["model"].map(lambda m: S.shorten(m, 26))
+    # This table is a LOOKUP table: a reader who meets a model name in the report has to be able
+    # to find its row here. The abbreviated display label is NOT good enough for that, because
+    # shorten() cuts the middle out and two different models can end up with the same string --
+    # seanet_gated_mschan and seanet_inputgate_mschan both became "sea channels...ea topk conj".
+    # The config identifier is unique, is what the YAML files and the commands use, and is what
+    # Appendix C refers to, so print that instead.
+    if "config" in lb.columns:
+        show["model"] = lb["config"].astype(str)
+    else:
+        show["model"] = show["model"].map(lambda m: S.shorten(m, 26))
     return write_table(
         show, "table_appendix_full_leaderboard", columns=columns,
         caption=(f"Complete leaderboard: all {len(show)} evaluated models, ranked by WebTraffic "
-                 f"accuracy. Encoder and pooling names are prefixed sea\\_ for components introduced "
+                 f"accuracy. The Model column is the configuration identifier under "
+                 f"configs/models/, so any model named in the report can be looked up here. "
+                 f"Encoder and pooling names are prefixed sea\\_ for components introduced "
                  f"in this work and mil\\_ for components reused unchanged from MILLET. A dash marks "
                  f"a model screened on WebTraffic only."),
         label="tab:full_leaderboard")

@@ -1,0 +1,39 @@
+% !TEX root = ../main.tex
+% SEA-Net bottleneck encoder (zone D). Box heights are drawn to scale, so the
+% narrow middle is visible rather than only stated.
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[seavar]
+  \node[zone] at (12.6,0.9) {D};
+
+  % --- the standard pointwise convolution, for comparison ---
+  \node[side] (aL1) at (1.5, 0) {standard:\ };
+  \node[chan, minimum height=12mm] (ac1) at (2.1, 0) {};
+  \node[blk]                       (ap)  at (5.8, 0) {$1{\times}1$ pointwise, $\dmodel \to \dmodel$};
+  \node[chan, minimum height=12mm] (ac2) at (9.5, 0) {};
+  \node[anchor=west, black!75] at (10.2, 0) {cost $=\dmodel^2 = 4096$ weights};
+
+  \draw[->] (ac1.east) -- (ap.west);
+  \draw[->] (ap.east)  -- (ac2.west);
+  \node[anchor=south, black!70, font=\scriptsize] at (ac1.north) {$\dmodel = 64$};
+  \node[anchor=south, black!70, font=\scriptsize] at (ac2.north) {$\dmodel = 64$};
+
+  % --- the bottleneck: same in, same out, narrow middle ---
+  \node[side] (aL2) at (1.5,-2.0) {bottleneck:\ };
+  \node[chan, minimum height=12mm] (ac3) at (2.1,-2.0) {};
+  \node[new]                       (asq) at (4.0,-2.0) {squeeze\\[-1pt]$\dmodel \to r$};
+  \node[chan, minimum height=3mm]  (ann) at (5.8,-2.0) {};   % 3mm = 12mm / 4, to scale
+  \node[new]                       (aex) at (7.6,-2.0) {expand\\[-1pt]$r \to \dmodel$};
+  \node[chan, minimum height=12mm] (ac4) at (9.5,-2.0) {};
+  \node[anchor=west, black!75] at (10.2,-2.0) {cost $=2\dmodel r = \dmodel^2/2 = 2048$ weights};
+
+  \draw[->] (ac3.east) -- (asq.west);
+  \draw[->] (asq.east) -- (ann.west);
+  \draw[->] (ann.east) -- (aex.west);
+  \draw[->] (aex.east) -- (ac4.west);
+
+  \node[anchor=south, black!70, font=\scriptsize] at (ac3.north) {$\dmodel = 64$};
+  \node[anchor=south, black!70, font=\scriptsize] at (ac4.north) {$\dmodel = 64$};
+  \node[anchor=south, black!70] at (5.8,-1.72) {$r = \dmodel/4 = 16$};
+  \node[anchor=north, black!70, align=center] at (5.8,-2.75)
+        {same input, same output -- only the middle is narrow (heights drawn to scale)};
+\end{tikzpicture}}

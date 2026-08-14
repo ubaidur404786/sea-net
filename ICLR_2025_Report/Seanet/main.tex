@@ -1,5 +1,5 @@
 % =====================================================================
-% SEA-Net -- FINAL INTERNSHIP REPORT (template / first draft skeleton)
+% SEA-Net -- MASTER'S INTERNSHIP REPORT
 %
 % This is the ONLY file you compile. Every section lives in sections/
 % and is pulled in with \input, so each file stays short and easy to edit.
@@ -11,16 +11,22 @@
 %     pdflatex main
 % or press Ctrl+Alt+B in VS Code (LaTeX Workshop).
 %
-% Target length: 20-30 pages INCLUDING the appendix (examiner rule).
-% See README.md in this folder for the page budget per section.
+% Target length: about 30 pages INCLUDING the appendices.
+% Reading order of the report:
+%   Problem -> Motivation -> State of the art -> Contributions -> Background
+%   -> MILLET baseline -> Proposed methods -> Methodology -> Results
+%   -> Discussion -> Conclusion -> References -> Appendices
+% The internship context (host team, objectives, constraints, skills) is in
+% Appendix A on purpose, so it does not interrupt the scientific story.
 % =====================================================================
 
 \documentclass{article}
 
-% ICLR 2025 style. The .sty file sits next to this file, so no path needed.
+% ICLR 2025 style file (page geometry and fonts only). The .sty sits next to
+% this file, so no path is needed.
 \usepackage{iclr2025_conference,times}
 
-% Keep this ON for the internship report:
+% Keep this ON:
 %   - it prints our real name (no anonymous submission here),
 %   - it adds page numbers,
 %   - it removes the ICLR line numbers in the margin.
@@ -31,7 +37,6 @@
 
 % ---------------------------------------------------------------------
 % Title page information
-% TODO: check the exact wording of the title with my supervisor.
 % ---------------------------------------------------------------------
 \title{SEA-Net: A Small and Inherently Interpretable\\
        Neural Network for Time Series Classification\\[6pt]
@@ -39,10 +44,8 @@
 
 \author{
 Ubaid Ur Rehman \\
-% \todo{Master programme name, e.g. M2 AIEDA} \\
 {M2 DSAI} \\
-% \todo{Host laboratory / team / department} \\
-{Crystal Lab / Fox Team / Computer Science Department} \\
+{CRIStAL Lab / Fox Team / Computer Science Department} \\
 \texttt{ubaid-ur.rehman@etu.univ-cotedazur.fr} \\[4pt]
 \textbf{Supervisor:} {Tanmoy MONDAL} \\
 \textbf{Internship period:} {01-June-2026} -- {30-September-2026} \\
@@ -53,51 +56,78 @@ Ubaid Ur Rehman \\
 
 \maketitle
 
+% The ICLR style writes "Published as a conference paper at ICLR 2025" into
+% the running head from inside \maketitle. This is an internship report, not
+% a conference submission, so the head is cleared here -- right AFTER
+% \maketitle, because that is where the style sets it.
+\lhead{}\chead{}\rhead{}
+
 % ---------------------------------------------------------------------
-% Abstract (write it LAST, when all the numbers are frozen)
+% Abstract. Kept to two short paragraphs so that the title block and the
+% abstract fit on the same page.
 % ---------------------------------------------------------------------
 \begin{abstract}
 \input{sections/00_abstract}
 \end{abstract}
 
 % ---------------------------------------------------------------------
-% Table of contents.
-% Switched OFF to stay inside the 30-page limit: it cost about 3 pages on
-% its own. Put it back by un-commenting the two lines below.
+% Table of contents, held to one page: \small type, sub-subsections hidden
+% (tocdepth 2) and the vertical space before each section entry reduced.
 % ---------------------------------------------------------------------
-% {\small\tableofcontents}
-% \newpage
+\setcounter{tocdepth}{2}
+\newpage           % so the contents get a page of their own, exactly one page
+\begingroup
+  \small
+  \setlength{\parskip}{0pt}
+  \makeatletter
+  \renewcommand*\l@section[2]{%
+    \ifnum \c@tocdepth >\z@
+      \addpenalty\@secpenalty
+      \addvspace{0.35em \@plus\p@}%
+      \setlength\@tempdima{1.5em}%
+      \begingroup
+        \parindent\z@ \rightskip\@pnumwidth
+        \parfillskip-\@pnumwidth
+        \leavevmode\bfseries
+        \advance\leftskip\@tempdima \hskip-\leftskip
+        #1\nobreak\hfil\nobreak\hb@xt@\@pnumwidth{\hss #2}\par
+      \endgroup
+    \fi}
+  \makeatother
+  \tableofcontents
+\endgroup
+\newpage
 
 % ---------------------------------------------------------------------
-% Main body. The order follows the examiner's required structure:
-%   Introduction -> What I had to do -> What I did / how / why
-%   -> Results -> Conclusion -> References -> Additional results
+% Main body: the scientific story, uninterrupted.
 % ---------------------------------------------------------------------
 \input{sections/01_introduction}
-\input{sections/02_context}
-\input{sections/03_objectives}
-\input{sections/04_background}
-\input{sections/05_architecture}
-\input{sections/06_pooling}
-\input{sections/07_setup}
-\input{sections/08_results}
-\input{sections/09_discussion}
-\input{sections/10_skills}
-\input{sections/11_conclusion}
+\input{sections/02_background}
+\input{sections/03_methods}
+\input{sections/04_methodology}
+\input{sections/05_results}
+\input{sections/06_discussion}
+\input{sections/07_conclusion}
 
 % ---------------------------------------------------------------------
 % Bibliography. All entries live in refs.bib.
 % Cite with \citep{key} (in brackets) or \citet{key} (in the sentence).
 % ---------------------------------------------------------------------
+% \small on the bibliography: it is a long list and the style is generous with
+% vertical space, so one size down saves most of a page without hurting legibility.
+{\small
 \bibliography{refs}
-\bibliographystyle{iclr2025_conference}
- 
+\bibliographystyle{iclr2025_conference}}
+
 % ---------------------------------------------------------------------
-% Appendix = the "Additional Results" the examiner asked for.
-% Everything that supports the story but is not needed to follow it.
+% Appendices:
+%   A -- the internship itself (team, objectives, constraints, skills)
+%   B -- additional results
+%   C -- reproducibility and implementation details
 % ---------------------------------------------------------------------
 \appendix
-\input{sections/A1_additional_results}
-\input{sections/A2_reproducibility}
+\input{sections/A1_internship}
+\input{sections/A2_additional_results}
+\input{sections/A3_reproducibility}
 
 \end{document}

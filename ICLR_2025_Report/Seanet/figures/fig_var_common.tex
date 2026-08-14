@@ -1,0 +1,29 @@
+% !TEX root = ../main.tex
+% =====================================================================
+% fig_var_common.tex -- the drawing style shared by every encoder-variant
+% diagram, defined once so all the small panels look the same.
+%
+% Loaded from preamble.tex, so any figures/fig_var_*.tex file can just say
+%     \begin{tikzpicture}[seavar] ... \end{tikzpicture}
+%
+% Colour rule used everywhere: ORANGE = what the variant adds,
+% GREY = the unchanged encoder.
+% =====================================================================
+
+\tikzset{
+  seavar/.style = {
+    font=\small,
+    >={Stealth[length=1.8mm]},
+    blk/.style   = {draw=black!55, fill=black!7,  rounded corners=2pt, minimum height=6mm,
+                    align=center, inner xsep=3pt},
+    new/.style   = {draw=orange!65!black, fill=orange!18, rounded corners=2pt, minimum height=6mm,
+                    align=center, inner xsep=3pt},
+    io/.style    = {draw=black!45, fill=black!3, rounded corners=1pt, minimum height=5.5mm,
+                    minimum width=6mm, align=center},
+    chan/.style  = {draw=black!55, fill=black!10, rounded corners=1pt, minimum width=4mm},
+    op/.style    = {draw=black!65, circle, inner sep=0.5pt, minimum size=4.6mm},
+    zone/.style  = {draw=black!70, fill=white, circle, inner sep=0.5pt, minimum size=4.6mm,
+                    font=\small\bfseries},
+    side/.style  = {anchor=east, black!70},
+  }
+}

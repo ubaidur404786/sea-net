@@ -21,6 +21,7 @@
 \usepackage{microtype}      % small spacing tweaks, text looks cleaner
 \usepackage{tikz}           % draw diagrams directly in LaTeX (no external image file)
 \usetikzlibrary{positioning, arrows.meta, calc, fit, backgrounds}
+\usepackage{caption}        % smaller, tighter figure/table captions
 \usepackage{url}
 \usepackage{hyperref}       % clickable links, \ref and \cite
 \usepackage{cleveref}       % \cref{fig:x} prints "Figure 1" by itself
@@ -34,6 +35,19 @@
 % and my own drawings go in the local figures/ folder.
 \graphicspath{{./}{figures/}{../../}}
 
+% --- Page geometry ----------------------------------------------------
+% The ICLR style sets a 5.5 in text block inside 8.5 in paper, i.e. 1.5 in of
+% margin on EACH side. That is a conference-proceedings convention, not a
+% requirement for an internship report, and here it was simply wasting paper:
+% widening the text block to 6.4 in and the height to 9.2 in fits noticeably
+% more text on every page and removes several pages of blank margin, without
+% changing a single word. The side margin is now (8.5 - 6.4)/2 = 1.05 in, so
+% \oddsidemargin = 1.05 - 1 = 0.05 in (LaTeX measures from a 1 in origin).
+\setlength{\textwidth}{6.4in}
+\setlength{\oddsidemargin}{0.05in}
+\setlength{\evensidemargin}{0.05in}
+\setlength{\textheight}{9.2in}
+
 % --- Float placement -------------------------------------------------
 % This report is table-heavy, and LaTeX's defaults refuse to put more than
 % 70% of a page into floats. That was leaving half-empty pages all over the
@@ -44,6 +58,43 @@
 \renewcommand{\textfraction}{0.06}
 \renewcommand{\floatpagefraction}{0.80}
 
+% --- Whitespace around floats, captions and equations -----------------
+% The defaults leave large gaps above and below every figure and table, and
+% this report has a lot of both. Tightening them removes several pages of
+% blank space without making anything harder to read.
+\setlength{\textfloatsep}{10pt plus 2pt minus 3pt}   % float next to top/bottom of a page
+\setlength{\intextsep}{9pt plus 2pt minus 3pt}       % float in the middle of the text
+\setlength{\floatsep}{9pt plus 2pt minus 3pt}        % between two floats
+\setlength{\abovecaptionskip}{5pt}
+\setlength{\belowcaptionskip}{0pt}
+
+% Captions one size down and justified, so a long caption costs fewer lines.
+\captionsetup{font=small, labelfont=bf, skip=5pt}
+\captionsetup[sub]{font=small, labelfont=bf}
+
+% Tighter lists. This report has many itemize/enumerate blocks (design goals,
+% limitations, future work), and the default vertical space around and inside a
+% list adds up to about a page over the whole document.
+\usepackage{enumitem}
+\setlist{topsep=3pt, partopsep=0pt, parsep=0pt, itemsep=2pt, leftmargin=1.6em}
+
+% Same idea for the "Property" blocks and the contribution / prior-work boxes.
+\makeatletter
+\def\th@definition{\thm@headfont{\bfseries}\normalfont\thm@preskip4pt\thm@postskip4pt}
+\makeatother
+\setlength{\FrameSep}{3pt}
+
+% Slightly tighter equation spacing (amsmath defaults are generous).
+\setlength{\abovedisplayskip}{6pt plus 2pt minus 2pt}
+\setlength{\belowdisplayskip}{6pt plus 2pt minus 2pt}
+\setlength{\abovedisplayshortskip}{3pt plus 2pt}
+\setlength{\belowdisplayshortskip}{4pt plus 2pt minus 2pt}
+
+% --- Shared TikZ style for the encoder-variant and pooling diagrams ----
+% Defined once in figures/fig_var_common.tex so every small diagram in
+% Section 3 uses the same boxes, arrows and colours.
+\input{figures/fig_var_common}
+
 % =====================================================================
 % DRAFTING HELPERS
 % Turn these off with one line when the report is finished.
@@ -52,7 +103,7 @@
 % Set to \showguidesfalse to hide every "Writing guide" box in the PDF.
 % Do that once the section is written, so the final report is clean.
 \newif\ifshowguides
-\showguidestrue
+\showguidesfalse
 
 % The zoom-in diagram of ONE encoder block (Section 5.3) is a nice-to-have, not
 % something the text depends on. It is drawn in TikZ in figures/fig_block_tikz.tex
@@ -61,7 +112,7 @@
 % no paragraph refers to it, so no \Cref can go missing and no figure number moves
 % except its own. Flip it to false if the page count needs one more page.
 \newif\ifshowblockfig
-\showblockfigtrue
+\showblockfigfalse
 
 \definecolor{shadecolor}{gray}{0.94}
 \definecolor{todored}{rgb}{0.80,0.10,0.10}
@@ -163,6 +214,15 @@
 \newcommand{\millet}{MILLET}
 \newcommand{\webtraffic}{WebTraffic}
 \newcommand{\ucr}{UCR}
+
+% Full model names = ENCODER + POOLING HEAD. Defined once so the same model is
+% never written two different ways. The matching configuration identifiers
+% (seanet_bottleneck_topk and so on) appear only in the appendix leaderboard
+% and in the commands, never in the prose.
+\newcommand{\mbot}{\seanet{} bottleneck $+$ Top-$k$}
+\newcommand{\mgat}{\seanet{} gated $+$ Top-$k$}
+\newcommand{\minp}{\seanet{} input-gated $+$ adaptive class-wise}
+\newcommand{\mmillet}{\millet{} (re-trained)}
 
 
 % "Property" blocks used in the pooling section (each head generalises

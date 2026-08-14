@@ -1,33 +1,34 @@
 % !TEX root = ../main.tex
 % =====================================================================
-% ABSTRACT  (~1/2 page, one paragraph, no citations, no figures)
-% Write this LAST, once every number is frozen.
+% ABSTRACT -- two short paragraphs.
+% Paragraph 1: the problem, why it matters, what I proposed.
+% Paragraph 2: what I evaluated, the main results, the conclusion.
+% No implementation detail here; everything is explained later.
 % =====================================================================
 
-% ---------------------------------------------------------------------
-% WRITING GUIDE (as comments, because the abstract is a quote environment
-% and a grey guide box cannot be placed inside one).
-%
-% One paragraph, about 150-200 words. Recipe, one or two sentences each:
-%   1. THE PROBLEM      - deep models classify time series well but do not say
-%                         WHICH PART of the signal caused the decision.
-%   2. EXISTING ANSWER  - MILLET makes the model explain itself with MIL pooling.
-%   3. WHAT I BUILT     - SEA-Net: a small multi-scale encoder plus my own family
-%                         of MIL pooling heads.
-%   4. HOW I TESTED IT  - WebTraffic + the 85 UCR datasets, 3 seeds, accuracy and
-%                         explanation quality (AOPCR, NDCG@n).
-%   5. HEADLINE NUMBER  - one clear result: accuracy ~ baseline, explanations
-%                         better, parameters down.
-%
-% Questions to answer before writing:
-%   - If a reader only reads this paragraph, what single sentence do I want them
-%     to remember?
-%   - What is the one number that proves it?
-% ---------------------------------------------------------------------
+Deep learning models classify time series accurately, but most of them cannot say
+\emph{which part} of the signal led to their decision. The usual answer is to explain the model
+after training with a separate tool, which adds cost and gives an explanation that is not
+guaranteed to match what the model actually computed. The \millet{} framework solves this by
+building the explanation into the model itself: it scores every time step, and those scores are
+both the prediction and its explanation. \millet{} is accurate and interpretable, but it is
+large -- about 424\,K parameters -- which rules it out for the microcontrollers that motivate this
+internship. During this internship I designed \seanet{}, a compact and inherently interpretable
+architecture for time series classification. It has two parts: a family of small multi-scale
+depthwise-separable convolutional \emph{encoders}, and a family of seven new \emph{Multiple
+Instance Learning (MIL) pooling heads}, each one designed to remove a specific limitation of the
+pooling method used by \millet{}.
 
-
-In tiny deep learning, previous models were black boxes. They only predicted classes or assigned labels to time series data without providing any reason for it. The \millet{} framework showed that Multiple Instance Learning (MIL) pooling turns a standard backbone into a model that explains itself. The network scores every time step, and those scores \emph{are} the explanation. However, the issue is that this model was not made for tiny applications.
-
-During this internship, I built \seanet{}, which is our baseline architecture. In this model, we use a Temporal Convolutional Network (TCN) as the main encoder along with different pooling techniques. My main contributions are the multi-scale depthwise-separable TCNs that create the \seanet{} family of encoders (the base encoder plus the gated, bottleneck, input-gate, spike/trend and reconstruction variants). I also contributed a family of seven MIL pooling heads: class-wise conjunctive, softmax conjunctive with a learnable temperature, adaptive class-wise, top-$k$ conjunctive, attention-max, per-class gated attention, and dual-stream conjunctive.
-
-I evaluated 72 model combinations on the \webtraffic{} dataset and the 85 \ucr{} datasets used by \millet{}. I measured both classification quality (accuracy, loss) and explanation quality (AOPCR, NDCG@$n$). Most of the sweep uses one random seed, but the four models that carry the main comparison were re-run over 3 random seeds. My best variant, \texttt{seanet\_bottleneck\_topk}, reaches 0.947 accuracy on \webtraffic{}, compared to 0.887 for the re-trained \millet{} baseline. At the same time it uses 10$\times$ fewer parameters (41\,K against 424\,K) and improves the NDCG score (used to evaluate explanations) from 0.677 to 0.773. The best model of the whole sweep, \texttt{seanet\_gated\_mean\_topk}, reaches 0.955 accuracy with 62\,K parameters. On the wider \ucr{} archive the re-trained \millet{} baseline is still ahead on average, which I report and discuss rather than hide. The code that produced every number in this report is at \url{https://github.com/ubaidur404786/sea-net}.
+I evaluated 72 encoder and pooling-head combinations on the \webtraffic{} dataset and on the
+\ucr{} archive, measuring classification quality (accuracy) and explanation quality (AOPCR and
+NDCG@$n$), with three random seeds on the models that carry the main comparison. On
+\webtraffic{}, \seanet{} bottleneck encoder + Top-$k$ pooling reaches 0.947 accuracy and 0.773
+NDCG@$n$ with 41\,K parameters, against 0.887 accuracy and 0.677 NDCG@$n$ for the \millet{}
+baseline re-trained under the same configuration with 424\,K parameters: better classification,
+better explanations and ten times fewer parameters at once. \seanet{} gated encoder + Top-$k$
+pooling is the most accurate model tested (0.955 accuracy, 0.750 NDCG@$n$, 62\,K parameters). Over
+the 85 \ucr{} datasets, however, the \millet{} baseline remains ahead on average, a limitation I
+report and analyse rather than hide. The conclusion is that inherent interpretability and a small
+parameter budget are compatible, and that the pooling head is as important as the encoder in
+reaching both. The code that produced every number in this report is available at
+\url{https://github.com/ubaidur404786/sea-net}.

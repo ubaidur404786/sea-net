@@ -1,0 +1,175 @@
+% !TEX root = ../main.tex
+% =====================================================================
+% APPENDIX C -- REPRODUCIBILITY AND IMPLEMENTATION DETAILS
+%
+% The details that do not belong in the main methodology section: the
+% full hyperparameter list, the engineering of the sweep, the exact
+% commands and the two environments.
+% =====================================================================
+
+\section{Reproducibility and Implementation Details}
+\label{app:repro}
+
+\subsection{Full hyperparameters}
+\label{app:hparams}
+
+Every model in this report is one YAML file under \texttt{configs/models/}
+(\Cref{sec:setup:pipeline}). \Cref{tab:hparams} lists the values shared by every configuration
+trained, and separates the one group that is not: the encoder width and depth, which differ between
+the wide base encoder and the smaller variants used in \Cref{sec:results}.
+
+\begin{table}[htbp]
+\caption{Hyperparameters shared by every model configuration, plus the two encoder sizes used.}
+\label{tab:hparams}
+\begin{center}
+\small
+\begin{tabular}{p{0.28\linewidth} p{0.30\linewidth} p{0.32\linewidth}}
+\toprule
+\textbf{Group} & \textbf{Parameter} & \textbf{Value} \\
+\midrule
+Encoder, wide (\texttt{sv2/seanet.yaml}) & width $\dmodel$ & 128 \\
+        & number of blocks             & 6 \\
+Encoder, narrow (sv4 family, used for every model in \Cref{sec:results}) & width $\dmodel$ & 64 \\
+        & number of blocks             & 4 \\
+\emph{Shared by both} & kernel sizes $\mathcal{K}$   & $\{5, 11, 23\}$, summed per block \\
+        & dilation cap $\delta_{\max}$ & 16 \\
+        & dropout                      & 0.2 \\
+\midrule
+Pooling & attention width $\dattn$     & 8 \\
+        & dropout                      & 0.2 \\
+        & positional encoding          & on \\
+        & Top-$k$ fraction $\kappa$ (\Cref{sec:pool:topk})     & 0.1 \\
+        & initial $\tau_0$ (\Cref{sec:pool:softmax}) & 1.0 \\
+        & initial sharpness $\beta_0$ (\Cref{sec:pool:adaptive}) & 0.3 \\
+        & initial blend $\lambda_0$, attention-max (\Cref{sec:pool:attnmax}) & 0.5 \\
+        & initial blend $\lambda_0$, dual-stream (\Cref{sec:pool:dsmil}) & 0.05 \\
+\midrule
+Training& optimiser, learning rate     & Adam, $1.25\!\times\!10^{-3}$ \\
+        & weight decay                 & $1.2\!\times\!10^{-4}$ \\
+        & batch size                   & $\mathrm{clamp}(n_{\text{train}}/10, 2, 16)$ \\
+        & epochs, patience             & 400, 60 \\
+        & label smoothing              & 0.13 \\
+        & focus penalty $\lambda_{\text{focus}}$ (\Cref{eq:loss}) & 0.01 \\
+        & seeds                        & 3 for the four models in \Cref{tab:seeds}, 1 for the rest \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+% Source: configs/models/sv2/seanet.yaml (wide encoder + training recipe), configs/models/sv4/*.yaml
+% (narrow encoder, d=64 / n_blocks=4 -- shared by every model in Section 5, only the block type
+% differs). Kernels, dilation cap, dropout and the whole training recipe are copy-pasted identically
+% across sv1..sv7 on purpose, so results only change encoder-by-encoder or pooling-by-pooling.
+% The four head-specific initial values are the constructor defaults in seanet/pooling.py:
+% temperature=1.0 (line 234), init_beta=0.3 (284), init_lam=0.5 for AttentionMaxPooling (375) and
+% init_lam=0.05 for DualStreamConjunctive (494). None is overridden in any YAML file.
+
+\subsection{Running a study of this size}
+\label{app:engineering}
+
+Three engineering properties made the study of \Cref{sec:results} possible within the compute
+constraints of \Cref{app:constraints}, and they affect what the stored results contain.
+
+\begin{itemize}\itemsep2pt
+  \item \textbf{Per-model result directories.} Each model writes one row per dataset per seed into
+        its own directory, so two models can never overwrite each other and a partially finished
+        model is still readable.
+  \item \textbf{Resumable multi-dataset runs.} Grid'5000 jobs have a wall-clock limit and a
+        complete run over the archive does not always finish within it, so each model keeps a record of the datasets it has
+        already completed. Restarting the same job skips those, and an interrupted job costs at most
+        the one dataset that was training when it stopped.
+  \item \textbf{Tracking and curves.} Every run is logged to MLflow and saves its per-epoch loss
+        curve next to its results, so the curve travels with the results when they are copied off
+        the training machine.
+\end{itemize}
+
+\subsection{Commands}
+\label{app:commands}
+
+The complete study is reproduced by the commands below, run from the project root against one of the
+configuration files under \texttt{configs/models/}. No step requires editing any code file.
+
+{\footnotesize
+\begin{verbatim}
+# train one model over WebTraffic + the UCR archive (resumable)
+python main.py train --model sv4/seanet_bottleneck_topk
+
+# add a repeat with a different seed (results are stored per seed)
+python main.py train --model sv4/seanet_bottleneck_topk --seed 1
+
+# WebTraffic only, for a screening run or an ablation
+python main.py webtraffic --model sv7/seanet_topk_k025
+
+# cost numbers at the real WebTraffic shape
+python scripts/profile_models.py --length 1008 --classes 10 --batch 32
+
+# per-sample explanation figures and the page-1 teaser
+python main.py interpret --model sv4/seanet_bottleneck_topk
+python main.py teaser --models sv1/millet,sv4/seanet_bottleneck_topk
+
+# seed spread, paired Wilcoxon test and the ensemble of Table 14
+python scripts/ensemble_vote.py \
+       --models sv4/seanet_bottleneck_topk \
+                sv4/seanet_inputgate_adaptive \
+       --baseline sv1/millet
+
+# rebuild every derived file, in this order
+python main.py leaderboard
+python main.py results
+python main.py report
+python main.py paper
+\end{verbatim}}
+
+The order of the last four matters: \texttt{paper} reads the leaderboard, and the leaderboard reads
+every model's \texttt{results.csv}. Every figure and table in this report is produced by
+\texttt{python main.py paper} directly from those CSV files, so no number here was transcribed by
+hand from a plot or a printed line.
+
+\subsection{Software and hardware environment}
+\label{app:env}
+
+Development -- writing and testing the encoder and pooling code -- was done on a local Windows
+machine with a 6\,GB RTX GPU, used for small tests only. The 72-model study ran on Grid'5000
+\citep{balouek2013grid5000}, split across two sites so that a queue at one did not stall it.
+\Cref{tab:environment} lists the two environments separately, because they are not identical and only
+the Grid'5000 column produced the numbers in this report.
+
+\begin{table}[htbp]
+\caption{The two environments. Only the Grid'5000 column produced the results in this report.}
+\label{tab:environment}
+\begin{center}
+\small
+\begin{tabular}{p{0.20\linewidth} p{0.32\linewidth} p{0.38\linewidth}}
+\toprule
+ & \textbf{Local (development)} & \textbf{Grid'5000 (training)} \\
+\midrule
+OS              & Windows 11 & Linux \\
+Python          & 3.10.20 & 3.10.20 \\
+Conda env       & \texttt{seanet} & \texttt{seanet} (same on both sites) \\
+PyTorch         & 2.0.1 & 2.0.1 \\
+CUDA            & cu118 11.8 & cu118 11.8 \\
+GPU             & 1$\times$ RTX, 6\,GB, small tests only & depends on the reserved node \\
+Sites / clusters & -- & Lille (\texttt{chuc}, \texttt{chifflot}); Sophia
+                        (\texttt{esterel22}, \texttt{esterel40}, \texttt{esterel43}) \\
+Job scheduler   & --   & OAR \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+% Source: requirements_versioned.txt (torch==2.0.1, mlflow==3.14.0, optuna==4.9.0, pandas==2.0.3,
+% numpy==1.24.4, scikit-learn==1.3.0) and GRID5K_CMD_HELP.md (conda env "seanet"; -p chuc default
+% Lille cluster with chifflot as an alternative; -p "cluster='esterel40'" / 'esterel43' for Sophia;
+% OAR via oarsub). esterel22 added because the 2026-08-10 rebuild ran there.
+
+\subsection{Code availability}
+\label{app:code}
+
+The codebase is organised as one module per stage of the pipeline under \texttt{seanet/} -- data
+loading, the encoder and pooling implementations (\Cref{sec:methods}), training, and results and
+figure generation -- driven by the configuration files under \texttt{configs/} (\Cref{app:hparams}).
+It is released under the Apache License 2.0, and per its \texttt{NOTICE} file it is built on top of
+Amazon's \texttt{MILTimeSeriesClassification} codebase (Copyright Amazon.com, Inc.\ or its
+affiliates), the original implementation of \millet{} \citep{early2024millet}, so any redistribution
+must preserve that attribution and its licence terms.
+
+The repository is not yet public, but access can be granted to the examiner on request:
+\url{https://github.com/ubaidur404786/sea-net}.

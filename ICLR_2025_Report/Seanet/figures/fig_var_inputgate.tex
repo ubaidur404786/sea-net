@@ -1,0 +1,19 @@
+% !TEX root = ../main.tex
+% SEA-Net input-gated encoder (zone B): one gate per time step, built from the
+% raw input instead of from the deep features.
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[seavar]
+  \node[zone] at (7.9,0.75) {B};
+
+  \node[io]  (ch)  at (0.3, 0)    {$\mathbf{h}$};
+  \node[io]  (cx)  at (0.3,-1.15) {$\bag$};
+  \node[new] (ccv) at (3.3,-1.15) {conv $k{=}7$, then $\sig$\\[-1pt]one gate \emph{per time step}};
+  \node[op]  (cmu) at (6.3, 0)    {$\odot$};
+  \node[io]  (cho) at (7.4, 0)    {$\mathbf{h}'$};
+
+  \draw[->] (ch.east)  -- (cmu.west);
+  \draw[->] (cx.east)  -- (ccv.west);
+  \draw[->] (ccv.east) -| (cmu.south);
+  \draw[->] (cmu.east) -- (cho.west);
+  \node[anchor=south, black!60] at (6.3,0.30) {$(1{+}\mathbf{g}_j)$};
+\end{tikzpicture}}

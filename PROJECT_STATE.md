@@ -28,35 +28,38 @@ Datasets: **WebTraffic** (our main one) + the **UCR 2018** archive
 
 **Current phase: writing the report. Not running new experiments.**
 
-- Branch: `report3` (created from `report2` on 2026-08-10).
+- Branch: `report4` (created from `report3`).
 - **72 model variants** trained and ranked in `results/SEA_NET/leaderboard.csv`.
-- **The full first draft is DONE.** Every section 00-A2 is written, all numbers
-  come from the CSVs, and it builds with 0 errors, 0 undefined
-  citations/references and **0 live `\todo`, `\num`, `\tbd`, `\figph` or guide
-  boxes** left.
-- **All figures are real now** — no placeholders anywhere (2026-08-11).
-- **All blue `[CHECK: ...]` flags are cleared (2026-08-12).** Both depended on
-  jobs that have now finished: the `millet_paper` UCR row and the ensemble
-  numbers. There is **no placeholder of any kind left in the PDF.**
-- **The one job left: the page count.** The PDF is **40 pages** and the examiner
-  limit is **20-30**. Cutting 10 more pages is the next task, and it needs my
-  decision about what to drop, not a guess. The cut order is written down in
-  `ICLR_2025_Report/Seanet/README.md` section 7.
+- **The report was fully restructured and rewritten on 2026-08-13.** New reading
+  order: Problem → Motivation → State of the art → Contributions → Background →
+  MILLET baseline → Proposed methods → Methodology → Results → Discussion →
+  Conclusion → References → Appendices. The internship context, objectives,
+  constraints and skills now live in **Appendix A**, after the references, so
+  they no longer interrupt the scientific story.
+- **The PDF is 34 pages** (was 40), builds with **0 errors, 0 undefined
+  references/citations, 0 overfull boxes**, no placeholders, no guide boxes.
+  Title + abstract are on page 1 and the table of contents is exactly page 2.
+- Page count came down through structure and formatting, not by deleting
+  results: wider text block (6.4 in instead of ICLR's 5.5 in), tighter float and
+  list spacing, deduplicated prose, and removal of two redundant tables.
 
-### Two known problems in the GENERATED figures
+### Two code changes that need `python main.py paper` to take effect
 
-Both need a change in the plotting code under `seanet/` plus a re-run of
-`python main.py paper`. Neither can be fixed by editing the report.
+These were made in the plotting/table code, so the report will only show them
+after the figures and tables are regenerated:
 
-1. `topk5_multimetric` (Figure 7, Section 8.1) — value labels sit on top of the
-   dashed reference lines and get clipped ("2.23" prints as "(.23"), and the
-   x-tick labels and panel titles collide.
-2. `fig5_win_tie_loss_accuracy` and `appendix_dataset_model_heatmap_accuracy`
-   (Figures 9 and 10) — the two MILLET rows both truncate to the same label
-   `mil_incep..._mil_conj`, so the reader cannot tell which is our recipe and
-   which is theirs. The names are distinct in the CSV
-   (`mil_incept-paper__mil_conj` vs `mil_incept-millet__mil_conj`); only the
-   display truncation is too aggressive.
+1. `seanet/paper/figures_stats.py` — `_labels()` no longer truncates to 20
+   characters (the two MILLET rows both collapsed to `mil_incep..._mil_conj`),
+   and the win/tie/loss figure now prefixes each bar with a **competition rank**,
+   so two models with the same number of wins visibly share a rank and are marked
+   with `=`. Appendix B.6 of the report already describes this.
+2. `seanet/paper/tables.py` — the appendix leaderboard's Model column now prints
+   the **configuration identifier** (`seanet_gated_mean_topk`) instead of an
+   abbreviated label. Two different models used to shorten to the same string, so
+   the table could not be used for lookup. Appendix B.1 already describes this.
+
+Still open in the generated figures: `topk5_multimetric` (Figure 8) has value
+labels that collide with the dashed reference lines.
 
 ### Float placement rule learned the hard way (2026-08-12)
 
@@ -114,45 +117,54 @@ ICLR_2025_Report/
   Template/                <- untouched original ICLR template, reference only
 ```
 
-Section files, in report order. All are **written**. 00-03 are in my own words
-and should not be rewritten — only factual errors get fixed there. 04-A2 were
-drafted with Claude from the real CSVs and code, with no invented explanation.
+Section files, in report order (restructured 2026-08-13). The old files are kept
+in `sections/_superseded/` — nothing was deleted, they are just no longer
+`\input` by `main.tex`.
 
-| file | section | pages | state |
-|---|---|---|---|
-| `00_abstract.tex` | Abstract | — | done |
-| `01_introduction.tex` | Introduction | 2 | mine, done (teaser figure in) |
-| `02_context.tex` | Context | 0.5 | mine, done |
-| `03_objectives.tex` | What I had to do | 1.5 | mine, done |
-| `04_background.tex` | Background (MIL, AOPCR) | 3 | done |
-| `05_architecture.tex` | The SEA-Net **encoder** | 4 | done |
-| `06_pooling.tex` | Pooling heads | 4 | done |
-| `07_setup.tex` | Experimental setup | 2 | done |
-| `08_results.tex` | Results | 2 | done — 2 tables only, rest moved to A1 |
-| `09_discussion.tex` | Discussion | 3 | done |
-| `10_skills.tex` | Skills | 1.5 | done |
-| `11_conclusion.tex` | Conclusion | 2 | done |
-| `A1_additional_results.tex` | Appendix A | 8 | done — **biggest cut target** |
-| `A2_reproducibility.tex` | Appendix B | 3 | done |
+| file | section | pages |
+|---|---|---|
+| `00_abstract.tex` | Abstract (2 paragraphs, page 1 with the title) | — |
+| `01_introduction.tex` | 1 Introduction: problem, motivation, state of the art, contributions | 3 |
+| `02_background.tex` | 2 Background: notation table, MIL, MILLET + its limits L1–L3, AOPCR/NDCG | 4 |
+| `03_methods.tex` | 3 Proposed Methods: encoder, block, 7 encoder variants, 7 pooling heads, loss | 9 |
+| `04_methodology.tex` | 4 Experimental Methodology | 2 |
+| `05_results.tex` | 5 Results | 2 |
+| `06_discussion.tex` | 6 Discussion | 3 |
+| `07_conclusion.tex` | 7 Conclusion + Future work | 2 |
+| `A1_internship.tex` | App. A internship: team, mission, objectives table, constraints, skills | 2 |
+| `A2_additional_results.tex` | App. B additional results | 6 |
+| `A3_reproducibility.tex` | App. C reproducibility | 3 |
 
-**Total 37.** Page budget: **20–30 including appendix** (examiner rule,
-AIEDA400). The cut order is in `ICLR_2025_Report/Seanet/README.md` section 7.
+**Total 34** including the title page, the one-page contents and 2 pages of
+references. Page budget: **20–30 including appendix** (examiner rule, AIEDA400),
+so it is still about 4 pages over. Getting to 30 now means dropping content, and
+that is my decision, not a guess: the candidates, cheapest first, are the 72-row
+leaderboard table (B.1, one full page), the encoder × pooling grid figure (B.3),
+the ensemble / Optuna / Transformer paragraphs (B.5), and the per-dataset table
+(B.4).
 
-### Figures — all 10 are real, no placeholders left
+### Figures — 13, all real, no placeholders left
 
 | where | figure | source |
 |---|---|---|
-| 01 | teaser | generated |
-| 04 | the MIL view | `figures/fig02_mil_view.png` (mine) |
-| 05 | the whole model | `figures/fig04_seanet_architecture.pdf` (mine) |
-| 05 | one encoder block + receptive field | `figures/fig_block_tikz.tex` — **TikZ, optional** |
-| 05 | all 7 encoder variants + attach points | `figures/fig_variants_tikz.tex` — TikZ |
-| 06 | all 8 pooling heads + the 2 slots | `figures/fig_pooling_tikz.tex` — TikZ |
-| 08 | top-5 quality vs cost | generated |
-| A1 | ablation grid, win/tie/loss, heatmap | generated |
+| 1 | teaser | generated |
+| 2 | the MIL view | `figures/fig02_mil_view.png` (mine) |
+| 3 | the whole model | `figures/fig04_seanet_architecture.pdf` (mine) |
+| 3 | attach points A–D | `figures/fig_var_attach.tex` — TikZ |
+| 3 | one figure per encoder variant | `figures/fig_var_{bottleneck,gated,inputgate,spiketrend,recon,mschan,pyramid}.tex` |
+| 3 | pooling template + one panel per head | `figures/fig_pool_template.tex`, `fig_pool_aggregators.tex` |
+| 5 | top-5 quality vs cost | generated |
+| B | ablation grid, win/tie/loss | generated |
 
-`figures/fig_bottleneck_tikz.tex` is kept but **unused** — the bottleneck is now
-panel (a) of the encoder-variants figure. Do not delete it.
+The old combined diagrams (`fig_variants_tikz.tex`, `fig_pooling_tikz.tex`) and
+`fig_bottleneck_tikz.tex` are kept but **unused** — they were split into the
+small per-variant files above so each diagram is readable on its own. Do not
+delete them. `fig_block_tikz.tex` is still switchable
+(`\showblockfigtrue/false` in `preamble.tex`) and is currently **off** to save a
+page; nothing cites it, so turning it back on breaks nothing. The
+`appendix_dataset_model_heatmap_accuracy` figure was removed from the report on
+2026-08-13 (it did not add enough over the win/tie/loss figure); the image file
+is still in `results/paper_figures/`.
 
 The block figure is **switchable**: `\showblockfigfalse` in `preamble.tex`
 removes it, and no paragraph cites it, so nothing breaks. Keep it uncited.

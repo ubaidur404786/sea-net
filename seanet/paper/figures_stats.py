@@ -24,9 +24,37 @@ from seanet.paper import stats as PS
 from seanet.paper import style as S
 
 
-def _labels(models: List[str]) -> List[str]:
-    """Short, readable names for a figure axis."""
-    return [S.shorten(m, 20) for m in models]
+def _labels(models: List[str], max_len: int = 34) -> List[str]:
+    """
+    Short, readable names for a figure axis.
+
+    max_len used to be 20, which was too aggressive: style.shorten() cuts the MIDDLE out of a label
+    that is longer than max_len, and at 20 characters the two MILLET rows both collapsed to
+    "mil_incep…_mil_conj". They are two different runs of the same architecture (our training
+    configuration vs the paper's own), so a reader could not tell which bar was which. 34 keeps
+    "mil_incept-paper__mil_conj" and "mil_incept-millet__mil_conj" distinct, and is the same default
+    style.shorten() uses everywhere else.
+    """
+    return [S.shorten(m, max_len) for m in models]
+
+
+def _competition_ranks(values: np.ndarray, higher_better: bool = True) -> List[int]:
+    """
+    Standard competition ranking ("1, 2, 2, 4"): equal values get the SAME rank number.
+
+    Used on the win/tie/loss figure so that two models with the same number of wins are visibly
+    tied instead of looking like a first and a second place that happen to have equal bars.
+    """
+    order = np.argsort(-values if higher_better else values, kind="stable")
+    ranks = [0] * len(values)
+    last_val, last_rank = None, 0
+    for position, idx in enumerate(order, start=1):
+        if last_val is not None and values[idx] == last_val:
+            ranks[idx] = last_rank                   # same value -> same rank as the one above
+        else:
+            ranks[idx] = position
+            last_val, last_rank = values[idx], position
+    return ranks
 
 
 def _is_ours(model_id: str) -> bool:
@@ -229,8 +257,15 @@ def win_tie_loss(mat: pd.DataFrame, baseline: pd.Series, metric_name: str = "acc
         if r["loss"]:
             ax.text(r["win"] + r["tie"] + r["loss"] / 2, i, int(r["loss"]), ha="center",
                     va="center", fontsize=6.5, color="white")
+    # Rank prefix on every label. Models with the SAME number of wins get the same rank number, so a
+    # tie is visible in the figure instead of looking like two neighbouring places.
+    ranks = _competition_ranks(wtl["win"].to_numpy(float), higher_better=True)
+    tied = {r for r in ranks if ranks.count(r) > 1}
+    tick_labels = [f"#{r}{'=' if r in tied else ' '} {lab}"
+                   for r, lab in zip(ranks, _labels(models))]
+
     ax.set_yticks(y)
-    ax.set_yticklabels(_labels(models))
+    ax.set_yticklabels(tick_labels)
     ax.invert_yaxis()
     ax.set_xlabel(f"datasets (out of {int(wtl['n_datasets'].max())})")
     ax.grid(axis="x", alpha=0.35)
@@ -244,7 +279,9 @@ def win_tie_loss(mat: pd.DataFrame, baseline: pd.Series, metric_name: str = "acc
         caption=(f"Per-dataset {metric_name} record of each fully-swept model against the published "
                  f"MILLET results, over the {int(wtl['n_datasets'].max())} datasets both report. "
                  f"Differences within 0.005 count as ties, since that is below the resolution of "
-                 f"these test sets. Sorted by number of wins."),
+                 f"these test sets. Sorted by number of wins; the rank prefix uses competition "
+                 f"ranking, so models with an equal number of wins share a rank and are marked "
+                 f"with '='."),
         question=f"How often does each model actually beat the published baseline on {metric_name}?")
 
 

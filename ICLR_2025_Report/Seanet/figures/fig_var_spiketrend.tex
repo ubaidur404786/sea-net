@@ -1,0 +1,21 @@
+% !TEX root = ../main.tex
+% SEA-Net spike/trend encoder: a second high-pass branch off the raw input,
+% merged back at zone B.
+\resizebox{\linewidth}{!}{%
+\begin{tikzpicture}[seavar]
+  \node[zone] at (8.9,0.75) {B};
+
+  \node[io]  (dx)  at (0.3,-0.5)  {$\bag$};
+  \node[blk] (dtr) at (2.5, 0.30) {blocks \emph{(trend)}};
+  \node[new] (dsp) at (2.5,-1.35) {$\bag - \operatorname{avg}_5$, conv$_3$ \emph{(spike)}};
+  \node[new] (dmx) at (5.4,-0.5)  {mix $1{\times}1$};
+  \node[new] (dg)  at (7.2,-0.5)  {gate};
+  \node[io]  (do)  at (8.5,-0.5)  {$\mathbf{h}'$};
+
+  \draw[->] (dx.east)  |- (dtr.west);
+  \draw[->] (dx.east)  |- (dsp.west);
+  \draw[->] (dtr.east) -| (dmx.north);
+  \draw[->] (dsp.east) -| (dmx.south);
+  \draw[->] (dmx.east) -- (dg.west);
+  \draw[->] (dg.east)  -- (do.west);
+\end{tikzpicture}}
