@@ -7,7 +7,7 @@
 # file live and forward the important lines to Telegram. Your phone then gets a push
 # notification - even if your laptop is closed.
 #
-# One-time setup (see GRID5K_CMD_HELP.md, section 8):
+# One-time setup:
 #   1) In Telegram, talk to @BotFather -> /newbot -> copy the TOKEN it gives you.
 #   2) Send any message to your new bot once.
 #   3) Get your CHAT_ID (the guide shows the exact curl command).
@@ -20,7 +20,7 @@ SECRETS="$(dirname "$0")/telegram_secrets.sh"
 if [ -f "$SECRETS" ]; then
   source "$SECRETS"
 else
-  echo "missing $SECRETS - create it with your TOKEN and CHAT_ID (see GRID5K_CMD_HELP.md section 8)"
+  echo "missing $SECRETS - copy scripts/telegram_secrets.example.sh to it and fill in TOKEN and CHAT_ID"
   exit 1
 fi
 

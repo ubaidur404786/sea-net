@@ -5,7 +5,7 @@
 #   2) paste your real TOKEN and CHAT_ID into the copy
 #
 # You get TOKEN from @BotFather, and CHAT_ID from the getUpdates command
-# (see GRID5K_CMD_HELP.md, section 8).
+# (create the bot with @BotFather, then read your chat id from getUpdates).
 
 TOKEN="PUT-YOUR-BOT-TOKEN-HERE"
 CHAT_ID="PUT-YOUR-CHAT-ID-HERE"

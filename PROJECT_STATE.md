@@ -114,6 +114,34 @@ Table 7 moved by about +0.7 when this row joined the pool; nothing regressed).
 
 ---
 
+## 2b. What goes on the PUBLIC GitHub repo (decided 2026-08-14)
+
+`main` is the branch people see, and the report gives its URL, so it holds
+**code + results + the built report PDF and nothing else**.
+
+- `.gitignore` was rewritten around that rule. Read its section headers before
+  adding anything new.
+- **Ignoring a file does not untrack it.** Anything already committed needs
+  `git rm -r --cached <path>` once. That is what the cleanup commit did.
+- Untracked on 2026-08-14 (~1,100 files, ~40 MB): `ICLR_2025_Report/` (LaTeX
+  sources stay private), `results/SEA_NET/*/predictions/` (30 MB of .npz,
+  regenerable, only `ensemble_vote.py` reads them),
+  `results/SEA_NET_legacy_slidingwindow/` (superseded),
+  `results/paper_figures/**/*.svg` (duplicate of the .pdf/.png),
+  `.vscode/`, the JVM crash dumps `hs_err_pid*.log` / `replay_pid*.log`,
+  `model_architecture/*.aux|bbl|blg|out|toc|synctex.gz`, and my private notes
+  (`CLAUDE.md`, this file, `GIT_GUIDE.md`, `GRID5K_CMD_HELP.md`,
+  `MLFLOW_GUIDE.md`, `CLUSTER_REQ_CMD.md`). **All of them are still on disk.**
+- The built report is published as `docs/SEA-Net_internship_report.pdf`. Re-copy
+  it whenever the report changes:
+  `cp ICLR_2025_Report/Seanet/main.pdf docs/SEA-Net_internship_report.pdf`
+- The README embeds `model_architecture/archi_level{1,2,3}.png`. It used to
+  point at `Latex/`, which is not tracked, so those three images were broken on
+  GitHub. Do not move them back.
+- `scripts/telegram_secrets.sh` has never been committed and must stay that way.
+
+---
+
 ## 3. The report — the one folder that matters
 
 **`ICLR_2025_Report/Seanet/` is the real report. Do not touch it unless I ask.**
