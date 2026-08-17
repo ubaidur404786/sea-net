@@ -1,0 +1,157 @@
+% !TEX root = ../main.tex
+% =====================================================================
+% 3. METHOD -- page budget 2.00 (including the architecture figure)
+%
+% Order: the baseline first (so the reader knows what we are changing),
+% then the encoder, then the bottleneck, then the head, then the cost
+% consequence. Only the equations the contribution needs; the other six
+% encoder variants and the other five pooling heads are in Appendix B.
+% =====================================================================
+
+\section{Method}
+\label{sec:method}
+
+\begin{figure}[t]
+  \centering
+  \resizebox{\textwidth}{!}{\input{figures/fig_arch}}
+  \caption{\emph{Top:} the model. The encoder never changes the length, so every downstream quantity
+  keeps a time axis. The head's two branches multiply into the evidence $g_j^k$, the single quantity
+  from which \emph{both} outputs are read: the prediction is a reduction of it over time, the
+  interpretation \emph{is} it. \emph{Bottom:} the change inside the block --- the pointwise $1\times1$
+  channel mix is factorised through a narrow middle layer, halving the term that dominates the
+  parameter count.}
+  \label{fig:arch}
+\end{figure}
+
+\subsection{The baseline we start from}
+\label{sec:method:mil}
+
+A series $\bag \in \R^{1 \times \nsteps}$ is treated as a bag of $\nsteps$ instances, one per time
+step. An encoder $f$ produces $\mathbf{H} = f(\bag) \in \R^{\dmodel \times \nsteps}$, one embedding
+$\emb_j$ per step. \millet{}'s \emph{conjunctive pooling} then runs two branches over those
+embeddings and multiplies them:
+\begin{equation}
+  a_j = \frac{\exp\!\big(w^{\!\top}\tanh(V \emb_j)\big)}{\sum_{i} \exp\!\big(w^{\!\top}\tanh(V \emb_i)\big)},
+  \qquad
+  \instpred_j = W_{\mathrm{c}} \emb_j \in \R^{\nclz},
+  \qquad
+  g_j^k = a_j \, \instpred_j^{\,k},
+  \label{eq:conj_gate}
+\end{equation}
+where $a_j$ says how much step $j$ matters and $\instpred_j^{\,k}$ says what step $j$ argues for
+regarding class $k$. The product $g_j^k$ is the \emph{evidence} of step $j$ for class $k$, and both
+outputs are read from it:
+\begin{equation}
+  \bagpred^{\,k} = \frac{1}{\nsteps}\sum_{j=1}^{\nsteps} g_j^k
+  \qquad\text{(prediction)},
+  \qquad\qquad
+  \interp_{k,j} = g_j^k
+  \qquad\text{(interpretation)} .
+  \label{eq:conj_bag}
+\end{equation}
+This is why the explanation is faithful by construction: it is not a model of the model, it is the
+summand of the prediction. Three properties of \Cref{eq:conj_gate,eq:conj_bag} matter later.
+\textbf{(L1)} the gate $a_j$ is shared across classes, so every class is forced to look in the same
+place; \textbf{(L2)} the normalisation in $a_j$ is over time, so attention mass is conserved rather
+than absolute; and \textbf{(L3)} the reduction is a fixed mean over all $\nsteps$ steps, so a signal
+confined to a short window is divided by the length of the whole series.
+
+\paragraph{Where the cost is.}
+The MIL machinery in \Cref{eq:conj_gate} is almost free. Replacing \millet{}'s interpretable head with
+ordinary global average pooling on the same InceptionTime backbone changes the model from 423{,}707
+to 422{,}666 parameters: explaining itself costs $0.25\,\%$ of the model, and everything else is the
+encoder. A cheaper interpretable classifier is therefore a cheaper \emph{encoder} problem, not a
+pooling problem --- which is what \Cref{sec:method:enc} addresses, while \Cref{sec:method:head}
+addresses quality at a fixed cost.
+
+\subsection{A length-preserving separable encoder}
+\label{sec:method:enc}
+
+We replace InceptionTime with a stack of \emph{multi-scale separable residual blocks}. Each unit
+reads its input with three depthwise convolutions of kernel size $\{5, 11, 23\}$ at a shared
+dilation, sums them, and mixes channels with a pointwise $1\times1$ convolution, followed by
+BatchNorm \citep{ioffe2015batchnorm}, ReLU and dropout; two units and a residual connection form a
+block, and dilation grows geometrically across blocks up to a cap of 16. Two design constraints are
+forced by the interpretation rather than by accuracy: convolutions use ``same'' padding with no
+stride and no pooling, so $\nsteps$ is preserved at every stage --- required, because
+\Cref{eq:conj_bag} needs one value per input step and the faithfulness metrics perturb individual
+steps --- and the dilation cap keeps every embedding tied to a bounded window, so importance stays
+local and readable. The third choice is the cost one: the depthwise/pointwise split
+\citep{chollet2017xception, howard2017mobilenets} replaces the $\dmodel^2 k$ weights of a dense
+convolution with
+\begin{equation}
+  \underbrace{\dmodel k}_{\text{depthwise}} \;+\; \underbrace{\dmodel^{2}}_{\text{pointwise}}
+  \;\ll\; \dmodel^{2} k ,
+  \label{eq:sep_cost}
+\end{equation}
+which is what makes the small setting reachable at all: at $\dmodel = 128$ a dense convolution
+covering the same three kernel sizes would cost $638{,}976$ weights per step against $22{,}144$ for
+the separable unit.
+
+\paragraph{The bottleneck.}
+\Cref{eq:sep_cost} has a consequence: once the convolutions are separable, the \emph{pointwise} term
+dominates. At $\dmodel = 128$ the three depthwise convolutions of one unit cost $5{,}376$ weights
+while the single $1\times1$ costs $16{,}512$ --- three times all three depthwise convolutions
+combined. We therefore factorise that $1\times1$ through a narrow middle layer of width
+$r = \dmodel / 4$, squeezing and then expanding:
+\begin{equation}
+  P = P_{\mathrm{expand}}\, P_{\mathrm{squeeze}}, \qquad
+  P_{\mathrm{squeeze}} \in \R^{r \times \dmodel}, \quad
+  P_{\mathrm{expand}} \in \R^{\dmodel \times r},
+  \qquad \text{cost } \dmodel^{2} \rightarrow 2\dmodel r = \dmodel^{2}/2 .
+  \label{eq:bottleneck}
+\end{equation}
+The construction is the standard squeeze-and-expand bottleneck \citep{he2016resnet,
+iandola2016squeezenet, sandler2018mobilenetv2}; what matters here is where it is applied and what it
+leaves intact. It halves the dominant term independently of $\dmodel$, and the block still consumes
+and returns $(\dmodel, \nsteps)$, so length preservation --- and with it the per-step interpretation
+--- is untouched. At the setting used throughout ($\dmodel = 64$, 4 blocks) it takes the complete
+model from 57{,}580 to 41{,}324 parameters and from $109.7$ to $76.7$\,MFLOPs per series: $28\,\%$
+of the parameters and $30\,\%$ of the arithmetic, for a change that is invisible to the head.
+
+\subsection{Top-$k$ conjunctive pooling}
+\label{sec:method:head}
+
+The head is where limitations L1 and L3 are addressed, at zero parameter cost. First we give each
+class its own gate, $a_j \rightarrow a_j^k$, so that classes may disagree about where to look (L1).
+Then, instead of the fixed mean of \Cref{eq:conj_bag}, we average only the largest evidence values
+for each class, with the count set as a fraction $\kappa$ of the series length so that the head is
+length-agnostic:
+\begin{equation}
+  k = \max\big(1, \lceil \kappa \nsteps \rceil\big),
+  \qquad
+  \bagpred^{\,k} = \frac{1}{k}\!\!\sum_{j \in \mathcal{S}^k_{\mathrm{top}}}\!\! g_j^k,
+  \qquad
+  \interp_{k,j} = g_j^k ,
+  \label{eq:topk}
+\end{equation}
+where $\mathcal{S}^k_{\mathrm{top}}$ indexes the $k$ largest $g_j^k$. Selection of the strongest
+instances is not new in MIL \citep{durand2016weldon}; the form here is per-class, expressed as a
+fraction of length, and applied to conjunctive evidence, which gives it a property the sweep in
+\Cref{sec:res:ablation} depends on.
+
+\begin{property}[Exact reduction]
+\label{prop:topk}
+At $\kappa = 1$, \Cref{eq:topk} is class-wise conjunctive pooling term for term. For $\kappa < 1$ the
+gradient reaches only the selected steps.
+\end{property}
+
+Two consequences. Practically, $\kappa$ is a hyperparameter and not a weight, so this head has
+\emph{exactly} the same parameter count as the head it generalises --- the interpretation quality it
+buys is free in every cost column of \Cref{tab:cost}. Experimentally, the $\kappa = 1$ row of
+\Cref{tab:ablation} is not a different model but the same model with selection switched off, so any
+difference along that column is attributable to selection and to nothing else.
+
+\paragraph{Training objective.}
+Every model is trained with cross-entropy on the bag logits plus one term that exists for the
+explanation rather than for the classification:
+\begin{equation}
+  \mathcal{L} = \mathrm{CE}(\bagpred, y)
+  \;+\; \lambda_{\mathrm{focus}} \Big({-}\textstyle\sum_{j} \bar a_j \log(\bar a_j + \epsilon)\Big),
+  \label{eq:loss}
+\end{equation}
+with $\bar a_j$ the class-averaged attention. Attention spread evenly over a series has high entropy,
+so adding entropy to a minimised loss pushes the model towards concentrated attention. Without it a
+model can be right while its importance map is flat, and a reader cannot tell where the evidence
+stops. We set $\lambda_{\mathrm{focus}} = 0.01$ for our models and $0$ for the \millet{} baseline,
+since the term is our addition; \Cref{sec:res:ablation} reports what it is worth.

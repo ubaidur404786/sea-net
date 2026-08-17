@@ -323,6 +323,130 @@ the sentence — an uncited gesture at a literature is worse than not making it.
 
 ---
 
+### I23 — Novelty: nothing we use is new in isolation — HIGH (checked 2026-08-17)
+A literature check was run before writing Draft 2, because the paper now leads
+with an architecture. The result: **every mechanism already exists.**
+
+| what we use | prior work found |
+|---|---|
+| depthwise-separable conv | Xception `chollet2017xception`, MobileNets `howard2017mobilenets` |
+| squeeze/expand bottleneck (`d → d/4 → d`) | ResNet `he2016resnet`, SqueezeNet `iandola2016squeezenet`, MobileNetV2 inverted residual `sandler2018mobilenetv2` |
+| separable TCN for edge time series | ATCN `baharani2022atcn`; TCN NAS at the edge `risso2023tcn` |
+| top-$k$ / $k$-max selection in MIL | WELDON `durand2016weldon` (k-max **and** k-min region selection), and later weakly supervised segmentation work |
+| MCU flash / SRAM budget framing | MCUNet `lin2020mcunet`, MicroNets `banbury2021micronets` |
+| conjunctive pooling | MILLET `early2024millet` |
+
+**Decision taken, and now written into §1, §2 and §3:** we claim none of these
+as novel. The paper says so explicitly ("Neither component is new in
+isolation"). What is claimed is the **intersection** — efficient TS
+architectures do not explain themselves, interpretable ones are not built to a
+cost budget, and MIL pooling work scores selection by bag accuracy rather than
+against per-instance ground truth — plus four concrete items listed at the end
+of §2.
+
+**Still to do before submission:** one more search pass close to the deadline,
+specifically for any 2026 paper combining MIL interpretability with a TinyML
+budget. If one exists it must be cited and distinguished, not omitted.
+
+---
+
+### I24 — The Pareto figure has truncated model labels — LOW
+`pareto_web_acc_vs_params.pdf` prints labels like `sea_bo…k_conj`. It is now in
+the appendix (\Cref{fig:app_pareto}) with a caption that points the reader to
+the full leaderboard, so it is not misleading, but it looks unfinished.
+
+**Fix:** add a display-name map to `seanet/paper/figures.py` and re-run
+`python main.py paper` (a command for you, not me — CLAUDE.md rule 3).
+
+---
+
+### I25 — The CD diagram's ranks differ from the ranking table — MED (explained, not fixed)
+`fig4_critical_difference_accuracy.pdf` shows 29 models and ranks like 13.32 for
+the matched-budget MILLET, while `table_ranking_accuracy.csv` has 28 models and
+12.60. The cause is that the diagram includes MILLET's *published* per-dataset
+accuracies as an extra entry, which shifts every rank by roughly +0.5 to +0.7.
+The ordering is identical.
+
+**Decision:** both are printed, and the appendix text states the reason
+explicitly so a reviewer comparing them finds the explanation rather than an
+inconsistency. Regenerating the diagram over the same 28 models would be
+cleaner and needs a `python main.py paper` run.
+
+---
+
+### I26 — `size_mb` in the results files is not a deployment footprint — MED (avoided)
+`state_dict_size_mb()` measures what `torch.save` writes, which for a 41 K model
+is 1.43 MB — dominated by pickle and zip-container overhead, not by weights.
+Printing that as "model size" would understate our own reduction (2.9× instead
+of 10.3×) and a reviewer who multiplied 41,324 × 4 B would notice.
+
+**Decision:** the paper never prints `size_mb`. \Cref{tab:cost} reports the
+parameter count and weight memory **computed** from it (params × 4 B at fp32,
+× 1 B at int8), labelled in the caption as computed rather than measured.
+
+---
+
+### I27 — Peak memory is worse, and that is the weakest point of the paper — HIGH (stated)
+Measured peak allocator memory: bottleneck models 179.0 MB against MILLET's
+112.3 MB, while the non-bottleneck narrow encoder is 64.9 MB. Since SRAM for
+activations is often the *binding* constraint on a microcontroller, this
+undercuts the tiny-device motivation more than any accuracy number does.
+
+**Decision:** printed in \Cref{tab:cost}, explained in §5.2 (the encoder is
+length-preserving, so activations are `(d, T)` at every stage no matter how few
+weights produce them — \Cref{eq:bottleneck} reduces weights, not activations),
+and repeated as a limitation in §6. Not hidden.
+
+**Open question worth one experiment if compute ever returns:** why the
+bottleneck raises peak memory by 114 MB when the extra intermediate tensor is
+only ~2 MB. Likely a cuDNN workspace effect for the `d→r` / `r→d` convolutions.
+The paper does not speculate about this.
+
+---
+
+### I28 — Draft 2 replaced Draft 1; Draft 1 is archived, not deleted — INFO
+Draft 1 (the "study paper" framing, thesis *Selection, Not Scale*) is preserved
+in `sections/_draft1/` including its `main.tex`. It is not compiled. Draft 2 is
+the tiny-device framing agreed on 2026-08-17.
+
+Issues that came from Draft 1 and are now **resolved differently** rather than
+fixed in place: I7 and I8 (still true, now stated in §4 as caveats rather than
+being the paper's subject), I11 and I15 (moved to \Cref{app:heads} and
+\Cref{app:ucr}), I19 (the κ table is now one ablation panel, not the paper's
+main claim, and its single-seed status is printed next to it).
+
+---
+
 ## DONE
 
-*(nothing yet — entries move here with a date and one line on what was decided)*
+### I9 / I20 — 9-page limit — DONE 2026-08-17
+Draft 2 main text ends **exactly at page 9**; the Reproducibility Statement
+starts at the top of page 10, and statements, references and appendices do not
+count. Measured on the built PDF, not estimated. 17 pages total.
+
+### I10 — AI use statement — DONE 2026-08-17
+Present in `sections/90_statements.tex`, following the wording pattern of the
+official template (`iclr2027_conference.tex`, "AI use statement") and filled in
+honestly: used for writing/editing text, literature-search assistance and
+supporting code; **not** used to generate, select, filter or interpret results,
+design models or produce any reported number.
+
+### I21 — The draft has no figures — DONE 2026-08-17
+Four floats now: Figure 1 teaser (main), Figure 2 architecture (main, drawn in
+TikZ in `figures/fig_arch.tex` so it is sharp, anonymous and shows the
+bottleneck), Figure 3 critical-difference diagram (appendix), Figure 4 Pareto
+front (appendix).
+
+### I22 — Uncited Related Work claim — DONE 2026-08-17
+The sentence was in Draft 1's §9 and does not exist in Draft 2. The AOPCR
+argument now stands on our own measurement (§5.5) and cites only
+`samek2017aopc` for the metric itself. Nothing was invented.
+
+### I13 — `topk5_multimetric` label collisions — DONE 2026-08-17
+That figure is not used in Draft 2. Superseded by I24, which is the same
+problem in the Pareto figure.
+
+### I17 — "smaller" is not true for latency or peak memory — DONE 2026-08-17
+Split into I26 (weight memory, avoided) and I27 (peak memory, stated). The
+paper claims a reduction in **parameters and FLOPs only**, and prints the two
+columns that did not improve alongside them.

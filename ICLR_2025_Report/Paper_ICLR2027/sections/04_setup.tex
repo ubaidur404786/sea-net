@@ -1,0 +1,64 @@
+% !TEX root = ../main.tex
+% =====================================================================
+% 4. EXPERIMENTAL SETUP -- page budget 0.60
+%
+% Short, and it carries the two caveats that a reviewer would otherwise
+% raise: WebTraffic was also the screening set, and seed coverage is
+% uneven. Both are stated here, once, so the results section can be read
+% at face value.
+% =====================================================================
+
+\section{Experimental Setup}
+\label{sec:setup}
+
+\paragraph{Research questions.}
+\textbf{RQ1} Does the small model retain classification accuracy? \textbf{RQ2} Does it retain a
+useful interpretation? \textbf{RQ3} How much cost is actually removed? \textbf{RQ4} What does the
+bottleneck contribute? \textbf{RQ5} What does \mbox{Top-$k$} pooling contribute?
+
+\paragraph{Datasets.}
+\webtraffic{} is the synthetic benchmark introduced with \millet{} \citep{early2024millet}: 1{,}000
+series (500 train / 500 test) of length 1{,}008 over 10 classes, in which a generator injects the
+class signal into a known window. It is the only dataset here with \emph{per-time-step ground truth},
+so it is the only place where an interpretation can be scored rather than admired, and RQ2 lives
+there. Breadth comes from the \ucr{} archive \citep{dau2019ucr}: we report the 85-dataset subset used
+by \millet{} for comparability, and the full 128-dataset archive in \Cref{app:ucr}.
+
+\paragraph{Metrics.}
+Classification is test accuracy, and across \ucr{} also mean rank over the datasets completed by
+every model in the comparison, with a Wilcoxon--Holm critical-difference analysis
+\citep{demsar2006statistical} in \Cref{app:ucr}. Interpretation is measured two ways.
+\textbf{AOPCR} \citep{samek2017aopc} deletes time steps in the order the model considers important
+and integrates the drop in the predicted-class score; it needs no ground truth, so it is available
+everywhere, but it is unnormalised --- a point \Cref{sec:res:aopcr} returns to. \textbf{\ndcg{}}
+\citep{jarvelin2002ndcg} ranks the time steps by claimed importance and scores that ranking against
+the generator's true signal window; it lies in $[0,1]$ and needs ground truth, so it exists only on
+\webtraffic{}. \ndcg{} is the stronger evidence of the two and we treat it as such.
+
+\paragraph{Baselines.}
+\millet{} with its reference InceptionTime backbone \citep{fawaz2020inceptiontime} is the model this
+paper is about; FCN and ResNet \citep{wang2017fcn} with the same head give two further reference
+points. Because \Cref{sec:res:aopcr} shows that faithfulness numbers cannot be moved between training
+recipes, we retrain every baseline ourselves rather than quoting published values, and we report
+\millet{} twice: once under \emph{our} budget, which is the only fair comparison, and once under
+\emph{its own} published 1{,}500-epoch recipe, which is the harder target.
+
+\paragraph{Protocol.}
+One configuration is used for every model and every dataset, so that a difference between two rows is
+a difference between two models: Adam \citep{kingma2015adam} at learning rate $1.25\times10^{-3}$,
+weight decay $1.2\times10^{-4}$, at most 400 epochs with early stopping at patience 60, batch size
+$\min(\lfloor n_{\mathrm{train}}/10 \rfloor, 16)$ floored at 2, label smoothing $0.13$, stratified
+$80/20$ validation split when $n_{\mathrm{train}} \ge 100$. Encoders use $\dmodel = 64$ with 4 blocks
+unless labelled \emph{wide} ($\dmodel = 128$, 6 blocks), and $\kappa = 0.1$; the remaining settings
+are in \Cref{app:hparams}. Cost is profiled separately at batch 32, length 1008, 10 classes on one
+GPU: parameters counted directly, FLOPs analytically per series with one multiply--accumulate counted
+as two operations, latency as the mean of 30 timed passes after 30 discarded warm-up passes.
+
+\paragraph{Two things to hold against every number that follows.}
+First, \webtraffic{} was also the set on which the design space was screened, so \webtraffic{}
+results are optimistic by construction; \ucr{} was never used for selection. Second, seed coverage is
+uneven: three models were run with three seeds (\Cref{tab:main}, column $S$) and the rest with one,
+because the sweep covered 72 encoder--head combinations over up to 129 datasets on a fixed compute
+allocation. The three-seed standard deviations on our headline model are $\pm 0.016$ for accuracy,
+$\pm 0.214$ for AOPCR and $\pm 0.013$ for \ndcg{} (\Cref{app:seeds}), and we treat any gap smaller
+than those as uninformative throughout.

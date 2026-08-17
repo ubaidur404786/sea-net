@@ -1,12 +1,12 @@
 % =====================================================================
 % refs.bib -- references for the ICLR 2027 paper.
 %
-% Copied from the internship report's bibliography and trimmed to what
-% this paper actually cites. Two deliberate omissions:
-%   - the Grid'5000 testbed reference: naming the compute platform is a
-%     hint towards the authors' institution, and we do not need it.
-%   - MILLET's published AOPCR value: our own Section 7 says it is not
-%     comparable, so we never quote it.
+% Trimmed to exactly what this paper cites. Two deliberate omissions,
+% recorded here so they are not "fixed" by mistake later:
+%   - the compute-testbed reference: naming the cluster would hint at
+%     the authors' institution, and the paper does not need it.
+%   - MILLET's published AOPCR value: Section 5.5 shows it is not
+%     comparable with anything we measured, so we never quote it.
 % =====================================================================
 
 % ---------------------------------------------------------------------
@@ -96,6 +96,32 @@
   year    = {2017}
 }
 
+@inproceedings{he2016resnet,
+  title     = {Deep Residual Learning for Image Recognition},
+  author    = {He, Kaiming and Zhang, Xiangyu and Ren, Shaoqing and Sun, Jian},
+  booktitle = {IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {770--778},
+  year      = {2016}
+}
+
+@article{iandola2016squeezenet,
+  title   = {{SqueezeNet}: {AlexNet}-level Accuracy with 50x Fewer Parameters and
+             $<$0.5{MB} Model Size},
+  author  = {Iandola, Forrest N. and Han, Song and Moskewicz, Matthew W. and
+             Ashraf, Khalid and Dally, William J. and Keutzer, Kurt},
+  journal = {arXiv preprint arXiv:1602.07360},
+  year    = {2016}
+}
+
+@inproceedings{sandler2018mobilenetv2,
+  title     = {{MobileNetV2}: Inverted Residuals and Linear Bottlenecks},
+  author    = {Sandler, Mark and Howard, Andrew and Zhu, Menglong and
+               Zhmoginov, Andrey and Chen, Liang-Chieh},
+  booktitle = {IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {4510--4520},
+  year      = {2018}
+}
+
 @inproceedings{ioffe2015batchnorm,
   title     = {Batch Normalization: Accelerating Deep Network Training by Reducing
                Internal Covariate Shift},
@@ -136,6 +162,14 @@
   booktitle = {International Conference on Machine Learning (ICML)},
   pages     = {2127--2136},
   year      = {2018}
+}
+
+@inproceedings{durand2016weldon,
+  title     = {{WELDON}: Weakly Supervised Learning of Deep Convolutional Neural Networks},
+  author    = {Durand, Thibaut and Thome, Nicolas and Cord, Matthieu},
+  booktitle = {IEEE Conference on Computer Vision and Pattern Recognition (CVPR)},
+  pages     = {4743--4752},
+  year      = {2016}
 }
 
 @inproceedings{hashimoto2020msdamil,
@@ -241,6 +275,51 @@
   booktitle = {International Conference on Learning Representations (ICLR)},
   year      = {2025},
   url       = {https://openreview.net/forum?id=n34taxF0TC}
+}
+
+% ---------------------------------------------------------------------
+% Efficient time series models and the small-device setting -- the
+% deployment target this paper is written against
+% ---------------------------------------------------------------------
+@article{baharani2022atcn,
+  title   = {{ATCN}: Resource-efficient Processing of Time Series on Edge},
+  author  = {Baharani, Mohammadreza and Tabkhi, Hamed},
+  journal = {ACM Transactions on Embedded Computing Systems},
+  volume  = {21},
+  number  = {5},
+  pages   = {1--21},
+  year    = {2022}
+}
+
+@article{risso2023tcn,
+  title   = {Lightweight Neural Architecture Search for Temporal Convolutional
+             Networks at the Edge},
+  author  = {Risso, Matteo and Burrello, Alessio and Conti, Francesco and
+             Lamberti, Lorenzo and Chen, Yukai and Benini, Luca and Macii, Enrico
+             and Poncino, Massimo and Jahier Pagliari, Daniele},
+  journal = {IEEE Transactions on Computers},
+  volume  = {72},
+  number  = {3},
+  pages   = {744--758},
+  year    = {2023}
+}
+
+@inproceedings{lin2020mcunet,
+  title     = {{MCUNet}: Tiny Deep Learning on {IoT} Devices},
+  author    = {Lin, Ji and Chen, Wei-Ming and Lin, Yujun and Cohn, John and
+               Gan, Chuang and Han, Song},
+  booktitle = {Advances in Neural Information Processing Systems (NeurIPS)},
+  year      = {2020}
+}
+
+@inproceedings{banbury2021micronets,
+  title     = {{MicroNets}: Neural Network Architectures for Deploying {TinyML}
+               Applications on Commodity Microcontrollers},
+  author    = {Banbury, Colby and Zhou, Chuteng and Fedorov, Igor and
+               Matas, Ramon and Thakker, Urmish and Gope, Dibakar and
+               Janapa Reddi, Vijay and Mattina, Matthew and Whatmough, Paul},
+  booktitle = {Proceedings of Machine Learning and Systems (MLSys)},
+  year      = {2021}
 }
 
 % ---------------------------------------------------------------------

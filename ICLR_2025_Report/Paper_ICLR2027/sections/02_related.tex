@@ -1,0 +1,58 @@
+% !TEX root = ../main.tex
+% =====================================================================
+% 2. RELATED WORK -- page budget 0.60
+%
+% Four groups, chosen by what the reader needs to place this paper:
+% the field, the baseline, the efficiency toolbox, the deployment
+% target. The last paragraph is the honest novelty statement demanded
+% by the plan -- what is known, and what is left for us to contribute.
+% =====================================================================
+
+\section{Related Work}
+\label{sec:related}
+
+\paragraph{Deep time series classification.}
+Convolutional baselines have dominated the field since FCN and ResNet were shown to be strong
+without feature engineering \citep{wang2017fcn}, and InceptionTime \citep{fawaz2020inceptiontime}
+remains the reference deep architecture on the \ucr{} archive \citep{dau2019ucr}; the survey of
+\citet{fawaz2019review} covers the design space between them. Accuracy in this literature is almost
+always reported without a cost column, and the models are correspondingly large: those three
+architectures use between 267\,K and 506\,K parameters at the input length we study.
+
+\paragraph{Interpretability and multiple instance learning.}
+Attribution methods \citep{ribeiro2016lime, lundberg2017shap, sundararajan2017ig} explain a trained
+model after the fact; \citet{rudin2019stop} argues for building the explanation in instead, and for
+time series VQShape \citep{wen2024vqshape} and InterpGN \citep{wen2025interpgn} do so through
+shapelet-like tokens and gated expert models. MIL \citep{dietterich1997mil} offers a different route,
+in which the interpretation is an intermediate activation rather than a separate artefact.
+Attention-based MIL \citep{ilse2018attention} and its dual-stream extension \citep{li2021dsmil}
+established the pooling mechanisms in histopathology, and \millet{} \citep{early2024millet}
+transferred the formulation to time series with \emph{conjunctive pooling}, the baseline we start
+from. Selecting only the strongest instances instead of averaging all of them is likewise
+established: WELDON \citep{durand2016weldon} introduced $k$-max region selection for weakly
+supervised recognition, and the idea recurs throughout weakly supervised segmentation.
+
+\paragraph{Efficient architectures and deployment budgets.}
+Depthwise-separable convolution \citep{chollet2017xception, howard2017mobilenets} and
+squeeze-and-expand bottlenecks \citep{he2016resnet, iandola2016squeezenet, sandler2018mobilenetv2}
+are the two standard levers for reducing convolutional parameter count, and both transfer directly
+to the 1-D case. In the time series setting, ATCN \citep{baharani2022atcn} combines residual
+connections with separable convolution for embedded inference, and \citet{risso2023tcn} search the
+dilation and channel structure of TCNs under edge constraints; neither targets interpretability ---
+they produce a label, and where it came from is left open. On the deployment side, MCUNet
+\citep{lin2020mcunet} and MicroNets \citep{banbury2021micronets} characterise what fits on commodity
+microcontrollers (flash for weights, SRAM for activations, operation count as a latency proxy) and
+both find that architectures designed without those constraints do not simply shrink into them.
+Post-training integer quantisation \citep{jacob2018quantization} is the standard final step and cuts
+weight memory by roughly four. We use these budgets as the target the paper aims at, not as a result:
+no measurement here was taken on a microcontroller.
+
+\paragraph{Where this leaves our contribution.}
+Every mechanism we use already exists. What is absent above is the intersection: efficient time
+series architectures do not produce interpretations, interpretable ones are not built to a cost
+budget, and the MIL pooling literature evaluates selection by bag-level accuracy rather than against
+per-instance ground truth. This paper occupies that intersection, contributing specifically the
+per-class, fraction-parameterised form of $k$-max selection inside conjunctive pooling with its exact
+reduction to the baseline head (\Cref{prop:topk}); its pairing with a bottlenecked length-preserving
+encoder; an ablation attributing size and interpretation quality to the two components separately;
+and the finding that the field's faithfulness measure is not comparable across training budgets.

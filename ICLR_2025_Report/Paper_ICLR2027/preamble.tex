@@ -12,9 +12,15 @@
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{multirow}
+\usepackage{longtable}   % only for the 72-row appendix leaderboard
 \usepackage{subcaption}
 \usepackage{xcolor}
 \usepackage{microtype}
+
+% TikZ is only used for the architecture figure. Everything else is an
+% external PDF produced by the experiment code.
+\usepackage{tikz}
+\usetikzlibrary{positioning, arrows.meta, fit, backgrounds, calc}
 
 \usepackage{hyperref}
 \usepackage{url}
@@ -48,6 +54,7 @@
 \newcommand{\webtraffic}{WebTraffic}
 \newcommand{\ucr}{UCR}
 \newcommand{\ndcg}{NDCG@$n$}
+\newcommand{\seatiny}{\seanet{}-B}          % the headline 41 K model (bottleneck + Top-k)
 
 % Anonymous code link. Replace the placeholder with the real anonymised
 % mirror before submitting -- see issue I18 in PAPER_ISSUES.md.
@@ -84,8 +91,9 @@
 \setlist[itemize]{topsep=2pt,itemsep=1pt,parsep=0pt,leftmargin=1.4em}
 \setlist[enumerate]{topsep=2pt,itemsep=1pt,parsep=0pt,leftmargin=1.6em}
 
-% Slightly tighter floats, again for the page budget.
-\setlength{\textfloatsep}{10pt plus 2pt minus 2pt}
-\setlength{\intextsep}{10pt plus 2pt minus 2pt}
+% Slightly tighter floats, again for the page budget. The style file
+% itself is never touched -- only these LaTeX lengths.
+\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
+\setlength{\intextsep}{8pt plus 2pt minus 2pt}
 \setlength{\abovecaptionskip}{4pt}
 \setlength{\belowcaptionskip}{2pt}

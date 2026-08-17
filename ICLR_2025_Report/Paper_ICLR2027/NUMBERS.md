@@ -200,7 +200,68 @@ remaining gap is the **training budget**, not the code.
   λ₀ = 0.5 (attention-max) / 0.05 (dual-stream).
 - Sweep size: **72 encoder × head combinations**, up to 129 datasets each.
 
-## 12. Numbers deliberately NOT used
+## 12. Draft 2 additions — the component ablation (Table 3, left panel)
+
+All four cells are **seed 0**, `d = 64`, 4 blocks, WebTraffic, so the only
+differences are the two components. From `LB`, except the last row which is the
+seed-0 row of `RC(seanet_bottleneck_topk)`.
+
+| config in `LB` | encoder | head | params | acc | AOPCR | NDCG@n |
+|---|---|---|---|---|---|---|
+| `seanet_slim` | plain | class-wise | 57,580 | 0.916 | 2.4782 | 0.7185 |
+| `seanet_slim_topk` | plain | Top-k | 57,580 | 0.932 | 2.6911 | 0.7776 |
+| `seanet_bottleneck` | bottleneck | class-wise | 41,324 | 0.902 | 2.5717 | 0.7325 |
+| `seanet_bottleneck_topk` (seed 0) | bottleneck | Top-k | 41,324 | 0.938 | 2.7784 | 0.7768 |
+
+Effects, and what may be claimed from each:
+
+| effect | accuracy | NDCG@n | claimable? |
+|---|---|---|---|
+| bottleneck, class-wise head | −0.014 | +0.014 | **no** — inside ±0.016 / ±0.013 |
+| bottleneck, Top-k head | +0.006 | −0.001 | **no** — inside the spread |
+| Top-k, plain encoder | +0.016 | **+0.059** | NDCG yes (4.5 sd), accuracy no |
+| Top-k, bottleneck encoder | +0.036 | **+0.044** | NDCG yes (3.4 sd), accuracy no |
+
+So the bottleneck is claimed as *free compression* and Top-k is claimed on
+**NDCG@n only**. This is why §5.4 does not present Top-k as an accuracy win.
+
+## 13. Draft 2 additions — cost (Table 2)
+
+Params and FLOPs from `PF`. **Weight memory is computed, not measured:**
+params × 4 B (fp32) and × 1 B (int8), divided by 1024. `size_mb` from the CSVs
+is deliberately NOT used — see issue I26.
+
+| model | params | fp32 KB | int8 KB | MFLOPs | latency ms | peak mem MB |
+|---|---|---|---|---|---|---|
+| `millet` | 423,707 | 1655 | 414 | 847.6 | 0.2026 | 112.284 |
+| `seanet_classwise` (wide) | 269,164 | 1051 | 263 | 523.7 | 0.3591 | 123.735 |
+| `seanet_gated_mean_topk` | 61,740 | 241 | 60 | 109.7 | 0.1279 | 64.871 |
+| `seanet_bottleneck_topk` | 41,324 | 161 | 40 | 76.7 | 0.1305 | 179.015 |
+| `seanet_bottleneck_shallow` | 21,548 | 84 | 21 | 40.0 | 0.0689 | 178.923 |
+
+Ratios against `millet`: params **10.25×**, FLOPs **11.06×**, latency 1.55×,
+peak memory **0.63× (i.e. worse)**.
+
+## 14. Draft 2 additions — the cost of interpretability itself
+
+From `PF`, same backbone, only the head differs:
+
+| model | head | params | MFLOPs |
+|---|---|---|---|
+| `conventional__mil_inceptiontime__mil_gap` | global average pooling | 422,666 | 842.981 |
+| `millet__mil_inceptiontime__mil_conjunctive` | conjunctive (interpretable) | 423,707 | 847.639 |
+
+Difference **1,041 parameters = 0.246 % of the model**, printed as 0.25 %.
+This is the fact §1, §3.1 and §6 all rest on: interpretability is not the
+expensive part.
+
+Encoder-side arithmetic quoted in §3.2, all verifiable by hand at `d = 128`:
+three depthwise convs `d(6+12+24) = 5,376`; pointwise `d² + d = 16,512`; one
+unit `22,144`; a dense conv over the same kernels `d²(5+11+23) = 638,976`.
+At `d = 64`, 4 blocks: 57,580 → 41,324 params (**28.2 %**) and 109.703 → 76.673
+MFLOPs (**30.1 %**).
+
+## 15. Numbers deliberately NOT used
 
 | number | why not |
 |---|---|
@@ -208,3 +269,5 @@ remaining gap is the **training budget**, not the code.
 | `seanet_bottleneck_adaptive` UCR results | only 6 datasets finished (I6) |
 | Any "runs on a microcontroller" claim | nothing was ever deployed (I17) |
 | MLPerf Tiny 38.6 K as a pass/fail threshold | it is an order of magnitude, not a spec |
+| `size_mb` from any results file | it is `torch.save` overhead, not a footprint (I26) |
+| Any UCR median-length or train-set-size claim | never measured here; the sentence was cut |

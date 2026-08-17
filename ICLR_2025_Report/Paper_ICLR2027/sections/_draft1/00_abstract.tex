@@ -1,0 +1,28 @@
+% !TEX root = ../main.tex
+% =====================================================================
+% ABSTRACT -- one paragraph, as the ICLR style requires.
+% It must promise exactly the four findings and nothing more.
+% =====================================================================
+
+Inherently interpretable time series classifiers built on Multiple Instance Learning (MIL) return a
+label and, from the same computation, an importance score for every time step. Progress in this
+line is usually reported as a stronger backbone paired with a better faithfulness score. We ask a
+different question: inside this family, what actually controls accuracy and explanation quality? We
+train 72 encoder $\times$ pooling-head combinations under one identical configuration, on a dataset
+with per-time-step ground truth and on 85 \ucr{} datasets, and report four findings. \textbf{(i)}
+Explanation quality is governed by \emph{selection inside the aggregator} rather than by encoder
+capacity: restricting the bag score to the largest $\kappa$ fraction of per-step evidence -- a head
+that reduces \emph{exactly} to the standard conjunctive baseline at $\kappa = 1$ -- raises
+ground-truth ranking quality from $0.722$ to $0.777$ \ndcg{}, and costs about one point of accuracy.
+\textbf{(ii)} Faithful interpretability is cheap: a $41$\,K-parameter model matches or exceeds a
+$424$\,K-parameter \millet{} baseline on accuracy, AOPCR and \ndcg{} \emph{simultaneously}, and the
+residual gap on \ucr{} is a capacity effect, not an architectural one -- at comparable capacity our
+encoder outranks the baseline ($11.53$ against $12.60$ mean rank). \textbf{(iii)} AOPCR, the
+faithfulness metric this literature reports, is not comparable across training configurations: the
+same architecture and the same code score $2.57$ under one recipe and $13.27$ under another, a
+$5.2\times$ swing that no change in explanation quality accounts for. We show why, and give a
+reporting protocol. \textbf{(iv)} Pooling heads that \emph{provably} contain the baseline as a
+special case still fail badly in practice -- the worst head we test is one of them -- because
+nothing in the objective drives the model back to the safe branch. Capacity-safety is not
+optimisation-safety. Together these results suggest the aggregator, not the backbone, is where the
+design effort in interpretable time series classification belongs.

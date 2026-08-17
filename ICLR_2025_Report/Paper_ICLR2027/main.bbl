@@ -1,15 +1,23 @@
-\begin{thebibliography}{22}
+\begin{thebibliography}{30}
 \providecommand{\natexlab}[1]{#1}
 \providecommand{\url}[1]{\texttt{#1}}
 \expandafter\ifx\csname urlstyle\endcsname\relax
   \providecommand{\doi}[1]{doi: #1}\else
   \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
 
-\bibitem[Bai et~al.(2018)Bai, Kolter, and Koltun]{bai2018tcn}
-Shaojie Bai, J.~Zico Kolter, and Vladlen Koltun.
-\newblock An empirical evaluation of generic convolutional and recurrent
-  networks for sequence modeling.
-\newblock \emph{arXiv preprint arXiv:1803.01271}, 2018.
+\bibitem[Baharani \& Tabkhi(2022)Baharani and Tabkhi]{baharani2022atcn}
+Mohammadreza Baharani and Hamed Tabkhi.
+\newblock {ATCN}: Resource-efficient processing of time series on edge.
+\newblock \emph{ACM Transactions on Embedded Computing Systems}, 21\penalty0
+  (5):\penalty0 1--21, 2022.
+
+\bibitem[Banbury et~al.(2021)Banbury, Zhou, Fedorov, Matas, Thakker, Gope,
+  Janapa~Reddi, Mattina, and Whatmough]{banbury2021micronets}
+Colby Banbury, Chuteng Zhou, Igor Fedorov, Ramon Matas, Urmish Thakker, Dibakar
+  Gope, Vijay Janapa~Reddi, Matthew Mattina, and Paul Whatmough.
+\newblock {MicroNets}: Neural network architectures for deploying {TinyML}
+  applications on commodity microcontrollers.
+\newblock In \emph{Proceedings of Machine Learning and Systems (MLSys)}, 2021.
 
 \bibitem[Chollet(2017)]{chollet2017xception}
 Fran{\c{c}}ois Chollet.
@@ -37,6 +45,13 @@ Thomas~G. Dietterich, Richard~H. Lathrop, and Tom{\'a}s Lozano-P{\'e}rez.
 \newblock \emph{Artificial Intelligence}, 89\penalty0 (1-2):\penalty0 31--71,
   1997.
 
+\bibitem[Durand et~al.(2016)Durand, Thome, and Cord]{durand2016weldon}
+Thibaut Durand, Nicolas Thome, and Matthieu Cord.
+\newblock {WELDON}: Weakly supervised learning of deep convolutional neural
+  networks.
+\newblock In \emph{IEEE Conference on Computer Vision and Pattern Recognition
+  (CVPR)}, pp.\  4743--4752, 2016.
+
 \bibitem[Early et~al.(2024)Early, Cheung, Cutajar, Xie, Kandola, and
   Twomey]{early2024millet}
 Joseph Early, Gavin K.~C. Cheung, Kurt Cutajar, Hanting Xie, Jasmina Kandola,
@@ -46,15 +61,11 @@ Joseph Early, Gavin K.~C. Cheung, Kurt Cutajar, Hanting Xie, Jasmina Kandola,
 \newblock In \emph{International Conference on Learning Representations
   (ICLR)}, 2024.
 
-\bibitem[Hashimoto et~al.(2020)Hashimoto, Fukushima, Koga, Takagi, Ko, Kohno,
-  Nakaguro, Nakamura, Hontani, and Takeuchi]{hashimoto2020msdamil}
-Noriaki Hashimoto, Daisuke Fukushima, Ryoichi Koga, Yusuke Takagi, Kaho Ko, Kei
-  Kohno, Masato Nakaguro, Shigeo Nakamura, Hidekata Hontani, and Ichiro
-  Takeuchi.
-\newblock Multi-scale domain-adversarial multiple-instance {CNN} for cancer
-  subtype classification with unannotated histopathological images.
+\bibitem[He et~al.(2016)He, Zhang, Ren, and Sun]{he2016resnet}
+Kaiming He, Xiangyu Zhang, Shaoqing Ren, and Jian Sun.
+\newblock Deep residual learning for image recognition.
 \newblock In \emph{IEEE Conference on Computer Vision and Pattern Recognition
-  (CVPR)}, pp.\  3852--3861, 2020.
+  (CVPR)}, pp.\  770--778, 2016.
 
 \bibitem[Howard et~al.(2017)Howard, Zhu, Chen, Kalenichenko, Wang, Weyand,
   Andreetto, and Adam]{howard2017mobilenets}
@@ -64,11 +75,26 @@ Andrew~G. Howard, Menglong Zhu, Bo~Chen, Dmitry Kalenichenko, Weijun Wang,
   applications.
 \newblock \emph{arXiv preprint arXiv:1704.04861}, 2017.
 
+\bibitem[Iandola et~al.(2016)Iandola, Han, Moskewicz, Ashraf, Dally, and
+  Keutzer]{iandola2016squeezenet}
+Forrest~N. Iandola, Song Han, Matthew~W. Moskewicz, Khalid Ashraf, William~J.
+  Dally, and Kurt Keutzer.
+\newblock {SqueezeNet}: {AlexNet}-level accuracy with 50x fewer parameters and
+  $<$0.5{MB} model size.
+\newblock \emph{arXiv preprint arXiv:1602.07360}, 2016.
+
 \bibitem[Ilse et~al.(2018)Ilse, Tomczak, and Welling]{ilse2018attention}
 Maximilian Ilse, Jakub~M. Tomczak, and Max Welling.
 \newblock Attention-based deep multiple instance learning.
 \newblock In \emph{International Conference on Machine Learning (ICML)}, pp.\
   2127--2136, 2018.
+
+\bibitem[Ioffe \& Szegedy(2015)Ioffe and Szegedy]{ioffe2015batchnorm}
+Sergey Ioffe and Christian Szegedy.
+\newblock Batch normalization: Accelerating deep network training by reducing
+  internal covariate shift.
+\newblock In \emph{International Conference on Machine Learning (ICML)}, pp.\
+  448--456, 2015.
 
 \bibitem[Ismail~Fawaz et~al.(2019)Ismail~Fawaz, Forestier, Weber, Idoumghar,
   and Muller]{fawaz2019review}
@@ -87,6 +113,15 @@ Hassan Ismail~Fawaz, Benjamin Lucas, Germain Forestier, Charlotte Pelletier,
 \newblock Inceptiontime: Finding {AlexNet} for time series classification.
 \newblock \emph{Data Mining and Knowledge Discovery}, 34\penalty0 (6):\penalty0
   1936--1962, 2020.
+
+\bibitem[Jacob et~al.(2018)Jacob, Kligys, Chen, Zhu, Tang, Howard, Adam, and
+  Kalenichenko]{jacob2018quantization}
+Benoit Jacob, Skirmantas Kligys, Bo~Chen, Menglong Zhu, Matthew Tang, Andrew
+  Howard, Hartwig Adam, and Dmitry Kalenichenko.
+\newblock Quantization and training of neural networks for efficient
+  integer-arithmetic-only inference.
+\newblock In \emph{IEEE Conference on Computer Vision and Pattern Recognition
+  (CVPR)}, pp.\  2704--2713, 2018.
 
 \bibitem[J{\"a}rvelin \& Kek{\"a}l{\"a}inen(2002)J{\"a}rvelin and
   Kek{\"a}l{\"a}inen]{jarvelin2002ndcg}
@@ -108,6 +143,12 @@ Bin Li, Yin Li, and Kevin~W. Eliceiri.
 \newblock In \emph{IEEE Conference on Computer Vision and Pattern Recognition
   (CVPR)}, pp.\  14318--14328, 2021.
 
+\bibitem[Lin et~al.(2020)Lin, Chen, Lin, Cohn, Gan, and Han]{lin2020mcunet}
+Ji~Lin, Wei-Ming Chen, Yujun Lin, John Cohn, Chuang Gan, and Song Han.
+\newblock {MCUNet}: Tiny deep learning on {IoT} devices.
+\newblock In \emph{Advances in Neural Information Processing Systems
+  (NeurIPS)}, 2020.
+
 \bibitem[Lundberg \& Lee(2017)Lundberg and Lee]{lundberg2017shap}
 Scott~M. Lundberg and Su-In Lee.
 \newblock A unified approach to interpreting model predictions.
@@ -120,6 +161,15 @@ Marco~Tulio Ribeiro, Sameer Singh, and Carlos Guestrin.
   classifier.
 \newblock In \emph{ACM SIGKDD International Conference on Knowledge Discovery
   and Data Mining}, pp.\  1135--1144, 2016.
+
+\bibitem[Risso et~al.(2023)Risso, Burrello, Conti, Lamberti, Chen, Benini,
+  Macii, Poncino, and Jahier~Pagliari]{risso2023tcn}
+Matteo Risso, Alessio Burrello, Francesco Conti, Lorenzo Lamberti, Yukai Chen,
+  Luca Benini, Enrico Macii, Massimo Poncino, and Daniele Jahier~Pagliari.
+\newblock Lightweight neural architecture search for temporal convolutional
+  networks at the edge.
+\newblock \emph{IEEE Transactions on Computers}, 72\penalty0 (3):\penalty0
+  744--758, 2023.
 
 \bibitem[Rudin(2019)]{rudin2019stop}
 Cynthia Rudin.
@@ -136,6 +186,14 @@ Wojciech Samek, Alexander Binder, Gr{\'e}goire Montavon, Sebastian Lapuschkin,
   learned.
 \newblock \emph{IEEE Transactions on Neural Networks and Learning Systems},
   28\penalty0 (11):\penalty0 2660--2673, 2017.
+
+\bibitem[Sandler et~al.(2018)Sandler, Howard, Zhu, Zhmoginov, and
+  Chen]{sandler2018mobilenetv2}
+Mark Sandler, Andrew Howard, Menglong Zhu, Andrey Zhmoginov, and Liang-Chieh
+  Chen.
+\newblock {MobileNetV2}: Inverted residuals and linear bottlenecks.
+\newblock In \emph{IEEE Conference on Computer Vision and Pattern Recognition
+  (CVPR)}, pp.\  4510--4520, 2018.
 
 \bibitem[Sundararajan et~al.(2017)Sundararajan, Taly, and
   Yan]{sundararajan2017ig}

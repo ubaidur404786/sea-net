@@ -1,82 +1,108 @@
 % !TEX root = ../main.tex
 % =====================================================================
-% 1. INTRODUCTION -- page budget 1.25
+% 1. INTRODUCTION -- page budget 1.20 (including the teaser figure)
 %
-% Written LAST, so it promises exactly what Sections 5-8 deliver and
-% nothing more. Order: the setting -> the question nobody asked ->
-% the four findings -> what we do not claim.
+% Six paragraphs, in the order a reader needs them:
+%   P1 problem      : classification + interpretation
+%   P2 deployment   : why size and FLOPs matter on small devices
+%   P3 baseline     : what MILLET gives us
+%   P4 limitation   : why MILLET is expensive, and where the cost sits
+%   P5 our approach : bottleneck encoder + Top-k pooling
+%   P6 result       : the trade-off, then the contribution list
 % =====================================================================
 
 \section{Introduction}
 \label{sec:intro}
 
-A time series classifier that only returns a label is of limited use where someone has to act on
-its output. When a model flags an anomaly in a patient recording or in a machine's vibration trace,
-the operator needs to know \emph{which part of the signal} triggered the alert.
-\citet{rudin2019stop} argues that in such settings a model that is interpretable \emph{by design}
-should be preferred to a black box paired with a post-hoc explainer, because only the first
-guarantees that the explanation and the decision are the same computation.
+A time series classifier is often not the end of the pipeline but the input to a decision. A
+vibration monitor that reports \emph{bearing fault} is only actionable if an engineer can see which
+part of the recording caused the verdict; a wearable that reports \emph{arrhythmia} is only auditable
+if the beats it reacted to can be inspected. Post-hoc attribution \citep{ribeiro2016lime,
+lundberg2017shap, sundararajan2017ig} is one route to that, but it needs a second computation on top
+of the classifier and explains a surrogate rather than the model. \citet{rudin2019stop} argues the
+alternative: build the explanation in, so that what is explained is what is predicted.
 
-For time series, the leading realisation of that idea is Multiple Instance Learning (MIL). \millet{}
-\citep{early2024millet} treats a series as a bag of time steps, replaces the global average pooling
-that ends every standard convolutional classifier \citep{wang2017fcn, fawaz2020inceptiontime} with a
-MIL \emph{pooling head} that scores each step, and computes the class prediction from those scores.
-The scores are therefore the explanation and the prediction at once. Work in this line is normally
-presented the same way: a backbone, a pooling head, an accuracy table, and a faithfulness score.
+The devices that most need this are the ones least able to afford it. Condition monitoring, wearable
+health sensing and structural monitoring run on microcontroller-class hardware, where a common
+configuration is a few hundred kilobytes of SRAM against roughly one megabyte of flash
+\citep{lin2020mcunet, banbury2021micronets}. A model exists there only if its weights fit in flash,
+its activations fit in SRAM, and its arithmetic fits in the energy budget between two sensor
+readings. Parameter count and FLOPs per series are therefore not secondary reporting columns in this
+setting; they decide whether the method is available at all.
 
-This paper asks a question that presentation leaves unanswered: \emph{within this family, what
-actually controls accuracy and explanation quality?} The question is answerable because the family
-factorises cleanly. A model is an encoder followed by a pooling head, the two communicate through
-one fixed tensor interface, and either can be replaced without touching the other. We exploit that
-to run a controlled sweep -- 72 encoder $\times$ pooling-head combinations, up to 129 datasets each,
-every model trained under a single identical configuration, with the \millet{} baseline re-trained
-inside the same harness rather than quoted from its paper. Under that design, any difference in the
-results is attributable to the component we changed.
+\millet{} \citep{early2024millet} is the natural starting point, because it already delivers the pair
+we want. It casts a series as a \emph{bag} of time steps and applies multiple instance learning
+\citep{dietterich1997mil, ilse2018attention}: an encoder produces one embedding per time step, an
+attention branch decides where to look, a per-step classifier decides what each position argues for,
+and the product of the two is both aggregated into the prediction and read out directly as the
+interpretation. The explanation is not an approximation of the model --- it is an intermediate value
+of the forward pass. \millet{} is also strong, matching or beating conventional deep time series
+classifiers on the \ucr{} archive \citep{dau2019ucr}.
 
-The sweep is built around \seanet{}, a compact multi-scale depthwise-separable encoder family and
-seven MIL pooling heads, each head targeting a specific limitation of \millet{}'s conjunctive
-pooling (\Cref{sec:design}). \seanet{} is the \emph{instrument} of this study rather than its
-result: it exists so that capacity, aggregation rule and training budget can be varied
-independently. Four findings follow, and they are the contribution of this paper.
+The cost, however, is inherited from the backbone rather than from the MIL formulation. \millet{}'s
+reference configuration uses InceptionTime \citep{fawaz2020inceptiontime}: 423{,}707 parameters and
+848\,MFLOPs for one series of length 1008, so at \mbox{32-bit} precision the weights alone occupy
+about 1.6\,MB --- above the flash budget above, before activations, runtime or application code.
+Nothing in the MIL construction requires this. Swapping \millet{}'s interpretable head for ordinary
+global average pooling on the same backbone removes only 1{,}041 of those parameters
+(\Cref{sec:method:mil}): the ability to explain itself costs a quarter of a percent of the model,
+and essentially all of the cost is the encoder. That observation is what this paper acts on.
 
+We therefore keep the MIL formulation and change the two components that decide its cost and its
+selectivity. First, the encoder: a stack of multi-scale depthwise-separable dilated convolutions,
+length-preserving by construction so that one embedding per time step survives to the head, in which
+the pointwise $1\times1$ mixing --- which dominates the parameter count once the convolutions are
+separable --- is factorised through a narrow bottleneck of width $r = d/4$, halving that term.
+Second, the pooling head: instead of averaging the evidence over all $T$ time steps behind a single
+shared attention gate, we score each class separately and average only the $k = \lceil \kappa T
+\rceil$ largest evidence values for that class. Both mechanisms are established --- separable
+convolutions \citep{chollet2017xception, howard2017mobilenets}, squeeze-and-expand bottlenecks
+\citep{he2016resnet, iandola2016squeezenet, sandler2018mobilenetv2}, and $k$-max selection in MIL
+\citep{durand2016weldon} --- and we claim neither as new. What is new is their combination inside an
+interpretable MIL time series classifier, and the measurement of what that combination retains and
+what it gives up.
+
+It retains a great deal and gives up something real. The resulting model uses 41{,}324 parameters and
+76.7\,MFLOPs per series, $10.3\times$ and $11.1\times$ below \millet{}. On \webtraffic{}, the one
+dataset here whose generator records which time steps actually carry the class signal, it beats the
+equally-trained baseline in both roles at once --- accuracy $0.947$ against $0.887$, \ndcg{} $0.772$
+against $0.677$ (\Cref{fig:teaser}). Across 85 \ucr{} datasets it is worse: $0.810$ against $0.827$
+for that baseline and $0.843$ for \millet{}'s published recipe. We locate that deficit rather than
+average it away: a wide version of the same encoder, at 269\,K parameters, reaches $0.829$ and
+outranks the equally-trained baseline, so what is being paid for is the shrinking and not a defect of
+the architecture --- about two accuracy points for an order of magnitude of cost.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=0.92\textwidth]{results/SEA_NET/teaser/2026-08-09_19-56-51/teaser_WebTraffic_idx0101}
+  \caption{The same \webtraffic{} series through both models --- \emph{top:} the \millet{} baseline
+  (423{,}707 parameters), \emph{bottom:} ours (41{,}324). Left, the predicted class distribution with
+  the true class marked; right, the series coloured by each model's own interpretation (red supports
+  the predicted class, blue argues against), with the shaded band showing where the generator put the
+  class signal. The smaller model is both more confident and more selective. Panel-title accuracy and
+  AOPCR are dataset means over three seeds; the single series shown is illustrative, not evidence.}
+  \label{fig:teaser}
+\end{figure}
+
+\paragraph{Contributions.}
 \begin{itemize}
-  \item \textbf{Selection inside the aggregator, not encoder capacity, drives explanation quality}
-        (\Cref{sec:selection}). Averaging only the largest $\kappa$ fraction of per-step evidence
-        makes the importance map exactly zero wherever the model used nothing. Because
-        $\kappa = 1$ recovers the conjunctive baseline \emph{exactly}, sweeping $\kappa$ is a
-        controlled experiment on selection alone: ground-truth ranking quality rises from $0.722$ to
-        $0.777$ \ndcg{}, with an optimum rather than a monotone gain, and costs about one accuracy
-        point. A second, independent knob -- an attention-entropy penalty -- moves both quantities
-        the same way.
-
-  \item \textbf{Faithful interpretability does not require a large backbone, and the residual gap is
-        capacity} (\Cref{sec:cheap}). A $41$\,K-parameter model beats the $424$\,K-parameter
-        baseline on accuracy, AOPCR and \ndcg{} at the same time on the one dataset where
-        explanation correctness can be checked against ground truth. On the 85 \ucr{} datasets the
-        small models fall behind the baseline, but a wider version of the \emph{same} encoder
-        overtakes it ($11.53$ against $12.60$ mean rank), which locates the effect in capacity
-        rather than in architecture.
-
-  \item \textbf{AOPCR is not comparable across training configurations} (\Cref{sec:aopcr}). Holding
-        the architecture, the code, the metric implementation and the data fixed and changing only
-        the training recipe moves AOPCR from $2.57$ to $13.27$. AOPCR is an area over a curve of raw
-        confidence differences, so its scale follows the scale of the logits. Every cross-paper
-        AOPCR comparison in this literature is therefore uninterpretable, including comparisons
-        against the published numbers of the method we build on. We give a reporting protocol that
-        costs nothing to adopt.
-
-  \item \textbf{Capacity-safety is not optimisation-safety} (\Cref{sec:safety}). Five of our seven
-        heads provably reduce to the conjunctive baseline for one setting of their parameters, an
-        argument used routinely to claim a design ``cannot hurt''. One of them is nonetheless the
-        worst head we test, by a wide margin. The mechanism is identifiable: no term in the
-        objective pushes the blend parameter back towards the safe branch, so a head that
-        \emph{can} represent the baseline never finds it.
+  \item \textbf{A MIL encoder cheap enough to be a candidate for small devices}
+        (\Cref{sec:method:enc}): multi-scale depthwise-separable dilated convolutions with a
+        bottlenecked pointwise mix, length-preserving so that per-time-step interpretation survives
+        end to end, at $10.3\times$ fewer parameters and $11.1\times$ fewer FLOPs than \millet{}.
+  \item \textbf{Per-class Top-$k$ conjunctive pooling} (\Cref{sec:method:head}), which adds no
+        parameters and reduces \emph{exactly} to the baseline head at $\kappa = 1$
+        (\Cref{prop:topk}) --- the property that makes the $\kappa$ sweep of \Cref{sec:res:ablation}
+        a controlled experiment rather than a comparison of two models.
+  \item \textbf{A component ablation} separating the two changes (\Cref{sec:res:ablation}): the
+        bottleneck buys the size reduction at no measurable accuracy cost, and \mbox{Top-$k$} buys
+        the interpretation quality, measured against per-time-step ground truth.
+  \item \textbf{A measurement caveat for this literature} (\Cref{sec:res:aopcr}): AOPCR is
+        unnormalised, and on fixed architecture and fixed code it moves by $5.2\times$ when only the
+        training budget changes, so we compare only against baselines we retrained ourselves.
 \end{itemize}
 
-\paragraph{What we do not claim.}
-We do not claim state of the art on the \ucr{} archive; we are not, and \Cref{sec:cheap} reports the
-margin by which. We do not claim that the encoder variants we build are individually important --
-\Cref{sec:cheap} shows the best pair is not composed of the two individually best halves. And
-because of \Cref{sec:aopcr}, we do not compare any AOPCR value in this paper against an AOPCR
-printed in another one. Every number we report was produced under a single configuration inside one
-harness, and the code that produced it is available at \anonrepo{}.
+\noindent We do not deploy on a microcontroller and report no on-device latency, energy or memory:
+our cost evidence is parameter counts, analytically counted FLOPs and GPU-side timing, which supports
+\emph{eligibility for a budget} rather than \emph{measured operation within it}. Nor do we claim
+state of the art on \ucr{}; \Cref{sec:res:ucr} quantifies the trade rather than softening it.

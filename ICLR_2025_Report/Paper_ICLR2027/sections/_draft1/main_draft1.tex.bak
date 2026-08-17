@@ -1,5 +1,5 @@
 % =====================================================================
-% main.tex -- the ONLY file that gets compiled.  DRAFT 2.
+% main.tex -- the ONLY file that gets compiled.
 %
 % Build:
 %   pdflatex main
@@ -13,10 +13,6 @@
 % ICLR 2027, double blind. \iclrfinalcopy stays COMMENTED OUT for the
 % submission -- uncommenting it would print the author block and the
 % paper would be desk rejected.
-%
-% Draft 1 (the "study paper" framing) is kept in sections/_draft1/ and is
-% not compiled. Draft 2 is the tiny-device framing: classification AND
-% interpretation at a much lower parameter and FLOP cost.
 % =====================================================================
 
 \documentclass{article}
@@ -24,9 +20,9 @@
 
 \input{preamble}
 
-\title{Interpretable Time Series Classification\\
-       on a Tiny Budget: Bottlenecked Separable TCNs\\
-       with Top-$k$ Conjunctive Pooling}
+\title{Selection, Not Scale: What Controls Accuracy and\\
+       Faithfulness in Inherently Interpretable\\
+       Time Series Classification}
 
 % Authors are hidden while \iclrfinalcopy is commented out. Do not put
 % real names here -- the style file prints this block in final mode only,
@@ -45,12 +41,15 @@ Paper under double-blind review}
 \end{abstract}
 
 \input{sections/01_introduction}
-\input{sections/02_related}
-\input{sections/03_method}
-\input{sections/04_setup}
-\input{sections/05_results}
-\input{sections/06_discussion}
-\input{sections/07_conclusion}
+\input{sections/02_background}
+\input{sections/03_designspace}
+\input{sections/04_protocol}
+\input{sections/05_selection}
+\input{sections/06_cheap}
+\input{sections/07_aopcr}
+\input{sections/08_safety}
+\input{sections/09_related}
+\input{sections/10_conclusion}
 
 % Statements go after the main text and before the references. None of
 % them counts towards the 9-page limit.

@@ -1,0 +1,82 @@
+% !TEX root = ../main.tex
+% =====================================================================
+% 1. INTRODUCTION -- page budget 1.25
+%
+% Written LAST, so it promises exactly what Sections 5-8 deliver and
+% nothing more. Order: the setting -> the question nobody asked ->
+% the four findings -> what we do not claim.
+% =====================================================================
+
+\section{Introduction}
+\label{sec:intro}
+
+A time series classifier that only returns a label is of limited use where someone has to act on
+its output. When a model flags an anomaly in a patient recording or in a machine's vibration trace,
+the operator needs to know \emph{which part of the signal} triggered the alert.
+\citet{rudin2019stop} argues that in such settings a model that is interpretable \emph{by design}
+should be preferred to a black box paired with a post-hoc explainer, because only the first
+guarantees that the explanation and the decision are the same computation.
+
+For time series, the leading realisation of that idea is Multiple Instance Learning (MIL). \millet{}
+\citep{early2024millet} treats a series as a bag of time steps, replaces the global average pooling
+that ends every standard convolutional classifier \citep{wang2017fcn, fawaz2020inceptiontime} with a
+MIL \emph{pooling head} that scores each step, and computes the class prediction from those scores.
+The scores are therefore the explanation and the prediction at once. Work in this line is normally
+presented the same way: a backbone, a pooling head, an accuracy table, and a faithfulness score.
+
+This paper asks a question that presentation leaves unanswered: \emph{within this family, what
+actually controls accuracy and explanation quality?} The question is answerable because the family
+factorises cleanly. A model is an encoder followed by a pooling head, the two communicate through
+one fixed tensor interface, and either can be replaced without touching the other. We exploit that
+to run a controlled sweep -- 72 encoder $\times$ pooling-head combinations, up to 129 datasets each,
+every model trained under a single identical configuration, with the \millet{} baseline re-trained
+inside the same harness rather than quoted from its paper. Under that design, any difference in the
+results is attributable to the component we changed.
+
+The sweep is built around \seanet{}, a compact multi-scale depthwise-separable encoder family and
+seven MIL pooling heads, each head targeting a specific limitation of \millet{}'s conjunctive
+pooling (\Cref{sec:design}). \seanet{} is the \emph{instrument} of this study rather than its
+result: it exists so that capacity, aggregation rule and training budget can be varied
+independently. Four findings follow, and they are the contribution of this paper.
+
+\begin{itemize}
+  \item \textbf{Selection inside the aggregator, not encoder capacity, drives explanation quality}
+        (\Cref{sec:selection}). Averaging only the largest $\kappa$ fraction of per-step evidence
+        makes the importance map exactly zero wherever the model used nothing. Because
+        $\kappa = 1$ recovers the conjunctive baseline \emph{exactly}, sweeping $\kappa$ is a
+        controlled experiment on selection alone: ground-truth ranking quality rises from $0.722$ to
+        $0.777$ \ndcg{}, with an optimum rather than a monotone gain, and costs about one accuracy
+        point. A second, independent knob -- an attention-entropy penalty -- moves both quantities
+        the same way.
+
+  \item \textbf{Faithful interpretability does not require a large backbone, and the residual gap is
+        capacity} (\Cref{sec:cheap}). A $41$\,K-parameter model beats the $424$\,K-parameter
+        baseline on accuracy, AOPCR and \ndcg{} at the same time on the one dataset where
+        explanation correctness can be checked against ground truth. On the 85 \ucr{} datasets the
+        small models fall behind the baseline, but a wider version of the \emph{same} encoder
+        overtakes it ($11.53$ against $12.60$ mean rank), which locates the effect in capacity
+        rather than in architecture.
+
+  \item \textbf{AOPCR is not comparable across training configurations} (\Cref{sec:aopcr}). Holding
+        the architecture, the code, the metric implementation and the data fixed and changing only
+        the training recipe moves AOPCR from $2.57$ to $13.27$. AOPCR is an area over a curve of raw
+        confidence differences, so its scale follows the scale of the logits. Every cross-paper
+        AOPCR comparison in this literature is therefore uninterpretable, including comparisons
+        against the published numbers of the method we build on. We give a reporting protocol that
+        costs nothing to adopt.
+
+  \item \textbf{Capacity-safety is not optimisation-safety} (\Cref{sec:safety}). Five of our seven
+        heads provably reduce to the conjunctive baseline for one setting of their parameters, an
+        argument used routinely to claim a design ``cannot hurt''. One of them is nonetheless the
+        worst head we test, by a wide margin. The mechanism is identifiable: no term in the
+        objective pushes the blend parameter back towards the safe branch, so a head that
+        \emph{can} represent the baseline never finds it.
+\end{itemize}
+
+\paragraph{What we do not claim.}
+We do not claim state of the art on the \ucr{} archive; we are not, and \Cref{sec:cheap} reports the
+margin by which. We do not claim that the encoder variants we build are individually important --
+\Cref{sec:cheap} shows the best pair is not composed of the two individually best halves. And
+because of \Cref{sec:aopcr}, we do not compare any AOPCR value in this paper against an AOPCR
+printed in another one. Every number we report was produced under a single configuration inside one
+harness, and the code that produced it is available at \anonrepo{}.

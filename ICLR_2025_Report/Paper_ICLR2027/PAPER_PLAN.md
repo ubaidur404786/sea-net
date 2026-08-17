@@ -10,9 +10,52 @@ Read this file and `PAPER_ISSUES.md` before working on the paper.
 
 ---
 
-## Part 1 — The story (decide this before writing a single line)
+## Part 1 — The story
 
-### Why the report cannot simply be cut down to 9 pages
+> **2026-08-17 — the story changed. Draft 2 supersedes Draft 1.**
+> Draft 1 was written as a *study paper* ("Selection, Not Scale"). You read it
+> and said the central idea was not represented: the real research problem is
+> **classification + interpretation on tiny devices**, reached by *MILLET
+> baseline → cheaper encoder via a TCN bottleneck → better pooling*. Draft 2 is
+> written to that. Draft 1 is archived, unchanged, in `sections/_draft1/`.
+> Everything from "Why the report cannot simply be cut down" to the end of the
+> C1–C4 table below is **Draft 1's reasoning, kept for the record only.**
+
+### Draft 2 — the thesis, in one sentence
+
+> \MILLET gives a time series classifier both a prediction and a per-time-step
+> explanation, but its cost is set by an InceptionTime backbone that is one to
+> two orders of magnitude above microcontroller budgets. Replacing that backbone
+> with a bottlenecked multi-scale separable dilated encoder, and the pooling
+> with per-class Top-$k$ selection, keeps both capabilities at $10.3\times$
+> fewer parameters and $11.1\times$ fewer FLOPs — for about two accuracy points
+> on the UCR archive.
+
+### Draft 2 — the five research questions the paper answers
+
+| | question | where | verdict |
+|---|---|---|---|
+| RQ1 | Is classification accuracy retained? | §5.1, §5.3 | Yes on WebTraffic (+6.0 pts); **no** on UCR-85 (−1.8 vs matched, −3.4 vs published) |
+| RQ2 | Is the interpretation retained? | §5.1 | Improved: NDCG@n 0.773 vs 0.677; AOPCR tied |
+| RQ3 | How much cost is removed? | §5.2 | Params 10.3×, FLOPs 11.1×; latency only 1.6×; **peak memory worse** |
+| RQ4 | What does the bottleneck contribute? | §5.4 | −28 % params at no measurable accuracy cost |
+| RQ5 | What does Top-$k$ contribute? | §5.4 | +0.044/+0.059 NDCG@n (3–4 seed sd); accuracy effect not claimed |
+
+### Draft 2 — what is NOT claimed
+
+- No on-device deployment. No microcontroller was used. int8 numbers are
+  arithmetic, labelled as such.
+- No novelty for separable convolutions, bottlenecks, or $k$-max MIL selection
+  (issue I23) — only for their combination and its measurement.
+- No state of the art on UCR.
+- No comparison against MILLET's published AOPCR (§5.5 says it is not
+  comparable, so quoting it would contradict our own finding).
+
+---
+
+### Draft 1's reasoning (archived — do not act on this section)
+
+#### Why the report cannot simply be cut down to 9 pages
 
 The report is written as *"here is SEA-Net, a new architecture"*. As an ICLR
 paper that framing loses, for one reason: an architecture paper is judged on
@@ -198,3 +241,7 @@ spread printed next to it.
 | 2026-08-17 | 2 | `NUMBERS.md` written — every number the paper prints, traced to its source file and column. κ seed-0 values verified directly against `results.csv` |
 | 2026-08-17 | 3–4 | **First draft complete and building clean.** `main.tex`, `preamble.tex`, `refs.bib`, 12 section files. 0 errors, 0 undefined references, 0 undefined citations, 0 overfull boxes. 17 pages total |
 | 2026-08-17 | — | Two gaps found in the draft itself: **12 pages of main text against a 9-page limit** (I20) and **no figures yet** (I21). Both must be solved together, since figures cost about a page |
+| 2026-08-17 | — | **Story changed on your instruction.** Draft 1 archived to `sections/_draft1/`; Draft 2 written to the tiny-device framing (see Part 1) |
+| 2026-08-17 | novelty | Literature check run before writing: separable conv, squeeze/expand bottleneck, $k$-max MIL selection and the MCU budget framing all already exist. Six new references added; the paper now states plainly that no component is novel in isolation (issue I23) |
+| 2026-08-17 | 3–5 | **Draft 2 complete.** New sections `02_related`, `03_method`, `04_setup`, `05_results`, `06_discussion`, `07_conclusion`; abstract, introduction, statements and appendix rewritten. New TikZ architecture figure in `figures/fig_arch.tex`. 72-row leaderboard generated from the CSV rather than typed |
+| 2026-08-17 | 6 | **Compliance pass passed.** Main text ends exactly at page 9 (measured, not estimated); 17 pages total; 0 errors, 0 undefined references, 0 undefined citations, 0 overfull boxes, no `??`. Anonymity sweep clean including PDF metadata (`/Author` empty). AI use statement present. Statements and appendices after the references |

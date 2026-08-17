@@ -1,28 +1,30 @@
 % !TEX root = ../main.tex
 % =====================================================================
-% ABSTRACT -- one paragraph, as the ICLR style requires.
-% It must promise exactly the four findings and nothing more.
+% ABSTRACT -- four questions, in order: problem / limitation / method /
+% result. No implementation detail, no adjectives, no claim that is not
+% in Section 5.
 % =====================================================================
 
-Inherently interpretable time series classifiers built on Multiple Instance Learning (MIL) return a
-label and, from the same computation, an importance score for every time step. Progress in this
-line is usually reported as a stronger backbone paired with a better faithfulness score. We ask a
-different question: inside this family, what actually controls accuracy and explanation quality? We
-train 72 encoder $\times$ pooling-head combinations under one identical configuration, on a dataset
-with per-time-step ground truth and on 85 \ucr{} datasets, and report four findings. \textbf{(i)}
-Explanation quality is governed by \emph{selection inside the aggregator} rather than by encoder
-capacity: restricting the bag score to the largest $\kappa$ fraction of per-step evidence -- a head
-that reduces \emph{exactly} to the standard conjunctive baseline at $\kappa = 1$ -- raises
-ground-truth ranking quality from $0.722$ to $0.777$ \ndcg{}, and costs about one point of accuracy.
-\textbf{(ii)} Faithful interpretability is cheap: a $41$\,K-parameter model matches or exceeds a
-$424$\,K-parameter \millet{} baseline on accuracy, AOPCR and \ndcg{} \emph{simultaneously}, and the
-residual gap on \ucr{} is a capacity effect, not an architectural one -- at comparable capacity our
-encoder outranks the baseline ($11.53$ against $12.60$ mean rank). \textbf{(iii)} AOPCR, the
-faithfulness metric this literature reports, is not comparable across training configurations: the
-same architecture and the same code score $2.57$ under one recipe and $13.27$ under another, a
-$5.2\times$ swing that no change in explanation quality accounts for. We show why, and give a
-reporting protocol. \textbf{(iv)} Pooling heads that \emph{provably} contain the baseline as a
-special case still fail badly in practice -- the worst head we test is one of them -- because
-nothing in the objective drives the model back to the safe branch. Capacity-safety is not
-optimisation-safety. Together these results suggest the aggregator, not the backbone, is where the
-design effort in interpretable time series classification belongs.
+Time series classifiers deployed on sensor nodes are often asked for two things at once: a
+prediction, and an indication of \emph{which part of the signal produced it}. Multiple instance
+learning supplies both from a single forward pass, and \millet{} \citep{early2024millet} is the
+current reference formulation. Its cost, however, is set by an InceptionTime backbone: 424\,K
+parameters and 848\,MFLOPs per series, one to two orders of magnitude above the flash and compute
+budgets typical of microcontroller-class hardware. We ask whether the pair \emph{classification $+$
+interpretation} survives being made an order of magnitude cheaper. We replace the backbone with a
+length-preserving multi-scale depthwise-separable dilated convolutional encoder whose pointwise
+channel mixing --- the step that dominates its parameter count --- is factorised through a narrow
+bottleneck, and replace the shared-gate mean of conjunctive pooling with a per-class
+\mbox{Top-$k$} head that averages only the $\kappa$ fraction of most supportive time steps. Neither
+component is new in isolation; the contribution is the combination and the measurement of what it
+costs. The resulting model has \textbf{41.3\,K parameters} and \textbf{76.7\,MFLOPs} per series,
+$10.3\times$ and $11.1\times$ below the baseline. On \webtraffic{}, the only dataset here with
+per-time-step ground truth, it improves on the equally-trained baseline in both roles at once:
+accuracy $0.947$ against $0.887$, \ndcg{} $0.772$ against $0.677$. Across 85 \ucr{} datasets it gives
+up $1.8$ accuracy points against that baseline and $3.4$ against \millet{}'s published recipe, and a
+wider version of the same encoder recovers the loss --- placing the deficit in capacity rather than
+architecture. An ablation separates the components: the bottleneck removes 28\,\% of the parameters
+at no measurable accuracy cost, and \mbox{Top-$k$} pooling supplies the interpretation gain. We
+further show that AOPCR, the faithfulness measure used in this literature, moves by $5.2\times$ on a
+fixed architecture when only the training budget changes, so faithfulness must be compared at
+matched budgets. We report a parameter and FLOP reduction, not an on-device deployment.

@@ -1,240 +1,305 @@
 % !TEX root = ../main.tex
 % =====================================================================
-% APPENDICES -- after the references, unlimited length, but reviewers
-% are not required to read them. So each one must be reachable from a
-% specific sentence in the main text, and nothing that carries a claim
-% may live here alone.
+% APPENDIX -- after the references, and clearly marked. Everything here
+% supports the main text; nothing here is needed to follow the argument.
 %
-% Labels used by the main text:
-%   app:encoders  app:hparams  app:cost  app:seeds
-%   app:ablations app:published app:leaderboard
+% Order follows the order a reader would look things up:
+%   A metrics, B model and training detail, C additional results.
 % =====================================================================
 
-\section{The \seanet{} Encoder Variants}
+\section{Metric definitions}
+\label{app:metrics}
+
+\paragraph{AOPCR.}
+Let $\bagpred^{\,c}(\bag)$ be the logit of the predicted class $c$ on the unperturbed series, and let
+$\bag^{(m)}$ be the series with the $m$ time steps that the model itself ranks most important for $c$
+replaced by the per-series mean. AOPCR integrates the drop over the perturbation order,
+\begin{equation}
+  \mathrm{AOPCR} = \frac{1}{M+1}\sum_{m=0}^{M}
+      \Big( \bagpred^{\,c}(\bag) - \bagpred^{\,c}\big(\bag^{(m)}\big) \Big),
+  \label{eq:aopc}
+\end{equation}
+following \citet{samek2017aopc} as adapted to time series by \citet{early2024millet}, with $M$ set to
+$10\,\%$ of the series length in steps of $1\,\%$. Higher is better. Note that \Cref{eq:aopc} is a
+difference of \emph{unnormalised} logits, which is the origin of the comparability problem documented
+in \Cref{sec:res:aopcr}: two models whose logits live on different scales produce AOPCR values on
+different scales, whatever the quality of their rankings.
+
+\paragraph{\ndcg{}.}
+Where per-time-step ground truth exists, we instead rank the $\nsteps$ time steps by the claimed
+importance $\interp_{c,j}$ and score that ranking with normalised discounted cumulative gain
+\citep{jarvelin2002ndcg} at cut-off $n$, the number of steps the generator actually marked as
+carrying the class signal. Relevance is binary. The normalisation is against the ideal ranking of the
+same series, so \ndcg{} lies in $[0,1]$ and is comparable between models, datasets and papers ---
+which is why the interpretation claims of this paper rest on it and not on AOPCR.
+
+\section{Model and training detail}
+
+\subsection{Encoder variants}
 \label{app:encoders}
 
-All seven variants share the multi-scale separable block of \Cref{sec:design:enc} and change it at
-one point. Each is stated as the problem it addresses and the modification.
+The main text uses two encoders: the plain multi-scale separable stack of \Cref{sec:method:enc}
+(\texttt{sea\_mstcn\_sep}) and its bottlenecked form (\Cref{eq:bottleneck},
+\texttt{sea\_mstcn\_sep\_bottleneck}). Five further variants were swept and appear in
+\Cref{tab:app_encoders}: \emph{gated}, which collapses the time axis to a summary vector and
+re-weights channels by it; \emph{input-gated}, which reads the same gate from the raw input instead;
+\emph{spike/trend}, which runs a smoothed and a high-pass branch and mixes them;
+\emph{reconstruction-residual}, which appends features built from a reconstruction error; and two
+\emph{wrappers} that do not replace an encoder but sit around one --- \emph{multi-scale channels},
+which adds rolling max/min/std input channels, and \emph{multi-scale pyramid}, which runs the same
+encoder at four downsampling rates and fuses back to length $\nsteps$. All preserve $\nsteps$. Only
+the bottleneck is part of this paper's contribution; the others are the context showing that the
+bottleneck was the right place to cut.
 
-\paragraph{Bottleneck.} The pointwise $1\times1$ step dominates the parameter count, costing
-$\dmodel^2$ per unit. Factorise it through a narrow middle layer of width $r = \dmodel/4$:
-$P = P_{\mathrm{expand}} P_{\mathrm{squeeze}}$, cost $\dmodel^2 \to 2\dmodel r = \dmodel^2/2$. At
-$\dmodel = 64$ with 4 blocks this takes the whole model from $57{,}580$ to $41{,}324$ parameters, a
-$28\%$ saving on the encoder. This is the smallest encoder here and the one in the headline row of
-\Cref{tab:web}.
-
-\paragraph{Gated.} Not every channel is informative for every series. Collapse the time axis to a
-summary $\mathbf{s}$, form a gate $\mathbf{g} = \sig(W_g \mathbf{s}) \in [0,1]^{\dmodel}$, and
-re-weight every step by $(1+\mathbf{g})$. The multiplier is $(1+\mathbf{g}) \in [1,2]$ rather than
-$\mathbf{g}$ deliberately: a plain product could drive features to zero, whereas amplifying on top
-of the original preserves the differences between time steps, which is what AOPCR and \ndcg{}
-measure. Three summaries (max, mean, last) were trained.
-
-\paragraph{Input-gated.} The gate above is one vector for the whole series. Compute it instead from
-the raw input with a kernel-7 convolution, giving $\mathbf{g}_j$ per time step. The two variants
-differ only in the subscript, so training both isolates the granularity of gating.
-
-\paragraph{Spike/trend.} Convolution plus normalisation is biased towards smooth patterns. Run an
-explicitly high-pass branch -- subtract a moving average of window $5$, convolve to $16$ channels --
-and concatenate it with the trend features. The expectation was an advantage on impulsive evidence;
-\Cref{tab:encoder_ablation} shows it was the weakest true encoder, so the expectation was not met.
-
-\paragraph{Reconstruction-residual.} Rather than assuming what the encoder misses, measure it: a
-$1\times1$ convolution reconstructs the raw input from the trend features, and the residual
-$\bag - \widehat{\bag}$ becomes $16$ extra channels. There is no separate reconstruction loss, so
-this is a learned residual feature and not an auto-encoder. It was the second strongest encoder.
-
-\paragraph{Multi-scale channels (wrapper).} Append rolling maximum, minimum and standard deviation
-over windows $\{3,7,15,31\}$ plus the sign of the first difference, widening the input from $1$ to
-$14$ channels. Max, min and standard deviation are used rather than a rolling mean because a mean is
-linear and the stem convolution could learn it unaided.
-
-\paragraph{Multi-scale pyramid (wrapper).} Run one shared encoder on the series downsampled by
-$\{1,2,4,8\}$, stretch the outputs back to length $\nsteps$, and fuse with attention over the
-\emph{scale} axis, never over time -- the per-step signal the metrics depend on is preserved. This is
-the one-dimensional analogue of multi-magnification whole-slide MIL \citep{hashimoto2020msdamil}. It
-was the weakest variant built, and it imposes a constraint the pipeline checks automatically: the
-wrapped encoder's receptive field must not exceed $\nsteps / 8$, or the coarse scales collapse.
-
-\paragraph{Rejected alternatives.} A Transformer encoder was rejected on two grounds: full
-self-attention costs $\mathcal{O}(\nsteps^2)$, prohibitive at $1{,}000$--$1{,}500$ steps on a
-constrained device, and unrestricted attention lets any output position draw on any input position,
-which diffuses the importance map. Pruning or quantising InceptionTime would reduce size but leaves
-the global average pooling in place, so the model would still need a post-hoc explainer.
-
-\section{Full Hyperparameters}
-\label{app:hparams}
-
-\begin{table}[htbp]
-\caption{Every setting shared across the study, plus the two encoder capacities. The head-specific
-initial values are the constructor defaults and are not overridden by any configuration file.}
-\label{tab:hparams}
-\begin{center}
-\footnotesize
-\begin{tabular}{lll}
-\toprule
-\textbf{Group} & \textbf{Parameter} & \textbf{Value} \\
-\midrule
-Optimisation & optimiser & Adam \citep{kingma2015adam} \\
-             & learning rate / weight decay & $1.25\times10^{-3}$ / $1.2\times10^{-4}$ \\
-             & epochs / patience & max $400$ / $60$ \\
-             & batch size & $\min(\lfloor n_{\mathrm{train}}/10\rfloor, 16)$, floor $2$ \\
-             & validation split & stratified $80/20$ if $n_{\mathrm{train}} \geq 100$ \\
-             & label smoothing & $0.13$ \\
-             & $\lambda_{\mathrm{focus}}$ (\Cref{eq:loss}) & $0.01$; $0$ for the \millet{} baseline \\
-             & seeds & $3$ for four models, $1$ for the other $68$ \\
-\midrule
-Encoder, narrow & width $\dmodel$ / blocks & $64$ / $4$ \\
-Encoder, wide   & width $\dmodel$ / blocks & $128$ / $6$ \\
-\emph{both}     & kernels $\mathcal{K}$ / dilation cap / dropout & $\{5,11,23\}$ / $16$ / $0.2$ \\
-\midrule
-Pooling & attention width $\dattn$ / dropout & $8$ / $0.2$ \\
-        & Top-$k$ fraction $\kappa$ & $0.1$ \\
-        & initial $\tau_0$ (softmax conjunctive) & $1.0$ \\
-        & initial $\beta_0$ (adaptive class-wise) & $0.3$ \\
-        & initial $\lambda_0$ (attention-max / dual-stream) & $0.5$ / $0.05$ \\
-\bottomrule
-\end{tabular}
-\end{center}
-\end{table}
-
-\section{Cost Measurements}
-\label{app:cost}
-
-\begin{table}[htbp]
-\caption{Measured on the real \webtraffic{} input (length $1{,}008$, $10$ classes, batch $32$) on one
-GPU. ``Train'' is wall-clock time to convergence including early stopping, mean $\pm$ sd over the
-three \webtraffic{} seeds where available. The last two columns are the ones that do not favour the
-small models and are discussed in \Cref{sec:cheap:cost}.}
-\label{tab:cost}
-\begin{center}
-\scriptsize
-\setlength{\tabcolsep}{4pt}
-\begin{tabular}{lrrrrrr}
-\toprule
-\textbf{Model} & \textbf{Params} & \textbf{Size} & \textbf{FLOPs} &
-\textbf{1 pred.} & \textbf{Peak mem} & \textbf{Train} \\
- & & (MB) & (M) & (ms) & (MB) & (s) \\
-\midrule
-\seanet{} bottleneck $+$ Top-$k$ & \textbf{41{,}324} & \textbf{1.43} & \textbf{76.7} & 0.131 & 179.0 & $117.3\pm14.0$ \\
-\seanet{} gated $+$ Top-$k$      & 61{,}740  & 1.50 & 109.7 & 0.128 & \textbf{64.9} & $91.3\pm25.9$ \\
-\seanet{} wide $+$ class-wise    & 269{,}164 & 3.54 & 523.7 & 0.359 & 123.7 & --- \\
-\millet{}                        & 423{,}707 & 4.11 & 847.6 & 0.203 & 112.3 & $50.4\pm9.5$ \\
-ResNet $+$ conjunctive           & 506{,}331 & 4.42 & 1013.2 & 0.139 & 76.5 & 38.1 \\
-FCN $+$ conjunctive              & 267{,}035 & 3.47 & 535.2 & \textbf{0.068} & 132.2 & 20.8 \\
-\bottomrule
-\end{tabular}
-\end{center}
-\end{table}
-
-\section{Per-Seed Results}
-\label{app:seeds}
-
-\begin{table}[htbp]
-\caption{\webtraffic{} accuracy for the four models trained with three seeds. These four spreads are
-what the rule of \Cref{sec:protocol} is calibrated against.}
-\label{tab:seeds}
+\begin{table}[h]
+\caption{Encoder axis: mean over every head the encoder was paired with, \webtraffic{}. $n$ is the
+number of pairings. These are means over heterogeneous pairings, so they indicate spread, not a
+ranking of encoders.}
+\label{tab:app_encoders}
 \begin{center}
 \small
-\begin{tabular}{lcccc}
-\toprule
-\textbf{Model} & \textbf{Seed 0} & \textbf{Seed 1} & \textbf{Seed 2} & \textbf{Mean $\pm$ sd} \\
-\midrule
-\seanet{} gated $+$ Top-$k$        & 0.954 & 0.958 & 0.952 & $0.955\pm0.003$ \\
-\seanet{} bottleneck $+$ Top-$k$   & 0.938 & 0.938 & 0.966 & $0.947\pm0.016$ \\
-\seanet{} input-gated $+$ adaptive & 0.938 & 0.880 & 0.898 & $0.905\pm0.030$ \\
-\millet{}, re-trained here         & 0.894 & 0.876 & 0.892 & $0.887\pm0.010$ \\
-\bottomrule
-\end{tabular}
-\end{center}
-\end{table}
-
-The three behave differently, and this matters for how far each result travels. The gated model is
-stable, six thousandths between best and worst seed. The bottleneck model is tight on two seeds and
-jumps on the third, so its mean is raised by one good run. The input-gated model is genuinely
-dispersed, which is why its AOPCR advantage in \Cref{tab:web} is read as noise.
-
-\section{Encoder Ablation}
-\label{app:ablations}
-
-\begin{table}[htbp]
-\caption{\webtraffic{} accuracy, AOPCR and \ndcg{} for each encoder, averaged over the $n$ pooling
-heads it was paired with; $^{\dagger}$ marks a wrapper. The companion table on the head axis is
-\Cref{tab:pooling}. Two cautions: several groups are small, and the bottleneck encoder's mean is
-dragged down because it was also paired with the weak heads -- its best pairing is the headline row
-of \Cref{tab:web}.}
-\label{tab:encoder_ablation}
-\begin{center}
-\footnotesize
 \begin{tabular}{lcccr}
 \toprule
-\textbf{Encoder} & \textbf{Mean acc.} & \textbf{Mean AOPCR} & \textbf{Mean \ndcg{}} & \textbf{$n$} \\
+\textbf{Encoder} & Acc. & AOPCR & \ndcg{} & $n$ \\
 \midrule
-\seanet{} multi-scale channels$^{\dagger}$ & \textbf{0.937} & 2.385 & \textbf{0.747} & \phantom{0}4 \\
-\seanet{} reconstruction-residual          & 0.924 & 2.315 & 0.719 & \phantom{0}5 \\
-\seanet{} input-gated                      & 0.904 & 2.345 & 0.718 & \phantom{0}5 \\
-\seanet{} gated                            & 0.902 & 2.056 & 0.710 & 19 \\
-\seanet{} base                             & 0.898 & 1.933 & 0.694 & 12 \\
-\seanet{} bottleneck                       & 0.884 & 2.209 & 0.694 & \phantom{0}8 \\
-\seanet{} spike/trend                      & 0.858 & 1.814 & 0.677 & \phantom{0}7 \\
-\seanet{} multi-scale pyramid$^{\dagger}$  & 0.771 & 1.394 & 0.604 & \phantom{0}3 \\
-\midrule
-InceptionTime (\millet{})                  & 0.887 & 2.569 & 0.677 & \phantom{0}1 \\
-ResNet                                     & 0.772 & 2.952 & 0.554 & \phantom{0}1 \\
-FCN                                        & 0.742 & 3.826 & 0.533 & \phantom{0}1 \\
+multi-scale channels (wrapper)   & 0.937 & 2.385 & 0.747 & 4 \\
+reconstruction-residual          & 0.924 & 2.315 & 0.719 & 5 \\
+input-gated                      & 0.904 & 2.345 & 0.718 & 5 \\
+gated                            & 0.902 & 2.056 & 0.710 & 19 \\
+plain (\texttt{sea\_mstcn\_sep}) & 0.898 & 1.933 & 0.694 & 12 \\
+bottleneck                       & 0.884 & 2.209 & 0.694 & 8 \\
+spike/trend                      & 0.858 & 1.814 & 0.677 & 7 \\
+multi-scale pyramid (wrapper)    & 0.771 & 1.394 & 0.604 & 3 \\
 \bottomrule
 \end{tabular}
 \end{center}
 \end{table}
 
-The encoder spread is $0.771$--$0.937$ ($0.166$) against the head spread of $0.744$--$0.921$
-($0.177$) in \Cref{tab:pooling}. Those two numbers are the evidence for \Cref{sec:cheap:axes}.
+\subsection{Pooling heads}
+\label{app:heads}
 
-\section{Relation to the Published \millet{} Results}
-\label{app:published}
+Every head keeps the two-branch template of \Cref{eq:conj_gate}, so a head is fully described by two
+choices: the shape of the attention branch, and the operator that reduces the $\nsteps$ evidence
+values $g_j^k$ to one number. \Cref{tab:app_heads} lays out all seven on those two axes together with
+the parameter setting at which each becomes conjunctive pooling exactly. Two are adapted from
+histopathology MIL rather than designed here: gated attention is due to \citet{ilse2018attention} and
+the dual-stream mechanism to \citet{li2021dsmil}; our changes to those two are the transfer to time
+series, the per-class formulation, and --- for the dual stream --- removing its contrastive
+pre-training and adding a learnable blend.
 
-The main text compares only models re-trained inside this harness. This appendix answers the
-separate question that choice raises: how do those numbers relate to the ones \millet{} published,
-and is the difference caused by our re-implementation or by the training configuration?
+\begin{table}[h]
+\caption{The seven heads as two independent slots. ``Reduces at'' names the setting at which the head
+becomes conjunctive pooling exactly. L1--L3 are the limitations listed in \Cref{sec:method:mil}.}
+\label{tab:app_heads}
+\begin{center}
+\scriptsize
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{lllcc}
+\toprule
+\textbf{Head} & \textbf{Attention} & \textbf{Reduction over time} & \textbf{Reduces at} & \textbf{Targets} \\
+\midrule
+Conjunctive (baseline)    & shared gate    & mean                            & --- & --- \\
+Class-wise conjunctive    & per-class gate & mean                            & $a_j^k = a_j$ & L1 \\
+Softmax conjunctive       & per-class score& softmax, learnable $\tau$       & $\tau \to \infty$ & L2 \\
+Adaptive class-wise       & per-class gate & soft-argmax, learnable $\beta_k$& $\beta_k \to 0$ & L3 \\
+Top-$k$ conjunctive       & per-class gate & mean of the $k$ largest         & $\kappa = 1$ & L3 \\
+Attention-max             & per-class gate & blend of mean and max           & $\lambda_k \to 0$ & L3 \\
+Per-class gated attention & gated $\tanh\!\odot\!\sig$ & softmax             & \textbf{none} & L1, L3 \\
+Dual-stream conjunctive   & gate $+$ critical query & blend of two streams   & $\lambda \to 0$ & L3 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
 
-\begin{table}[htbp]
-\caption{The \millet{} baseline (InceptionTime $+$ conjunctive pooling) measured five ways. Only the
-last row is used anywhere in the main text, except in \Cref{tab:aopcr} and \Cref{tab:ucr} where the
-fourth row appears explicitly as the alternative recipe.}
-\label{tab:published}
+\Cref{tab:app_pooling} averages each head over every encoder it was paired with. Two observations
+support statements made in the main text. First, the spread of the head choice ($0.744$ to $0.921$)
+is as large as the spread of the encoder choice in \Cref{tab:app_encoders} ($0.771$ to $0.937$), so
+the pooling head is a first-class design axis and not a detail. Second, a reduction property is
+\emph{not} a safety guarantee: five of the seven heads provably contain conjunctive pooling as a
+special case, and the dual-stream head, which is one of them, is nevertheless the worst head tested
+--- its four pairings score $0.860$, $0.824$, $0.736$ and $0.556$. The mechanism is visible in the
+training runs: its blend weight starts at $\lambda_0 = 0.05$ and nothing in \Cref{eq:loss} pushes it
+back towards the reduction point, so being \emph{able} to recover the baseline does not mean being
+optimised towards it. That is why the main text argues for \mbox{Top-$k$} on measured \ndcg{} rather
+than on its reduction property alone.
+
+\begin{table}[h]
+\caption{Head axis: mean over every encoder the head was paired with, \webtraffic{}. Excludes the
+$\kappa$ and $\lambda_{\mathrm{focus}}$ ablation configurations and the published-recipe baseline,
+which would otherwise weight \mbox{Top-$k$} and the bottleneck encoder.}
+\label{tab:app_pooling}
+\begin{center}
+\small
+\begin{tabular}{lcccr}
+\toprule
+\textbf{Head} & Acc. & AOPCR & \ndcg{} & $n$ \\
+\midrule
+Class-wise conjunctive    & 0.921 & 2.322 & 0.692 & 10 \\
+Per-class gated attention & 0.918 & 1.869 & 0.733 & 4 \\
+Adaptive class-wise       & 0.912 & 2.210 & 0.732 & 9 \\
+Softmax conjunctive       & 0.907 & 1.690 & 0.712 & 9 \\
+Top-$k$ conjunctive       & 0.904 & 2.267 & 0.712 & 16 \\
+Attention-max             & 0.838 & 1.758 & 0.645 & 8 \\
+Dual-stream conjunctive   & 0.744 & 2.007 & 0.636 & 4 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+\subsection{Hyperparameters}
+\label{app:hparams}
+
+Identical for every model and every dataset unless stated: Adam \citep{kingma2015adam}, learning rate
+$1.25\times10^{-3}$, weight decay $1.2\times10^{-4}$, at most 400 epochs, early stopping patience 60
+on validation loss, batch size $\min(\lfloor n_{\mathrm{train}}/10 \rfloor, 16)$ with a floor of 2,
+label smoothing $0.13$, stratified $80/20$ validation split when $n_{\mathrm{train}} \ge 100$ and
+training-set monitoring otherwise. Encoder: $\dmodel = 64$, 4 blocks (wide: $\dmodel = 128$, 6
+blocks), kernels $\{5, 11, 23\}$, dilation doubling per block capped at 16, dropout $0.2$. Head:
+attention width 8, $\kappa = 0.1$, $\tau_0 = 1.0$, $\beta_0 = 0.3$, $\lambda_0 = 0.5$
+(attention-max) or $0.05$ (dual-stream). Loss: $\lambda_{\mathrm{focus}} = 0.01$ for our models and
+$0$ for the \millet{} baselines, since the term is our addition. The published-recipe baseline uses
+\millet{}'s own settings instead, of which the material difference is 1{,}500 epochs against our 400.
+\webtraffic{} is generated at the released defaults: 1{,}000 series, length 1{,}008, 10 classes,
+$50/50$ train/test split. Series are standardised per series; no other preprocessing is applied.
+
+\section{Additional results}
+
+\subsection{Per-seed values}
+\label{app:seeds}
+
+\begin{table}[h]
+\caption{The three models run with three seeds on \webtraffic{}. The standard deviations in the last
+three columns are the noise floor used throughout the paper: no difference smaller than the relevant
+one is reported as a result.}
+\label{tab:app_seeds}
 \begin{center}
 \footnotesize
-\begin{tabular}{lcc}
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{lcccccc}
 \toprule
-\textbf{How the number was obtained} & \textbf{\webtraffic{} acc.} & \textbf{\ucr{}-85 mean acc.} \\
+\textbf{Model} & seed 0 & seed 1 & seed 2 & Acc. mean $\pm$ sd & AOPCR sd & \ndcg{} sd \\
 \midrule
-Published \citep{early2024millet}, mean of $5$ seeds  & 0.924 & 0.8445 \\
-Published \citep{early2024millet}, $5$-model ensemble & 0.940 & --- \\
-Their released weights, evaluated in this harness     & 0.922 & --- \\
-Re-trained here under \emph{their} hyperparameters    & 0.920 & 0.8434 \\
-\midrule
-\textbf{Re-trained here under \Cref{sec:protocol}}    & \textbf{0.887} & \textbf{0.8274} \\
+\seanet{} gated $+$ Top-$k$      & 0.954 & 0.958 & 0.952 & $0.955 \pm 0.003$ & $\pm 0.131$ & $\pm 0.022$ \\
+\seanet{} bottleneck $+$ Top-$k$ & 0.938 & 0.938 & 0.966 & $0.947 \pm 0.016$ & $\pm 0.214$ & $\pm 0.013$ \\
+\millet{} (matched budget)       & 0.894 & 0.876 & 0.892 & $0.887 \pm 0.010$ & $\pm 0.884$ & $\pm 0.016$ \\
 \bottomrule
 \end{tabular}
 \end{center}
 \end{table}
 
-Two conclusions follow. First, the re-implementation is correct: under \millet{}'s own
-hyperparameters it reproduces their \ucr{} mean to within about one thousandth ($0.8434$ against
-$0.8445$), with a balanced per-dataset record of $26$ wins, $32$ ties and $26$ losses against the
-published numbers, and their released weights evaluated in our harness land inside the spread of
-their own five seeds. Second, the remaining difference is therefore the training budget, and not the
-architecture or the code -- about $0.016$ on the \ucr{} mean and $0.033$ on \webtraffic{}. That
-figure cannot simply be added to our models, since a longer schedule need not help every
-architecture equally, but it is the right order of magnitude to hold in mind while reading
-\Cref{tab:ucr}. The AOPCR values of these same two runs are what \Cref{sec:aopcr} is built on.
+The single-seed rows of \Cref{tab:ablation} are all instances of the bottleneck
+\mbox{Top-$k$} model with one component or one hyperparameter changed, so its spreads are the right
+noise floor for them. Note that seed 0 of that model gives $0.938$, not its three-seed mean of
+$0.947$; \Cref{tab:ablation} therefore uses $0.938$, so that every cell in both its panels
+comes from the same seed.
 
-\section{Full Leaderboard and Per-Dataset Results}
+\subsection{\ucr{} archive detail}
+\label{app:ucr}
+
+\begin{table}[h]
+\caption{\ucr{}-85 accuracy and mean rank. Mean rank is over the 84 datasets completed by all 28
+fully-swept models; lower is better. Win/tie/loss is per dataset against \millet{}'s \emph{published}
+accuracies. $^{\ddagger}$84 of 85 datasets completed.}
+\label{tab:app_ucr}
+\begin{center}
+\footnotesize
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{lrccc}
+\toprule
+\textbf{Model} & Params & Acc. & Mean rank & W/T/L \\
+\midrule
+\millet{}, published \citep{early2024millet}   & 423{,}707 & 0.8445 & --- & --- \\
+\millet{}, published recipe, our code          & 423{,}707 & 0.8434$^{\ddagger}$ & \textbf{9.41} & 26/32/26 \\
+\seanet{} wide $+$ class-wise conjunctive      & 269{,}164 & 0.8292 & 11.53 & 26/19/39 \\
+\seanet{} wide $+$ \millet{} additive          & 269{,}083 & 0.8298 & 11.98 & 23/19/42 \\
+\seanet{} wide $+$ \millet{} conjunctive       & 269{,}083 & 0.8238 & 12.43 & 22/20/42 \\
+\millet{}, matched budget                      & 423{,}707 & 0.8274$^{\ddagger}$ & 12.60 & 13/25/46 \\
+ResNet $+$ conjunctive                         & 506{,}331 & 0.8146 & 13.54 & 25/11/49 \\
+FCN $+$ conjunctive                            & 267{,}035 & 0.8141 & 14.48 & 20/12/52 \\
+\seanet{} gated $+$ Top-$k$                    &  61{,}740 & 0.8083 & 15.29 & 19/13/53 \\
+\textbf{\seanet{} bottleneck $+$ Top-$k$}      & \textbf{41{,}324} & 0.8097 & 15.40 & 20/15/50 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+\Cref{tab:app_ucr} is the evidence behind \Cref{sec:res:ucr}. Two effect sizes are worth isolating.
+Holding the training budget fixed and changing the backbone at comparable capacity moves the mean
+rank from $12.60$ to $11.53$, about $1.1$ places. Holding the architecture fixed and changing only
+the training budget moves it from $12.60$ to $9.41$, about $3.2$ places --- three times as much. Any
+comparison of backbones in this literature that does not hold the budget fixed is measuring mostly
+the budget.
+
+\Cref{fig:app_cd} is the corresponding Wilcoxon--Holm critical-difference analysis
+\citep{demsar2006statistical}. Its mean ranks are systematically about $0.5$--$0.7$ higher than those
+in \Cref{tab:app_ucr}, because it includes \millet{}'s published per-dataset accuracies as a
+\mbox{29th} entry and that shifts every rank; the ordering is unchanged. The diagram also shows that
+pairwise differences through the middle of the field are not significant at $\alpha = 0.05$ after
+Holm correction, which is a further reason the main text argues from \webtraffic{} and from cost
+rather than from \ucr{} rank.
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.85\textwidth]{results/paper_figures/01_main_figures/fig4_critical_difference_accuracy}
+  \caption{Critical-difference diagram over the shared \ucr{} datasets. Lower rank is better;
+  horizontal bars join models that are not significantly different after Holm correction. Orange
+  labels are reproduced baselines, blue are ours. Ranks differ from \Cref{tab:app_ucr} because this
+  diagram includes one additional entry --- see the text above.}
+  \label{fig:app_cd}
+\end{figure}
+
+\subsection{Cost against quality across the whole sweep}
+\label{app:pareto}
+
+\begin{figure}[h]
+  \centering
+  \includegraphics[width=0.6\textwidth]{results/paper_figures/01_main_figures/pareto_web_acc_vs_params}
+  \caption{All 72 swept encoder--head combinations (circles) and the reproduced baselines (squares)
+  on \webtraffic{}. Filled circles are Pareto-optimal: nothing beats them on both axes at once. The
+  baselines occupy the right-hand quarter of the parameter axis without occupying the top of the
+  accuracy axis, which is the picture behind \Cref{tab:main,tab:cost}. Labels are abbreviated
+  configuration names; \Cref{tab:app_leaderboard} gives them in full.}
+  \label{fig:app_pareto}
+\end{figure}
+
+\subsection{Relation to published \millet{} results}
+\label{app:published}
+
+\begin{table}[h]
+\caption{Five ways of obtaining a \millet{} number, and what each is evidence for.}
+\label{tab:app_published}
+\begin{center}
+\small
+\begin{tabular}{lcc}
+\toprule
+\textbf{How obtained} & \webtraffic{} Acc. & \ucr{}-85 Acc. \\
+\midrule
+Published, mean of 5 seeds \citep{early2024millet} & 0.924 & 0.8445 \\
+Published, 5-model ensemble                        & 0.940 & --- \\
+Released weights, evaluated in our pipeline        & 0.922 & --- \\
+Re-trained here under \emph{their} hyperparameters & 0.920 & 0.8434 \\
+Re-trained here under \emph{our} configuration     & 0.887 & 0.8274 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+The third and fourth rows agree with the first to within $0.4$ and $0.1$ accuracy points, which is
+the check that our re-implementation is faithful. The gap between the fourth and fifth rows is
+therefore the training budget and nothing else, and it is why the main comparison in \Cref{tab:main}
+treats the matched-budget row as the like-for-like baseline while still printing the published-recipe
+row as the harder target. We do not reproduce \millet{}'s published AOPCR in this table:
+\Cref{sec:res:aopcr} shows it would not be comparable with any value we measured, and quoting it
+would contradict our own finding.
+
+\subsection{Full sweep}
 \label{app:leaderboard}
 
-The complete table of all $72$ encoder $\times$ head combinations -- with the configuration
-identifier for every row, so that any row can be reproduced by name -- together with the full
-encoder $\times$ head grid, the per-dataset \ucr{} results for every model, the win/tie/loss
-analysis and the critical-difference diagram, is published with the code at \anonrepo{}. It is
-omitted here only for length; nothing in the main text depends on a number that appears solely in
-that material.
+\Cref{tab:app_leaderboard} lists all 72 encoder--head combinations, ordered by \webtraffic{}
+accuracy. \ucr{} columns are blank where the combination was not run on the archive; those
+combinations were screened on \webtraffic{} only, under a fixed compute allocation. One row,
+\texttt{seanet\_bottleneck\_adaptive}, completed only 6 of the 85 \ucr{} datasets, so its \ucr{}
+values are omitted rather than reported --- a 6-dataset mean is not comparable with an 85-dataset
+mean.
+
+\input{tables/leaderboard}

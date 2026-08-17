@@ -2,253 +2,255 @@
 \providecommand\hyper@newdestlabel[2]{}
 \providecommand\HyField@AuxAddToFields[1]{}
 \providecommand\HyField@AuxAddToCoFields[2]{}
-\citation{rudin2019stop}
 \citation{early2024millet}
-\citation{wang2017fcn,fawaz2020inceptiontime}
+\citation{ribeiro2016lime,lundberg2017shap,sundararajan2017ig}
+\citation{rudin2019stop}
+\citation{lin2020mcunet,banbury2021micronets}
 \@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{section.1}\protected@file@percent }
 \newlabel{sec:intro}{{1}{1}{Introduction}{section.1}{}}
 \newlabel{sec:intro@cref}{{[section][1][]1}{[1][1][]1}{}{}{}}
-\citation{dietterich1997mil}
-\citation{ilse2018attention}
-\citation{hashimoto2020msdamil}
-\citation{li2021dsmil}
-\@writefile{toc}{\contentsline {paragraph}{What we do not claim.}{2}{section*.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {2}Background}{2}{section.2}\protected@file@percent }
-\newlabel{sec:bg}{{2}{2}{Background}{section.2}{}}
-\newlabel{sec:bg@cref}{{[section][2][]2}{[1][2][]2}{}{}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Time series as bags of time steps}{2}{subsection.2.1}\protected@file@percent }
-\newlabel{sec:bg:mil}{{2.1}{2}{Time series as bags of time steps}{subsection.2.1}{}}
-\newlabel{sec:bg:mil@cref}{{[subsection][1][2]2.1}{[1][2][]2}{}{}{}}
 \citation{early2024millet}
-\citation{fawaz2020inceptiontime}
-\citation{early2024millet}
-\citation{samek2017aopc}
-\citation{jarvelin2002ndcg}
-\citation{chollet2017xception,howard2017mobilenets}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.2}The baseline: conjunctive pooling}{3}{subsection.2.2}\protected@file@percent }
-\newlabel{sec:bg:conj}{{2.2}{3}{The baseline: conjunctive pooling}{subsection.2.2}{}}
-\newlabel{sec:bg:conj@cref}{{[subsection][2][2]2.2}{[1][3][]3}{}{}{}}
-\newlabel{eq:conj_gate}{{1}{3}{The baseline: conjunctive pooling}{equation.1}{}}
-\newlabel{eq:conj_gate@cref}{{[equation][1][]1}{[1][3][]3}{}{}{}}
-\newlabel{eq:conj_bag}{{2}{3}{The baseline: conjunctive pooling}{equation.2}{}}
-\newlabel{eq:conj_bag@cref}{{[equation][2][]2}{[1][3][]3}{}{}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.3}Measuring explanation quality}{3}{subsection.2.3}\protected@file@percent }
-\newlabel{sec:bg:metrics}{{2.3}{3}{Measuring explanation quality}{subsection.2.3}{}}
-\newlabel{sec:bg:metrics@cref}{{[subsection][3][2]2.3}{[1][3][]3}{}{}{}}
-\@writefile{toc}{\contentsline {paragraph}{AOPCR (faithfulness to the model).}{3}{section*.2}\protected@file@percent }
-\newlabel{eq:aopc}{{3}{3}{AOPCR (faithfulness to the model)}{equation.3}{}}
-\newlabel{eq:aopc@cref}{{[equation][3][]3}{[1][3][]3}{}{}{}}
-\@writefile{toc}{\contentsline {paragraph}{NDCG@$n${} (correctness against ground truth).}{3}{section*.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {3}The Design Space We Sweep}{3}{section.3}\protected@file@percent }
-\newlabel{sec:design}{{3}{3}{The Design Space We Sweep}{section.3}{}}
-\newlabel{sec:design@cref}{{[section][3][]3}{[1][3][]3}{}{}{}}
-\citation{ilse2018attention}
-\citation{li2021dsmil}
-\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces The seven pooling heads as two independent slots. $g_j^k$ is the evidence of step $j$ for class $k$. ``Reduces to baseline'' names the parameter setting at which the head becomes conjunctive pooling \emph  {exactly}; this is what makes the $\kappa $ sweep of \Cref  {sec:selection} a controlled experiment, and what \Cref  {sec:safety} shows is not sufficient in practice. L1--L3 are the limitations of \Cref  {sec:bg:conj}.}}{4}{table.caption.4}\protected@file@percent }
-\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
-\newlabel{tab:heads}{{1}{4}{The seven pooling heads as two independent slots. $g_j^k$ is the evidence of step $j$ for class $k$. ``Reduces to baseline'' names the parameter setting at which the head becomes conjunctive pooling \emph {exactly}; this is what makes the $\kappa $ sweep of \Cref {sec:selection} a controlled experiment, and what \Cref {sec:safety} shows is not sufficient in practice. L1--L3 are the limitations of \Cref {sec:bg:conj}}{table.caption.4}{}}
-\newlabel{tab:heads@cref}{{[table][1][]1}{[1][4][]4}{}{}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}The encoder axis: capacity at fixed structure}{4}{subsection.3.1}\protected@file@percent }
-\newlabel{sec:design:enc}{{3.1}{4}{The encoder axis: capacity at fixed structure}{subsection.3.1}{}}
-\newlabel{sec:design:enc@cref}{{[subsection][1][3]3.1}{[1][3][]4}{}{}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}The aggregation axis: seven heads in two slots}{4}{subsection.3.2}\protected@file@percent }
-\newlabel{sec:design:heads}{{3.2}{4}{The aggregation axis: seven heads in two slots}{subsection.3.2}{}}
-\newlabel{sec:design:heads@cref}{{[subsection][2][3]3.2}{[1][4][]4}{}{}{}}
-\@writefile{toc}{\contentsline {paragraph}{Top-$k$ conjunctive pooling, in full.}{4}{section*.5}\protected@file@percent }
-\newlabel{eq:topk}{{4}{4}{Top-$k$ conjunctive pooling, in full}{equation.4}{}}
-\newlabel{eq:topk@cref}{{[equation][4][]4}{[1][4][]4}{}{}{}}
-\newlabel{prop:topk}{{1}{4}{Exact reduction}{property.1}{}}
-\newlabel{prop:topk@cref}{{[property][1][]1}{[1][4][]4}{}{}{}}
-\citation{early2024millet}
+\citation{dietterich1997mil,ilse2018attention}
 \citation{dau2019ucr}
-\citation{wang2017fcn}
-\citation{kingma2015adam}
-\citation{demsar2006statistical}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Training objective}{5}{subsection.3.3}\protected@file@percent }
-\newlabel{sec:design:loss}{{3.3}{5}{Training objective}{subsection.3.3}{}}
-\newlabel{sec:design:loss@cref}{{[subsection][3][3]3.3}{[1][5][]5}{}{}{}}
-\newlabel{eq:loss}{{5}{5}{Training objective}{equation.5}{}}
-\newlabel{eq:loss@cref}{{[equation][5][]5}{[1][5][]5}{}{}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {4}Experimental Protocol}{5}{section.4}\protected@file@percent }
-\newlabel{sec:protocol}{{4}{5}{Experimental Protocol}{section.4}{}}
-\newlabel{sec:protocol@cref}{{[section][4][]4}{[1][5][]5}{}{}{}}
-\@writefile{toc}{\contentsline {paragraph}{Datasets.}{5}{section*.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{One configuration for everything.}{5}{section*.7}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Two things to hold against every result that follows.}{5}{section*.8}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Reporting.}{5}{section*.9}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {5}Selection Inside the Aggregator Drives Explanation Quality}{5}{section.5}\protected@file@percent }
-\newlabel{sec:selection}{{5}{5}{Selection Inside the Aggregator Drives Explanation Quality}{section.5}{}}
-\newlabel{sec:selection@cref}{{[section][5][]5}{[1][5][]5}{}{}{}}
-\newlabel{find:selection}{{1}{5}{}{finding.1}{}}
-\newlabel{find:selection@cref}{{[finding][1][]1}{[1][5][]5}{}{}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Top-$k$ fraction $\kappa $, on WebTraffic{}. The model is the SEA-Net{} bottleneck encoder with Top-$k$ pooling and only $\kappa $ changes; $\kappa = 1.00$ recovers class-wise conjunctive pooling exactly (Property~\ref {prop:topk}). \textbf  {All five rows are a single seed} (seed $0$), so the $0.938$/$0.940$ step is inside the seed spread of this model ($\pm 0.016$) and is not read as a difference.}}{6}{table.caption.10}\protected@file@percent }
-\newlabel{tab:kappa}{{2}{6}{Top-$k$ fraction $\kappa $, on \webtraffic {}. The model is the \seanet {} bottleneck encoder with Top-$k$ pooling and only $\kappa $ changes; $\kappa = 1.00$ recovers class-wise conjunctive pooling exactly (Property~\ref {prop:topk}). \textbf {All five rows are a single seed} (seed $0$), so the $0.938$/$0.940$ step is inside the seed spread of this model ($\pm 0.016$) and is not read as a difference}{table.caption.10}{}}
-\newlabel{tab:kappa@cref}{{[table][2][]2}{[1][6][]6}{}{}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces The attention-entropy term of \Cref  {eq:loss}, on and off, on WebTraffic{}. Same encoder, same head, same $\kappa $, same seed ($0$); only $\lambda _{\mathrm  {focus}}$ changes. One matched pair, so this indicates a direction rather than a measured effect size.}}{6}{table.caption.11}\protected@file@percent }
-\newlabel{tab:entropy}{{3}{6}{The attention-entropy term of \Cref {eq:loss}, on and off, on \webtraffic {}. Same encoder, same head, same $\kappa $, same seed ($0$); only $\lambda _{\mathrm {focus}}$ changes. One matched pair, so this indicates a direction rather than a measured effect size}{table.caption.11}{}}
-\newlabel{tab:entropy@cref}{{[table][3][]3}{[1][6][]6}{}{}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}A controlled experiment on selection}{6}{subsection.5.1}\protected@file@percent }
-\newlabel{sec:selection:kappa}{{5.1}{6}{A controlled experiment on selection}{subsection.5.1}{}}
-\newlabel{sec:selection:kappa@cref}{{[subsection][1][5]5.1}{[1][5][]6}{}{}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}A second, independent knob points the same way}{6}{subsection.5.2}\protected@file@percent }
-\newlabel{sec:selection:entropy}{{5.2}{6}{A second, independent knob points the same way}{subsection.5.2}{}}
-\newlabel{sec:selection:entropy@cref}{{[subsection][2][5]5.2}{[1][6][]6}{}{}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces WebTraffic{}, ranked by accuracy, with the re-trained baselines below. $S$ is the number of seeds; $S = 3$ rows give the mean and the per-seed values are in \Cref  {app:seeds}, $S = 1$ rows are a single run. Rows marked $^{\dagger }$ pair \emph  {our} encoder with \emph  {MILLET{}'s} head and are included so the two halves can be separated. AOPCR is unnormalised (\Cref  {sec:aopcr}): this column may be compared down its own rows and nowhere else. The full $72$-model table is in \Cref  {app:leaderboard}.}}{7}{table.caption.13}\protected@file@percent }
-\newlabel{tab:web}{{4}{7}{\webtraffic {}, ranked by accuracy, with the re-trained baselines below. $S$ is the number of seeds; $S = 3$ rows give the mean and the per-seed values are in \Cref {app:seeds}, $S = 1$ rows are a single run. Rows marked $^{\dagger }$ pair \emph {our} encoder with \emph {\millet {}'s} head and are included so the two halves can be separated. AOPCR is unnormalised (\Cref {sec:aopcr}): this column may be compared down its own rows and nowhere else. The full $72$-model table is in \Cref {app:leaderboard}}{table.caption.13}{}}
-\newlabel{tab:web@cref}{{[table][4][]4}{[1][7][]7}{}{}{}}
-\@writefile{toc}{\contentsline {paragraph}{The practical reading.}{7}{section*.12}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {6}Faithful Interpretability Is Cheap, and the Remaining Gap Is Capacity}{7}{section.6}\protected@file@percent }
-\newlabel{sec:cheap}{{6}{7}{Faithful Interpretability Is Cheap, and the Remaining Gap Is Capacity}{section.6}{}}
-\newlabel{sec:cheap@cref}{{[section][6][]6}{[1][7][]7}{}{}{}}
-\newlabel{find:cheap}{{2}{7}{}{finding.2}{}}
-\newlabel{find:cheap@cref}{{[finding][2][]2}{[1][7][]7}{}{}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.1}Where explanation correctness can be checked}{7}{subsection.6.1}\protected@file@percent }
-\newlabel{sec:cheap:web}{{6.1}{7}{Where explanation correctness can be checked}{subsection.6.1}{}}
-\newlabel{sec:cheap:web@cref}{{[subsection][1][6]6.1}{[1][7][]7}{}{}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.2}Cost, including the parts that do not favour us}{7}{subsection.6.2}\protected@file@percent }
-\newlabel{sec:cheap:cost}{{6.2}{7}{Cost, including the parts that do not favour us}{subsection.6.2}{}}
-\newlabel{sec:cheap:cost@cref}{{[subsection][2][6]6.2}{[1][7][]7}{}{}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces UCR{}: mean accuracy and mean accuracy rank, all re-trained here under the identical configuration except the first row. Lower rank is better; ranks are over the $84$ datasets shared by all $28$ fully-swept models. $^{\dagger }$ = our encoder with MILLET{}'s head. The last row is the same architecture as the baseline under \emph  {MILLET{}'s own} $1500$-epoch recipe, and is included to size the effect of the training budget against the effect of architecture.}}{8}{table.caption.14}\protected@file@percent }
-\newlabel{tab:ucr}{{5}{8}{\ucr {}: mean accuracy and mean accuracy rank, all re-trained here under the identical configuration except the first row. Lower rank is better; ranks are over the $84$ datasets shared by all $28$ fully-swept models. $^{\dagger }$ = our encoder with \millet {}'s head. The last row is the same architecture as the baseline under \emph {\millet {}'s own} $1500$-epoch recipe, and is included to size the effect of the training budget against the effect of architecture}{table.caption.14}{}}
-\newlabel{tab:ucr@cref}{{[table][5][]5}{[1][8][]8}{}{}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.3}The UCR{} archive: where the small models lose, and why}{8}{subsection.6.3}\protected@file@percent }
-\newlabel{sec:cheap:ucr}{{6.3}{8}{The \ucr {} archive: where the small models lose, and why}{subsection.6.3}{}}
-\newlabel{sec:cheap:ucr@cref}{{[subsection][3][6]6.3}{[1][8][]8}{}{}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces The same architecture and the same code under two training recipes. Accuracy moves by a few points, as expected from a longer schedule. AOPCR moves by a factor of five, on both datasets.}}{9}{table.caption.15}\protected@file@percent }
-\newlabel{tab:aopcr}{{6}{9}{The same architecture and the same code under two training recipes. Accuracy moves by a few points, as expected from a longer schedule. AOPCR moves by a factor of five, on both datasets}{table.caption.15}{}}
-\newlabel{tab:aopcr@cref}{{[table][6][]6}{[1][9][]9}{}{}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {6.4}Neither axis dominates the other}{9}{subsection.6.4}\protected@file@percent }
-\newlabel{sec:cheap:axes}{{6.4}{9}{Neither axis dominates the other}{subsection.6.4}{}}
-\newlabel{sec:cheap:axes@cref}{{[subsection][4][6]6.4}{[1][8][]9}{}{}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {7}AOPCR Is Not Comparable Across Training Configurations}{9}{section.7}\protected@file@percent }
-\newlabel{sec:aopcr}{{7}{9}{AOPCR Is Not Comparable Across Training Configurations}{section.7}{}}
-\newlabel{sec:aopcr@cref}{{[section][7][]7}{[1][9][]9}{}{}{}}
-\newlabel{find:aopcr}{{3}{9}{}{finding.3}{}}
-\newlabel{find:aopcr@cref}{{[finding][3][]3}{[1][9][]9}{}{}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.1}The measurement}{9}{subsection.7.1}\protected@file@percent }
-\newlabel{sec:aopcr:measure}{{7.1}{9}{The measurement}{subsection.7.1}{}}
-\newlabel{sec:aopcr:measure@cref}{{[subsection][1][7]7.1}{[1][9][]9}{}{}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.2}Why this happens}{9}{subsection.7.2}\protected@file@percent }
-\newlabel{sec:aopcr:why}{{7.2}{9}{Why this happens}{subsection.7.2}{}}
-\newlabel{sec:aopcr:why@cref}{{[subsection][2][7]7.2}{[1][9][]9}{}{}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces WebTraffic{} accuracy, AOPCR and NDCG@$n${} for each pooling head, averaged over the $n$ encoders it was paired with. ``Reduces'' repeats the fourth column of \Cref  {tab:heads}. The $\kappa $-ablation configurations and the alternative-recipe baseline are excluded, so that no pairing is counted twice. Groups with small $n$ are not comparable with groups averaged over ten or more pairings; the full grid is in \Cref  {app:ablations}.}}{10}{table.caption.16}\protected@file@percent }
-\newlabel{tab:pooling}{{7}{10}{\webtraffic {} accuracy, AOPCR and \ndcg {} for each pooling head, averaged over the $n$ encoders it was paired with. ``Reduces'' repeats the fourth column of \Cref {tab:heads}. The $\kappa $-ablation configurations and the alternative-recipe baseline are excluded, so that no pairing is counted twice. Groups with small $n$ are not comparable with groups averaged over ten or more pairings; the full grid is in \Cref {app:ablations}}{table.caption.16}{}}
-\newlabel{tab:pooling@cref}{{[table][7][]7}{[1][10][]10}{}{}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {7.3}What follows for practice}{10}{subsection.7.3}\protected@file@percent }
-\newlabel{sec:aopcr:protocol}{{7.3}{10}{What follows for practice}{subsection.7.3}{}}
-\newlabel{sec:aopcr:protocol@cref}{{[subsection][3][7]7.3}{[1][9][]10}{}{}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {8}Capacity-Safety Is Not Optimisation-Safety}{10}{section.8}\protected@file@percent }
-\newlabel{sec:safety}{{8}{10}{Capacity-Safety Is Not Optimisation-Safety}{section.8}{}}
-\newlabel{sec:safety@cref}{{[section][8][]8}{[1][10][]10}{}{}{}}
-\newlabel{find:safety}{{4}{10}{}{finding.4}{}}
-\newlabel{find:safety@cref}{{[finding][4][]4}{[1][10][]10}{}{}{}}
-\@writefile{toc}{\contentsline {paragraph}{The counterexample.}{10}{section*.17}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{The mechanism.}{10}{section*.18}\protected@file@percent }
+\citation{fawaz2020inceptiontime}
+\citation{chollet2017xception,howard2017mobilenets}
+\citation{he2016resnet,iandola2016squeezenet,sandler2018mobilenetv2}
+\citation{durand2016weldon}
+\@writefile{toc}{\contentsline {paragraph}{Contributions.}{2}{section*.2}\protected@file@percent }
 \citation{wang2017fcn}
 \citation{fawaz2020inceptiontime}
-\citation{fawaz2019review,dau2019ucr}
-\citation{bai2018tcn}
-\citation{chollet2017xception,howard2017mobilenets}
-\citation{ribeiro2016lime}
-\citation{lundberg2017shap}
-\citation{sundararajan2017ig}
+\citation{dau2019ucr}
+\citation{fawaz2019review}
+\citation{ribeiro2016lime,lundberg2017shap,sundararajan2017ig}
 \citation{rudin2019stop}
 \citation{wen2024vqshape}
 \citation{wen2025interpgn}
-\citation{early2024millet}
+\citation{dietterich1997mil}
 \citation{ilse2018attention}
-\citation{hashimoto2020msdamil}
 \citation{li2021dsmil}
+\citation{early2024millet}
+\citation{durand2016weldon}
+\citation{chollet2017xception,howard2017mobilenets}
+\citation{he2016resnet,iandola2016squeezenet,sandler2018mobilenetv2}
+\citation{baharani2022atcn}
+\citation{risso2023tcn}
+\citation{lin2020mcunet}
+\citation{banbury2021micronets}
+\citation{jacob2018quantization}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces The same WebTraffic{} series through both models --- \emph  {top:} the MILLET{} baseline (423{,}707 parameters), \emph  {bottom:} ours (41{,}324). Left, the predicted class distribution with the true class marked; right, the series coloured by each model's own interpretation (red supports the predicted class, blue argues against), with the shaded band showing where the generator put the class signal. The smaller model is both more confident and more selective. Panel-title accuracy and AOPCR are dataset means over three seeds; the single series shown is illustrative, not evidence.}}{3}{figure.caption.1}\protected@file@percent }
+\providecommand*\caption@xref[2]{\@setref\relax\@undefined{#1}}
+\newlabel{fig:teaser}{{1}{3}{The same \webtraffic {} series through both models --- \emph {top:} the \millet {} baseline (423{,}707 parameters), \emph {bottom:} ours (41{,}324). Left, the predicted class distribution with the true class marked; right, the series coloured by each model's own interpretation (red supports the predicted class, blue argues against), with the shaded band showing where the generator put the class signal. The smaller model is both more confident and more selective. Panel-title accuracy and AOPCR are dataset means over three seeds; the single series shown is illustrative, not evidence}{figure.caption.1}{}}
+\newlabel{fig:teaser@cref}{{[figure][1][]1}{[1][2][]3}{}{}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {2}Related Work}{3}{section.2}\protected@file@percent }
+\newlabel{sec:related}{{2}{3}{Related Work}{section.2}{}}
+\newlabel{sec:related@cref}{{[section][2][]2}{[1][3][]3}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{Deep time series classification.}{3}{section*.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Interpretability and multiple instance learning.}{3}{section*.4}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Efficient architectures and deployment budgets.}{3}{section*.5}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces \emph  {Top:} the model. The encoder never changes the length, so every downstream quantity keeps a time axis. The head's two branches multiply into the evidence $g_j^k$, the single quantity from which \emph  {both} outputs are read: the prediction is a reduction of it over time, the interpretation \emph  {is} it. \emph  {Bottom:} the change inside the block --- the pointwise $1\times 1$ channel mix is factorised through a narrow middle layer, halving the term that dominates the parameter count.}}{4}{figure.caption.7}\protected@file@percent }
+\newlabel{fig:arch}{{2}{4}{\emph {Top:} the model. The encoder never changes the length, so every downstream quantity keeps a time axis. The head's two branches multiply into the evidence $g_j^k$, the single quantity from which \emph {both} outputs are read: the prediction is a reduction of it over time, the interpretation \emph {is} it. \emph {Bottom:} the change inside the block --- the pointwise $1\times 1$ channel mix is factorised through a narrow middle layer, halving the term that dominates the parameter count}{figure.caption.7}{}}
+\newlabel{fig:arch@cref}{{[figure][2][]2}{[1][4][]4}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{Where this leaves our contribution.}{4}{section*.6}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {3}Method}{4}{section.3}\protected@file@percent }
+\newlabel{sec:method}{{3}{4}{Method}{section.3}{}}
+\newlabel{sec:method@cref}{{[section][3][]3}{[1][4][]4}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1}The baseline we start from}{4}{subsection.3.1}\protected@file@percent }
+\newlabel{sec:method:mil}{{3.1}{4}{The baseline we start from}{subsection.3.1}{}}
+\newlabel{sec:method:mil@cref}{{[subsection][1][3]3.1}{[1][4][]4}{}{}{}}
+\newlabel{eq:conj_gate}{{1}{4}{The baseline we start from}{equation.1}{}}
+\newlabel{eq:conj_gate@cref}{{[equation][1][]1}{[1][4][]4}{}{}{}}
+\newlabel{eq:conj_bag}{{2}{4}{The baseline we start from}{equation.2}{}}
+\newlabel{eq:conj_bag@cref}{{[equation][2][]2}{[1][4][]4}{}{}{}}
+\citation{ioffe2015batchnorm}
+\citation{chollet2017xception,howard2017mobilenets}
+\citation{he2016resnet,iandola2016squeezenet,sandler2018mobilenetv2}
+\citation{durand2016weldon}
+\@writefile{toc}{\contentsline {paragraph}{Where the cost is.}{5}{section*.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}A length-preserving separable encoder}{5}{subsection.3.2}\protected@file@percent }
+\newlabel{sec:method:enc}{{3.2}{5}{A length-preserving separable encoder}{subsection.3.2}{}}
+\newlabel{sec:method:enc@cref}{{[subsection][2][3]3.2}{[1][5][]5}{}{}{}}
+\newlabel{eq:sep_cost}{{3}{5}{A length-preserving separable encoder}{equation.3}{}}
+\newlabel{eq:sep_cost@cref}{{[equation][3][]3}{[1][5][]5}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{The bottleneck.}{5}{section*.9}\protected@file@percent }
+\newlabel{eq:bottleneck}{{4}{5}{The bottleneck}{equation.4}{}}
+\newlabel{eq:bottleneck@cref}{{[equation][4][]4}{[1][5][]5}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Top-$k$ conjunctive pooling}{5}{subsection.3.3}\protected@file@percent }
+\newlabel{sec:method:head}{{3.3}{5}{Top-$k$ conjunctive pooling}{subsection.3.3}{}}
+\newlabel{sec:method:head@cref}{{[subsection][3][3]3.3}{[1][5][]5}{}{}{}}
+\newlabel{eq:topk}{{5}{5}{Top-$k$ conjunctive pooling}{equation.5}{}}
+\newlabel{eq:topk@cref}{{[equation][5][]5}{[1][5][]5}{}{}{}}
+\newlabel{prop:topk}{{1}{5}{Exact reduction}{property.1}{}}
+\newlabel{prop:topk@cref}{{[property][1][]1}{[1][5][]5}{}{}{}}
+\citation{early2024millet}
+\citation{dau2019ucr}
+\citation{demsar2006statistical}
 \citation{samek2017aopc}
 \citation{jarvelin2002ndcg}
-\citation{early2024millet}
-\@writefile{toc}{\contentsline {paragraph}{The contrast that supports the reading.}{11}{section*.19}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{What a designer should take from this.}{11}{section*.20}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {9}Related Work}{11}{section.9}\protected@file@percent }
-\newlabel{sec:related}{{9}{11}{Related Work}{section.9}{}}
-\newlabel{sec:related@cref}{{[section][9][]9}{[1][11][]11}{}{}{}}
-\@writefile{toc}{\contentsline {paragraph}{Deep time series classification.}{11}{section*.21}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Post-hoc explanation.}{11}{section*.22}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Interpretable-by-design time series models.}{11}{section*.23}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Evaluating explanations.}{11}{section*.24}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {10}Limitations}{11}{section.10}\protected@file@percent }
-\newlabel{sec:limitations}{{10}{11}{Limitations}{section.10}{}}
-\newlabel{sec:limitations@cref}{{[section][10][]10}{[1][11][]11}{}{}{}}
-\citation{dau2019ucr}
-\citation{early2024millet}
-\@writefile{toc}{\contentsline {section}{\numberline {11}Conclusion}{12}{section.11}\protected@file@percent }
-\newlabel{sec:conclusion}{{11}{12}{Conclusion}{section.11}{}}
-\newlabel{sec:conclusion@cref}{{[section][11][]11}{[1][12][]12}{}{}{}}
-\bibdata{refs}
-\bibcite{bai2018tcn}{{1}{2018}{{Bai et~al.}}{{Bai, Kolter, and Koltun}}}
-\bibcite{chollet2017xception}{{2}{2017}{{Chollet}}{{}}}
-\bibcite{dau2019ucr}{{3}{2019}{{Dau et~al.}}{{Dau, Bagnall, Kamgar, Yeh, Zhu, Gharghabi, Ratanamahatana, and Keogh}}}
-\bibcite{demsar2006statistical}{{4}{2006}{{Dem{\v {s}}ar}}{{}}}
-\bibcite{dietterich1997mil}{{5}{1997}{{Dietterich et~al.}}{{Dietterich, Lathrop, and Lozano-P{\'e}rez}}}
-\bibcite{early2024millet}{{6}{2024}{{Early et~al.}}{{Early, Cheung, Cutajar, Xie, Kandola, and Twomey}}}
-\bibcite{hashimoto2020msdamil}{{7}{2020}{{Hashimoto et~al.}}{{Hashimoto, Fukushima, Koga, Takagi, Ko, Kohno, Nakaguro, Nakamura, Hontani, and Takeuchi}}}
-\bibcite{howard2017mobilenets}{{8}{2017}{{Howard et~al.}}{{Howard, Zhu, Chen, Kalenichenko, Wang, Weyand, Andreetto, and Adam}}}
-\bibcite{ilse2018attention}{{9}{2018}{{Ilse et~al.}}{{Ilse, Tomczak, and Welling}}}
-\bibcite{fawaz2019review}{{10}{2019}{{Ismail~Fawaz et~al.}}{{Ismail~Fawaz, Forestier, Weber, Idoumghar, and Muller}}}
-\bibcite{fawaz2020inceptiontime}{{11}{2020}{{Ismail~Fawaz et~al.}}{{Ismail~Fawaz, Lucas, Forestier, Pelletier, Schmidt, Weber, Webb, Idoumghar, Muller, and Petitjean}}}
-\bibcite{jarvelin2002ndcg}{{12}{2002}{{J{\"a}rvelin \& Kek{\"a}l{\"a}inen}}{{J{\"a}rvelin and Kek{\"a}l{\"a}inen}}}
-\bibcite{kingma2015adam}{{13}{2015}{{Kingma \& Ba}}{{Kingma and Ba}}}
-\bibcite{li2021dsmil}{{14}{2021}{{Li et~al.}}{{Li, Li, and Eliceiri}}}
-\bibcite{lundberg2017shap}{{15}{2017}{{Lundberg \& Lee}}{{Lundberg and Lee}}}
-\bibcite{ribeiro2016lime}{{16}{2016}{{Ribeiro et~al.}}{{Ribeiro, Singh, and Guestrin}}}
-\bibcite{rudin2019stop}{{17}{2019}{{Rudin}}{{}}}
-\bibcite{samek2017aopc}{{18}{2017}{{Samek et~al.}}{{Samek, Binder, Montavon, Lapuschkin, and M{\"u}ller}}}
-\bibcite{sundararajan2017ig}{{19}{2017}{{Sundararajan et~al.}}{{Sundararajan, Taly, and Yan}}}
-\bibcite{wang2017fcn}{{20}{2017}{{Wang et~al.}}{{Wang, Yan, and Oates}}}
-\bibcite{wen2024vqshape}{{21}{2024}{{Wen et~al.}}{{Wen, Ma, Weng, Nguyen, and Julius}}}
-\bibcite{wen2025interpgn}{{22}{2025}{{Wen et~al.}}{{Wen, Ma, Luss, Bhattacharjya, Fokoue, and Julius}}}
-\bibstyle{iclr2027_conference}
-\@writefile{toc}{\contentsline {section}{\numberline {A}The SEA-Net{} Encoder Variants}{14}{appendix.A}\protected@file@percent }
-\newlabel{app:encoders}{{A}{14}{The \seanet {} Encoder Variants}{appendix.A}{}}
-\newlabel{app:encoders@cref}{{[section][1][]A}{[1][14][]14}{}{}{}}
-\@writefile{toc}{\contentsline {paragraph}{Bottleneck.}{14}{section*.29}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Gated.}{14}{section*.30}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Input-gated.}{14}{section*.31}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Spike/trend.}{14}{section*.32}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Reconstruction-residual.}{14}{section*.33}\protected@file@percent }
-\citation{hashimoto2020msdamil}
+\citation{fawaz2020inceptiontime}
+\citation{wang2017fcn}
 \citation{kingma2015adam}
-\@writefile{toc}{\contentsline {paragraph}{Multi-scale channels (wrapper).}{15}{section*.34}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Multi-scale pyramid (wrapper).}{15}{section*.35}\protected@file@percent }
-\@writefile{toc}{\contentsline {paragraph}{Rejected alternatives.}{15}{section*.36}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {B}Full Hyperparameters}{15}{appendix.B}\protected@file@percent }
-\newlabel{app:hparams}{{B}{15}{Full Hyperparameters}{appendix.B}{}}
-\newlabel{app:hparams@cref}{{[section][2][]B}{[1][15][]15}{}{}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces Every setting shared across the study, plus the two encoder capacities. The head-specific initial values are the constructor defaults and are not overridden by any configuration file.}}{15}{table.caption.37}\protected@file@percent }
-\newlabel{tab:hparams}{{8}{15}{Every setting shared across the study, plus the two encoder capacities. The head-specific initial values are the constructor defaults and are not overridden by any configuration file}{table.caption.37}{}}
-\newlabel{tab:hparams@cref}{{[table][8][]8}{[1][15][]15}{}{}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {C}Cost Measurements}{15}{appendix.C}\protected@file@percent }
-\newlabel{app:cost}{{C}{15}{Cost Measurements}{appendix.C}{}}
-\newlabel{app:cost@cref}{{[section][3][]C}{[1][15][]15}{}{}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {9}{\ignorespaces Measured on the real WebTraffic{} input (length $1{,}008$, $10$ classes, batch $32$) on one GPU. ``Train'' is wall-clock time to convergence including early stopping, mean $\pm $ sd over the three WebTraffic{} seeds where available. The last two columns are the ones that do not favour the small models and are discussed in \Cref  {sec:cheap:cost}.}}{15}{table.caption.38}\protected@file@percent }
-\newlabel{tab:cost}{{9}{15}{Measured on the real \webtraffic {} input (length $1{,}008$, $10$ classes, batch $32$) on one GPU. ``Train'' is wall-clock time to convergence including early stopping, mean $\pm $ sd over the three \webtraffic {} seeds where available. The last two columns are the ones that do not favour the small models and are discussed in \Cref {sec:cheap:cost}}{table.caption.38}{}}
-\newlabel{tab:cost@cref}{{[table][9][]9}{[1][15][]15}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{Training objective.}{6}{section*.10}\protected@file@percent }
+\newlabel{eq:loss}{{6}{6}{Training objective}{equation.6}{}}
+\newlabel{eq:loss@cref}{{[equation][6][]6}{[1][6][]6}{}{}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4}Experimental Setup}{6}{section.4}\protected@file@percent }
+\newlabel{sec:setup}{{4}{6}{Experimental Setup}{section.4}{}}
+\newlabel{sec:setup@cref}{{[section][4][]4}{[1][6][]6}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{Research questions.}{6}{section*.11}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Datasets.}{6}{section*.12}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Metrics.}{6}{section*.13}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Baselines.}{6}{section*.14}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Protocol.}{6}{section*.15}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Two things to hold against every number that follows.}{6}{section*.16}\protected@file@percent }
+\citation{lin2020mcunet}
+\citation{banbury2021micronets}
+\citation{jacob2018quantization}
+\@writefile{lot}{\contentsline {table}{\numberline {1}{\ignorespaces Main comparison. WebTraffic{} has per-time-step ground truth; UCR{}-85 is the breadth check and was never used for model selection. $S$ = seeds; multi-seed rows are means. Cost is at batch 32, length 1008, 10 classes. $^{\ddagger }$84 of 85 datasets completed. $^{\dagger }$MILLET{}'s own 1{,}500-epoch recipe: a harder accuracy target, and an AOPCR value \emph  {not} comparable with the rest of that column (\Cref  {sec:res:aopcr}). Bold marks the best matched-budget row per column.}}{7}{table.caption.17}\protected@file@percent }
+\newlabel{tab:main}{{1}{7}{Main comparison. \webtraffic {} has per-time-step ground truth; \ucr {}-85 is the breadth check and was never used for model selection. $S$ = seeds; multi-seed rows are means. Cost is at batch 32, length 1008, 10 classes. $^{\ddagger }$84 of 85 datasets completed. $^{\dagger }$\millet {}'s own 1{,}500-epoch recipe: a harder accuracy target, and an AOPCR value \emph {not} comparable with the rest of that column (\Cref {sec:res:aopcr}). Bold marks the best matched-budget row per column}{table.caption.17}{}}
+\newlabel{tab:main@cref}{{[table][1][]1}{[1][7][]7}{}{}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {2}{\ignorespaces Cost, profiled at batch 32, length 1008. Weight memory is \emph  {computed} from the parameter count (4\,B and 1\,B per weight); nothing was quantised or deployed. Latency and peak memory are GPU measurements and are not device estimates.}}{7}{table.caption.18}\protected@file@percent }
+\newlabel{tab:cost}{{2}{7}{Cost, profiled at batch 32, length 1008. Weight memory is \emph {computed} from the parameter count (4\,B and 1\,B per weight); nothing was quantised or deployed. Latency and peak memory are GPU measurements and are not device estimates}{table.caption.18}{}}
+\newlabel{tab:cost@cref}{{[table][2][]2}{[1][7][]7}{}{}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5}Results}{7}{section.5}\protected@file@percent }
+\newlabel{sec:results}{{5}{7}{Results}{section.5}{}}
+\newlabel{sec:results@cref}{{[section][5][]5}{[1][7][]7}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}RQ1 and RQ2: classification and interpretation at 41\,K parameters}{7}{subsection.5.1}\protected@file@percent }
+\newlabel{sec:res:main}{{5.1}{7}{RQ1 and RQ2: classification and interpretation at 41\,K parameters}{subsection.5.1}{}}
+\newlabel{sec:res:main@cref}{{[subsection][1][5]5.1}{[1][7][]7}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}RQ3: what the cost reduction actually is}{7}{subsection.5.2}\protected@file@percent }
+\newlabel{sec:res:cost}{{5.2}{7}{RQ3: what the cost reduction actually is}{subsection.5.2}{}}
+\newlabel{sec:res:cost@cref}{{[subsection][2][5]5.2}{[1][7][]7}{}{}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3}{\ignorespaces Ablations on WebTraffic{}, all at $d= 64$, 4 blocks, seed 0. \emph  {Left:} the two components on and off --- reading down gives the bottleneck, across gives \mbox  {Top-$k$}. \emph  {Right:} only $\kappa $ changes, and at $\kappa = 1$ the head \emph  {is} the class-wise baseline (\Cref  {prop:topk}); the last row instead switches off the entropy term of \Cref  {eq:loss}.}}{8}{table.caption.19}\protected@file@percent }
+\newlabel{tab:ablation}{{3}{8}{Ablations on \webtraffic {}, all at $\dmodel = 64$, 4 blocks, seed 0. \emph {Left:} the two components on and off --- reading down gives the bottleneck, across gives \mbox {Top-$k$}. \emph {Right:} only $\kappa $ changes, and at $\kappa = 1$ the head \emph {is} the class-wise baseline (\Cref {prop:topk}); the last row instead switches off the entropy term of \Cref {eq:loss}}{table.caption.19}{}}
+\newlabel{tab:ablation@cref}{{[table][3][]3}{[1][8][]8}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}RQ1 across 85 datasets: where shrinking starts to cost}{8}{subsection.5.3}\protected@file@percent }
+\newlabel{sec:res:ucr}{{5.3}{8}{RQ1 across 85 datasets: where shrinking starts to cost}{subsection.5.3}{}}
+\newlabel{sec:res:ucr@cref}{{[subsection][3][5]5.3}{[1][8][]8}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.4}RQ4 and RQ5: which component did what}{8}{subsection.5.4}\protected@file@percent }
+\newlabel{sec:res:ablation}{{5.4}{8}{RQ4 and RQ5: which component did what}{subsection.5.4}{}}
+\newlabel{sec:res:ablation@cref}{{[subsection][4][5]5.4}{[1][8][]8}{}{}{}}
 \citation{early2024millet}
+\citation{dau2019ucr}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.5}A caveat about AOPCR}{9}{subsection.5.5}\protected@file@percent }
+\newlabel{sec:res:aopcr}{{5.5}{9}{A caveat about AOPCR}{subsection.5.5}{}}
+\newlabel{sec:res:aopcr@cref}{{[subsection][5][5]5.5}{[1][9][]9}{}{}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6}Discussion and Limitations}{9}{section.6}\protected@file@percent }
+\newlabel{sec:disc}{{6}{9}{Discussion and Limitations}{section.6}{}}
+\newlabel{sec:disc@cref}{{[section][6][]6}{[1][9][]9}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{What the trade actually is.}{9}{section*.20}\protected@file@percent }
+\@writefile{toc}{\contentsline {paragraph}{Limitations.}{9}{section*.21}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {7}Conclusion}{9}{section.7}\protected@file@percent }
+\newlabel{sec:conclusion}{{7}{9}{Conclusion}{section.7}{}}
+\newlabel{sec:conclusion@cref}{{[section][7][]7}{[1][9][]9}{}{}{}}
+\citation{dau2019ucr}
+\bibdata{refs}
+\bibcite{baharani2022atcn}{{1}{2022}{{Baharani \& Tabkhi}}{{Baharani and Tabkhi}}}
+\bibcite{banbury2021micronets}{{2}{2021}{{Banbury et~al.}}{{Banbury, Zhou, Fedorov, Matas, Thakker, Gope, Janapa~Reddi, Mattina, and Whatmough}}}
+\bibcite{chollet2017xception}{{3}{2017}{{Chollet}}{{}}}
+\bibcite{dau2019ucr}{{4}{2019}{{Dau et~al.}}{{Dau, Bagnall, Kamgar, Yeh, Zhu, Gharghabi, Ratanamahatana, and Keogh}}}
+\bibcite{demsar2006statistical}{{5}{2006}{{Dem{\v {s}}ar}}{{}}}
+\bibcite{dietterich1997mil}{{6}{1997}{{Dietterich et~al.}}{{Dietterich, Lathrop, and Lozano-P{\'e}rez}}}
+\bibcite{durand2016weldon}{{7}{2016}{{Durand et~al.}}{{Durand, Thome, and Cord}}}
+\bibcite{early2024millet}{{8}{2024}{{Early et~al.}}{{Early, Cheung, Cutajar, Xie, Kandola, and Twomey}}}
+\bibcite{he2016resnet}{{9}{2016}{{He et~al.}}{{He, Zhang, Ren, and Sun}}}
+\bibcite{howard2017mobilenets}{{10}{2017}{{Howard et~al.}}{{Howard, Zhu, Chen, Kalenichenko, Wang, Weyand, Andreetto, and Adam}}}
+\bibcite{iandola2016squeezenet}{{11}{2016}{{Iandola et~al.}}{{Iandola, Han, Moskewicz, Ashraf, Dally, and Keutzer}}}
+\bibcite{ilse2018attention}{{12}{2018}{{Ilse et~al.}}{{Ilse, Tomczak, and Welling}}}
+\bibcite{ioffe2015batchnorm}{{13}{2015}{{Ioffe \& Szegedy}}{{Ioffe and Szegedy}}}
+\bibcite{fawaz2019review}{{14}{2019}{{Ismail~Fawaz et~al.}}{{Ismail~Fawaz, Forestier, Weber, Idoumghar, and Muller}}}
+\bibcite{fawaz2020inceptiontime}{{15}{2020}{{Ismail~Fawaz et~al.}}{{Ismail~Fawaz, Lucas, Forestier, Pelletier, Schmidt, Weber, Webb, Idoumghar, Muller, and Petitjean}}}
+\bibcite{jacob2018quantization}{{16}{2018}{{Jacob et~al.}}{{Jacob, Kligys, Chen, Zhu, Tang, Howard, Adam, and Kalenichenko}}}
+\bibcite{jarvelin2002ndcg}{{17}{2002}{{J{\"a}rvelin \& Kek{\"a}l{\"a}inen}}{{J{\"a}rvelin and Kek{\"a}l{\"a}inen}}}
+\bibcite{kingma2015adam}{{18}{2015}{{Kingma \& Ba}}{{Kingma and Ba}}}
+\bibcite{li2021dsmil}{{19}{2021}{{Li et~al.}}{{Li, Li, and Eliceiri}}}
+\bibcite{lin2020mcunet}{{20}{2020}{{Lin et~al.}}{{Lin, Chen, Lin, Cohn, Gan, and Han}}}
+\bibcite{lundberg2017shap}{{21}{2017}{{Lundberg \& Lee}}{{Lundberg and Lee}}}
+\bibcite{ribeiro2016lime}{{22}{2016}{{Ribeiro et~al.}}{{Ribeiro, Singh, and Guestrin}}}
+\bibcite{risso2023tcn}{{23}{2023}{{Risso et~al.}}{{Risso, Burrello, Conti, Lamberti, Chen, Benini, Macii, Poncino, and Jahier~Pagliari}}}
+\bibcite{rudin2019stop}{{24}{2019}{{Rudin}}{{}}}
+\bibcite{samek2017aopc}{{25}{2017}{{Samek et~al.}}{{Samek, Binder, Montavon, Lapuschkin, and M{\"u}ller}}}
+\bibcite{sandler2018mobilenetv2}{{26}{2018}{{Sandler et~al.}}{{Sandler, Howard, Zhu, Zhmoginov, and Chen}}}
+\bibcite{sundararajan2017ig}{{27}{2017}{{Sundararajan et~al.}}{{Sundararajan, Taly, and Yan}}}
+\bibcite{wang2017fcn}{{28}{2017}{{Wang et~al.}}{{Wang, Yan, and Oates}}}
+\bibcite{wen2024vqshape}{{29}{2024}{{Wen et~al.}}{{Wen, Ma, Weng, Nguyen, and Julius}}}
+\bibcite{wen2025interpgn}{{30}{2025}{{Wen et~al.}}{{Wen, Ma, Luss, Bhattacharjya, Fokoue, and Julius}}}
+\bibstyle{iclr2027_conference}
+\citation{samek2017aopc}
 \citation{early2024millet}
-\@writefile{toc}{\contentsline {section}{\numberline {D}Per-Seed Results}{16}{appendix.D}\protected@file@percent }
-\newlabel{app:seeds}{{D}{16}{Per-Seed Results}{appendix.D}{}}
-\newlabel{app:seeds@cref}{{[section][4][]D}{[1][15][]16}{}{}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {10}{\ignorespaces WebTraffic{} accuracy for the four models trained with three seeds. These four spreads are what the rule of \Cref  {sec:protocol} is calibrated against.}}{16}{table.caption.39}\protected@file@percent }
-\newlabel{tab:seeds}{{10}{16}{\webtraffic {} accuracy for the four models trained with three seeds. These four spreads are what the rule of \Cref {sec:protocol} is calibrated against}{table.caption.39}{}}
-\newlabel{tab:seeds@cref}{{[table][10][]10}{[1][15][]16}{}{}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {E}Encoder Ablation}{16}{appendix.E}\protected@file@percent }
-\newlabel{app:ablations}{{E}{16}{Encoder Ablation}{appendix.E}{}}
-\newlabel{app:ablations@cref}{{[section][5][]E}{[1][16][]16}{}{}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {11}{\ignorespaces WebTraffic{} accuracy, AOPCR and NDCG@$n${} for each encoder, averaged over the $n$ pooling heads it was paired with; $^{\dagger }$ marks a wrapper. The companion table on the head axis is \Cref  {tab:pooling}. Two cautions: several groups are small, and the bottleneck encoder's mean is dragged down because it was also paired with the weak heads -- its best pairing is the headline row of \Cref  {tab:web}.}}{16}{table.caption.40}\protected@file@percent }
-\newlabel{tab:encoder_ablation}{{11}{16}{\webtraffic {} accuracy, AOPCR and \ndcg {} for each encoder, averaged over the $n$ pooling heads it was paired with; $^{\dagger }$ marks a wrapper. The companion table on the head axis is \Cref {tab:pooling}. Two cautions: several groups are small, and the bottleneck encoder's mean is dragged down because it was also paired with the weak heads -- its best pairing is the headline row of \Cref {tab:web}}{table.caption.40}{}}
-\newlabel{tab:encoder_ablation@cref}{{[table][11][]11}{[1][16][]16}{}{}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {F}Relation to the Published MILLET{} Results}{16}{appendix.F}\protected@file@percent }
-\newlabel{app:published}{{F}{16}{Relation to the Published \millet {} Results}{appendix.F}{}}
-\newlabel{app:published@cref}{{[section][6][]F}{[1][16][]16}{}{}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {12}{\ignorespaces The MILLET{} baseline (InceptionTime $+$ conjunctive pooling) measured five ways. Only the last row is used anywhere in the main text, except in \Cref  {tab:aopcr} and \Cref  {tab:ucr} where the fourth row appears explicitly as the alternative recipe.}}{17}{table.caption.41}\protected@file@percent }
-\newlabel{tab:published}{{12}{17}{The \millet {} baseline (InceptionTime $+$ conjunctive pooling) measured five ways. Only the last row is used anywhere in the main text, except in \Cref {tab:aopcr} and \Cref {tab:ucr} where the fourth row appears explicitly as the alternative recipe}{table.caption.41}{}}
-\newlabel{tab:published@cref}{{[table][12][]12}{[1][16][]17}{}{}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {G}Full Leaderboard and Per-Dataset Results}{17}{appendix.G}\protected@file@percent }
-\newlabel{app:leaderboard}{{G}{17}{Full Leaderboard and Per-Dataset Results}{appendix.G}{}}
-\newlabel{app:leaderboard@cref}{{[section][7][]G}{[1][16][]17}{}{}{}}
+\citation{jarvelin2002ndcg}
+\@writefile{toc}{\contentsline {section}{\numberline {A}Metric definitions}{12}{appendix.A}\protected@file@percent }
+\newlabel{app:metrics}{{A}{12}{Metric definitions}{appendix.A}{}}
+\newlabel{app:metrics@cref}{{[section][1][]A}{[1][12][]12}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{AOPCR.}{12}{section*.26}\protected@file@percent }
+\newlabel{eq:aopc}{{7}{12}{AOPCR}{equation.7}{}}
+\newlabel{eq:aopc@cref}{{[equation][7][]7}{[1][12][]12}{}{}{}}
+\@writefile{toc}{\contentsline {paragraph}{NDCG@$n${}.}{12}{section*.27}\protected@file@percent }
+\citation{ilse2018attention}
+\citation{li2021dsmil}
+\@writefile{toc}{\contentsline {section}{\numberline {B}Model and training detail}{13}{appendix.B}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {B.1}Encoder variants}{13}{subsection.B.1}\protected@file@percent }
+\newlabel{app:encoders}{{B.1}{13}{Encoder variants}{subsection.B.1}{}}
+\newlabel{app:encoders@cref}{{[subsection][1][2]B.1}{[1][12][]13}{}{}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4}{\ignorespaces Encoder axis: mean over every head the encoder was paired with, WebTraffic{}. $n$ is the number of pairings. These are means over heterogeneous pairings, so they indicate spread, not a ranking of encoders.}}{13}{table.caption.28}\protected@file@percent }
+\newlabel{tab:app_encoders}{{4}{13}{Encoder axis: mean over every head the encoder was paired with, \webtraffic {}. $n$ is the number of pairings. These are means over heterogeneous pairings, so they indicate spread, not a ranking of encoders}{table.caption.28}{}}
+\newlabel{tab:app_encoders@cref}{{[table][4][]4}{[1][13][]13}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {B.2}Pooling heads}{13}{subsection.B.2}\protected@file@percent }
+\newlabel{app:heads}{{B.2}{13}{Pooling heads}{subsection.B.2}{}}
+\newlabel{app:heads@cref}{{[subsection][2][2]B.2}{[1][13][]13}{}{}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {5}{\ignorespaces The seven heads as two independent slots. ``Reduces at'' names the setting at which the head becomes conjunctive pooling exactly. L1--L3 are the limitations listed in \Cref  {sec:method:mil}.}}{13}{table.caption.29}\protected@file@percent }
+\newlabel{tab:app_heads}{{5}{13}{The seven heads as two independent slots. ``Reduces at'' names the setting at which the head becomes conjunctive pooling exactly. L1--L3 are the limitations listed in \Cref {sec:method:mil}}{table.caption.29}{}}
+\newlabel{tab:app_heads@cref}{{[table][5][]5}{[1][13][]13}{}{}{}}
+\citation{kingma2015adam}
+\citation{early2024millet}
+\citation{demsar2006statistical}
+\@writefile{lot}{\contentsline {table}{\numberline {6}{\ignorespaces Head axis: mean over every encoder the head was paired with, WebTraffic{}. Excludes the $\kappa $ and $\lambda _{\mathrm  {focus}}$ ablation configurations and the published-recipe baseline, which would otherwise weight \mbox  {Top-$k$} and the bottleneck encoder.}}{14}{table.caption.30}\protected@file@percent }
+\newlabel{tab:app_pooling}{{6}{14}{Head axis: mean over every encoder the head was paired with, \webtraffic {}. Excludes the $\kappa $ and $\lambda _{\mathrm {focus}}$ ablation configurations and the published-recipe baseline, which would otherwise weight \mbox {Top-$k$} and the bottleneck encoder}{table.caption.30}{}}
+\newlabel{tab:app_pooling@cref}{{[table][6][]6}{[1][13][]14}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {B.3}Hyperparameters}{14}{subsection.B.3}\protected@file@percent }
+\newlabel{app:hparams}{{B.3}{14}{Hyperparameters}{subsection.B.3}{}}
+\newlabel{app:hparams@cref}{{[subsection][3][2]B.3}{[1][14][]14}{}{}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {C}Additional results}{14}{appendix.C}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {C.1}Per-seed values}{14}{subsection.C.1}\protected@file@percent }
+\newlabel{app:seeds}{{C.1}{14}{Per-seed values}{subsection.C.1}{}}
+\newlabel{app:seeds@cref}{{[subsection][1][3]C.1}{[1][14][]14}{}{}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {7}{\ignorespaces The three models run with three seeds on WebTraffic{}. The standard deviations in the last three columns are the noise floor used throughout the paper: no difference smaller than the relevant one is reported as a result.}}{14}{table.caption.31}\protected@file@percent }
+\newlabel{tab:app_seeds}{{7}{14}{The three models run with three seeds on \webtraffic {}. The standard deviations in the last three columns are the noise floor used throughout the paper: no difference smaller than the relevant one is reported as a result}{table.caption.31}{}}
+\newlabel{tab:app_seeds@cref}{{[table][7][]7}{[1][14][]14}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {C.2}UCR{} archive detail}{14}{subsection.C.2}\protected@file@percent }
+\newlabel{app:ucr}{{C.2}{14}{\ucr {} archive detail}{subsection.C.2}{}}
+\newlabel{app:ucr@cref}{{[subsection][2][3]C.2}{[1][14][]14}{}{}{}}
+\citation{early2024millet}
+\@writefile{lot}{\contentsline {table}{\numberline {8}{\ignorespaces UCR{}-85 accuracy and mean rank. Mean rank is over the 84 datasets completed by all 28 fully-swept models; lower is better. Win/tie/loss is per dataset against MILLET{}'s \emph  {published} accuracies. $^{\ddagger }$84 of 85 datasets completed.}}{15}{table.caption.32}\protected@file@percent }
+\newlabel{tab:app_ucr}{{8}{15}{\ucr {}-85 accuracy and mean rank. Mean rank is over the 84 datasets completed by all 28 fully-swept models; lower is better. Win/tie/loss is per dataset against \millet {}'s \emph {published} accuracies. $^{\ddagger }$84 of 85 datasets completed}{table.caption.32}{}}
+\newlabel{tab:app_ucr@cref}{{[table][8][]8}{[1][14][]15}{}{}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Critical-difference diagram over the shared UCR{} datasets. Lower rank is better; horizontal bars join models that are not significantly different after Holm correction. Orange labels are reproduced baselines, blue are ours. Ranks differ from \Cref  {tab:app_ucr} because this diagram includes one additional entry --- see the text above.}}{15}{figure.caption.33}\protected@file@percent }
+\newlabel{fig:app_cd}{{3}{15}{Critical-difference diagram over the shared \ucr {} datasets. Lower rank is better; horizontal bars join models that are not significantly different after Holm correction. Orange labels are reproduced baselines, blue are ours. Ranks differ from \Cref {tab:app_ucr} because this diagram includes one additional entry --- see the text above}{figure.caption.33}{}}
+\newlabel{fig:app_cd@cref}{{[figure][3][]3}{[1][15][]15}{}{}{}}
+\gdef \LT@i {\LT@entry 
+    {5}{13.00002pt}\LT@entry 
+    {5}{135.35994pt}\LT@entry 
+    {5}{46.97054pt}\LT@entry 
+    {5}{41.88171pt}\LT@entry 
+    {5}{21.75002pt}\LT@entry 
+    {1}{28.95285pt}\LT@entry 
+    {1}{37.22116pt}\LT@entry 
+    {1}{29.72284pt}\LT@entry 
+    {5}{28.75002pt}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces All 72 swept encoder--head combinations (circles) and the reproduced baselines (squares) on WebTraffic{}. Filled circles are Pareto-optimal: nothing beats them on both axes at once. The baselines occupy the right-hand quarter of the parameter axis without occupying the top of the accuracy axis, which is the picture behind \Cref  {tab:main,tab:cost}. Labels are abbreviated configuration names; \Cref  {tab:app_leaderboard} gives them in full.}}{16}{figure.caption.34}\protected@file@percent }
+\newlabel{fig:app_pareto}{{4}{16}{All 72 swept encoder--head combinations (circles) and the reproduced baselines (squares) on \webtraffic {}. Filled circles are Pareto-optimal: nothing beats them on both axes at once. The baselines occupy the right-hand quarter of the parameter axis without occupying the top of the accuracy axis, which is the picture behind \Cref {tab:main,tab:cost}. Labels are abbreviated configuration names; \Cref {tab:app_leaderboard} gives them in full}{figure.caption.34}{}}
+\newlabel{fig:app_pareto@cref}{{[figure][4][]4}{[1][15][]16}{}{}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {9}{\ignorespaces Five ways of obtaining a MILLET{} number, and what each is evidence for.}}{16}{table.caption.35}\protected@file@percent }
+\newlabel{tab:app_published}{{9}{16}{Five ways of obtaining a \millet {} number, and what each is evidence for}{table.caption.35}{}}
+\newlabel{tab:app_published@cref}{{[table][9][]9}{[1][15][]16}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {C.3}Cost against quality across the whole sweep}{16}{subsection.C.3}\protected@file@percent }
+\newlabel{app:pareto}{{C.3}{16}{Cost against quality across the whole sweep}{subsection.C.3}{}}
+\newlabel{app:pareto@cref}{{[subsection][3][3]C.3}{[1][15][]16}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {C.4}Relation to published MILLET{} results}{16}{subsection.C.4}\protected@file@percent }
+\newlabel{app:published}{{C.4}{16}{Relation to published \millet {} results}{subsection.C.4}{}}
+\newlabel{app:published@cref}{{[subsection][4][3]C.4}{[1][15][]16}{}{}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {C.5}Full sweep}{16}{subsection.C.5}\protected@file@percent }
+\newlabel{app:leaderboard}{{C.5}{16}{Full sweep}{subsection.C.5}{}}
+\newlabel{app:leaderboard@cref}{{[subsection][5][3]C.5}{[1][16][]16}{}{}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {10}{\ignorespaces All 72 encoder--head combinations, ordered by WebTraffic{} accuracy. A dash in the UCR{} column means the combination was screened on WebTraffic{} only. Pooling heads marked $^{*}$ are MILLET{}'s own, reused unchanged.}}{16}{table.10}\protected@file@percent }
+\newlabel{tab:app_leaderboard}{{10}{16}{All 72 encoder--head combinations, ordered by \webtraffic {} accuracy. A dash in the \ucr {} column means the combination was screened on \webtraffic {} only. Pooling heads marked $^{*}$ are \millet {}'s own, reused unchanged}{table.10}{}}
+\newlabel{tab:app_leaderboard@cref}{{[table][10][]10}{[1][16][]16}{}{}{}}
 \gdef \@abspage@last{17}

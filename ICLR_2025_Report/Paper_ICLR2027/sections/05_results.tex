@@ -1,0 +1,208 @@
+% !TEX root = ../main.tex
+% =====================================================================
+% 5. RESULTS -- page budget 2.60 (three floats live here)
+%
+% One subsection per research question, in the order the reader asks
+% them: does it still work, does it still explain, what did it cost,
+% which component did what, and can the faithfulness numbers be trusted.
+% =====================================================================
+
+\section{Results}
+\label{sec:results}
+
+\begin{table}[t]
+\caption{Main comparison. \webtraffic{} has per-time-step ground truth; \ucr{}-85 is the breadth
+check and was never used for model selection. $S$ = seeds; multi-seed rows are means. Cost is at
+batch 32, length 1008, 10 classes. $^{\ddagger}$84 of 85 datasets completed.
+$^{\dagger}$\millet{}'s own 1{,}500-epoch recipe: a harder accuracy target, and an AOPCR value
+\emph{not} comparable with the rest of that column (\Cref{sec:res:aopcr}). Bold marks the best
+matched-budget row per column.}
+\label{tab:main}
+\begin{center}
+\footnotesize
+\setlength{\tabcolsep}{3.2pt}
+\begin{tabular}{llccccrr}
+\toprule
+& & \multicolumn{3}{c}{\webtraffic{}} & \ucr{}-85 & \multicolumn{2}{c}{Cost} \\
+\cmidrule(lr){3-5}\cmidrule(lr){6-6}\cmidrule(lr){7-8}
+\textbf{Model} & $S$ & Acc. $\uparrow$ & AOPCR $\uparrow$ & \ndcg{} $\uparrow$ & Acc. $\uparrow$ &
+Params & MFLOPs \\
+\midrule
+FCN $+$ conjunctive           & 1 & 0.742 & 3.826 & 0.533 & 0.814 & 267{,}035 & 535.2 \\
+ResNet $+$ conjunctive        & 1 & 0.772 & 2.952 & 0.554 & 0.815 & 506{,}331 & 1013.2 \\
+\millet{} (matched budget)    & 3 & 0.887 & 2.569 & 0.677 & \textbf{0.827}$^{\ddagger}$ & 423{,}707 & 847.6 \\
+\millet{} (published recipe)$^{\dagger}$ & 1 & 0.920 & 13.268 & 0.661 & 0.843$^{\ddagger}$ & 423{,}707 & 847.6 \\
+\midrule
+\seanet{} wide $+$ class-wise & 1 & 0.946 & 1.722 & 0.686 & \textbf{0.829} & 269{,}164 & 523.7 \\
+\seanet{} gated $+$ Top-$k$   & 3 & \textbf{0.955} & 2.225 & 0.750 & 0.808 & 61{,}740 & 109.7 \\
+\textbf{\seanet{} bottleneck $+$ Top-$k$ (ours)}
+                              & 3 & 0.947 & \textbf{2.621} & \textbf{0.772} & 0.810 & \textbf{41{,}324} & \textbf{76.7} \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+\subsection{RQ1 and RQ2: classification and interpretation at 41\,K parameters}
+\label{sec:res:main}
+
+\Cref{tab:main} answers both questions on \webtraffic{}, in the same direction. Against the baseline
+trained under our budget, the 41\,K model is $6.0$ accuracy points better ($0.947$ against $0.887$,
+three seeds each, seed standard deviation $\pm 0.016$) and $9.5$ \ndcg{} points better ($0.772$
+against $0.677$, $\pm 0.013$); both gaps are several times the seed spread. AOPCR is $2.621$ against
+$2.569$, inside the AOPCR standard deviation of either model ($\pm 0.214$ and $\pm 0.884$), and
+should be read as a tie. The honest summary: better classification, better interpretation ranking,
+unchanged perturbation faithfulness --- at $10.3\times$ fewer parameters.
+
+Two rows keep that in proportion. \millet{} under its own 1{,}500-epoch recipe reaches $0.920$, so
+more than half of our margin over the matched-budget baseline is about training budget rather than
+architecture; our model still leads it by $2.7$ accuracy and $11.1$ \ndcg{} points at $10.3\times$
+less cost. And \seanet{} gated $+$ Top-$k$, at $61{,}740$ parameters, is nominally the most accurate
+row at $0.955$ --- but $0.008$ against a seed spread of $0.016$ is not a difference we claim, and the
+bottleneck version is preferred for being $33\,\%$ smaller at no cost on \ndcg{}.
+
+\subsection{RQ3: what the cost reduction actually is}
+\label{sec:res:cost}
+
+\begin{table}[t]
+\caption{Cost, profiled at batch 32, length 1008. Weight memory is \emph{computed} from the
+parameter count (4\,B and 1\,B per weight); nothing was quantised or deployed. Latency and peak
+memory are GPU measurements and are not device estimates.}
+\label{tab:cost}
+\begin{center}
+\small
+\setlength{\tabcolsep}{5pt}
+\begin{tabular}{lrrrrrr}
+\toprule
+\textbf{Model} & Params & \multicolumn{2}{c}{Weights (KB)} & MFLOPs & Lat. & Mem. \\
+\cmidrule(lr){3-4}
+ & & fp32 & int8 & & (ms) & (MB) \\
+\midrule
+\millet{}               & 423{,}707 & 1655 & 414 & 847.6 & 0.203 & 112.3 \\
+\seanet{} wide          & 269{,}164 & 1051 & 263 & 523.7 & 0.359 & 123.7 \\
+\seanet{} gated         &  61{,}740 &  241 &  60 & 109.7 & 0.128 &  64.9 \\
+\textbf{\seanet{} bottl.} & \textbf{41{,}324} & \textbf{161} & \textbf{40} & \textbf{76.7} & 0.131 & 179.0 \\
+\seanet{} bottl., 2 blocks & 21{,}548 &   84 &  21 &  40.0 & 0.069 & 178.9 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+\Cref{tab:cost} separates what improved from what did not. Parameters fall $10.3\times$ and
+arithmetic $11.1\times$; at 32-bit precision the weights go from about $1.6$\,MB to $161$\,KB, which
+moves the model from above to comfortably below the roughly 1\,MB flash budget of the microcontroller
+class described by \citet{lin2020mcunet} and \citet{banbury2021micronets}, and standard int8
+quantisation \citep{jacob2018quantization} would take it to about $40$\,KB. That is the sense in
+which it becomes a candidate for such a device.
+
+The other two columns do not improve, and we state them rather than omit them. Latency improves by
+only $1.6\times$ despite the $11.1\times$ FLOP reduction, because depthwise convolutions are
+memory-bound and a GPU at batch 32 is the wrong instrument for a claim about small hardware --- the
+$269$\,K wide model is in fact the \emph{slowest} row. Peak allocator memory is $179.0$\,MB against
+the baseline's $112.3$\,MB, which is worse, and structurally so: the encoder is length-preserving by
+design, so activations are $(\dmodel, \nsteps)$ at every stage regardless of how few weights produce
+them, and \Cref{eq:bottleneck} reduces weights, not activations. Since SRAM for activations binds on
+microcontrollers at least as often as flash for weights, this is a real limitation of the design and
+not a measurement artefact (\Cref{sec:disc}).
+
+\subsection{RQ1 across 85 datasets: where shrinking starts to cost}
+\label{sec:res:ucr}
+
+\ucr{} was never used for selection, and it is where the trade-off becomes visible. Our 41\,K model
+reaches $0.810$ mean accuracy against $0.827$ for the matched-budget baseline and $0.843$ for
+\millet{}'s published recipe: $1.8$ and $3.4$ points behind, with the same ordering in mean rank over
+the 84 shared datasets, $15.40$ against $12.60$ and $9.41$ (\Cref{app:ucr}).
+
+What that deficit is made of matters more than its size, and one row of \Cref{tab:main} answers it.
+The \emph{wide} version of the same encoder --- identical blocks and head family, $\dmodel$ raised
+from 64 to 128 and 4 blocks to 6 --- reaches $0.829$ and mean rank $11.53$, ahead of the
+matched-budget baseline on both. The architecture is therefore not what loses on \ucr{}; the capacity
+is. Two effect sizes follow, and they are the practically useful numbers here: changing the backbone
+at comparable capacity is worth about $1.1$ rank places, while moving from our 400-epoch budget to
+\millet{}'s 1{,}500-epoch budget on a \emph{fixed} architecture is worth about $3.2$ --- three times
+more. We read this as a priced trade rather than a failure: two accuracy points for an order of
+magnitude of cost.
+
+\subsection{RQ4 and RQ5: which component did what}
+\label{sec:res:ablation}
+
+\begin{table}[t]
+\caption{Ablations on \webtraffic{}, all at $\dmodel = 64$, 4 blocks, seed 0. \emph{Left:} the two
+components on and off --- reading down gives the bottleneck, across gives \mbox{Top-$k$}.
+\emph{Right:} only $\kappa$ changes, and at $\kappa = 1$ the head \emph{is} the class-wise baseline
+(\Cref{prop:topk}); the last row instead switches off the entropy term of \Cref{eq:loss}.}
+\label{tab:ablation}
+\begin{center}
+\begin{minipage}[t]{0.51\textwidth}
+\centering
+\scriptsize
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{llrccc}
+\toprule
+\textbf{Encoder} & \textbf{Head} & Params & Acc. & AOPCR & \ndcg{} \\
+\midrule
+plain      & class-wise & 57{,}580 & 0.916 & 2.478 & 0.719 \\
+plain      & Top-$k$    & 57{,}580 & 0.932 & 2.691 & \textbf{0.778} \\
+bottleneck & class-wise & \textbf{41{,}324} & 0.902 & 2.572 & 0.733 \\
+bottleneck & Top-$k$    & \textbf{41{,}324} & \textbf{0.938} & \textbf{2.778} & 0.777 \\
+\bottomrule
+\end{tabular}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.45\textwidth}
+\centering
+\scriptsize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lccc}
+\toprule
+$\kappa$ & Acc. & AOPCR & \ndcg{} \\
+\midrule
+0.05 & 0.888 & 2.288 & 0.715 \\
+\textbf{0.10} & 0.938 & 2.778 & \textbf{0.777} \\
+0.25 & \textbf{0.940} & 2.648 & 0.733 \\
+0.50 & 0.882 & \textbf{3.114} & 0.732 \\
+1.00 \emph{(= baseline head)} & 0.908 & 2.436 & 0.722 \\
+\midrule
+$\lambda_{\mathrm{focus}} = 0$ & 0.950 & 2.303 & 0.765 \\
+\bottomrule
+\end{tabular}
+\end{minipage}
+\end{center}
+\end{table}
+
+\textbf{RQ4, the bottleneck.} Reading down \Cref{tab:ablation}, it removes $16{,}256$ parameters ---
+$28\,\%$ of the model --- and accuracy moves by $-0.014$ with the class-wise head and $+0.006$ with
+\mbox{Top-$k$}, both inside the $\pm 0.016$ seed spread; \ndcg{} moves by $+0.014$ and $-0.001$. The
+defensible statement is therefore that the bottleneck buys the size reduction \emph{at no measurable
+accuracy cost}, not that it improves anything: a compression the rest of the model does not notice.
+
+\textbf{RQ5, \mbox{Top-$k$} pooling.} Reading across, \ndcg{} rises by $0.059$ on the plain encoder
+and $0.044$ on the bottleneck encoder. Against a \ndcg{} seed spread of $\pm 0.013$ these are three
+to four standard deviations, and they are the claim we make for the head; the accuracy movements
+($+0.016$ and $+0.036$) point the same way but sit at or below one seed spread, so we do not present
+\mbox{Top-$k$} as an accuracy improvement. The right panel of \Cref{tab:ablation} isolates the
+mechanism, and here
+\Cref{prop:topk} earns its place: the $\kappa = 1$ row is the baseline head exactly, so the $0.777$
+against $0.722$ gap between $\kappa = 0.1$ and $\kappa = 1$ is caused by selection alone. Two
+features of that table are worth stating plainly rather than smoothing. There is an \emph{optimum},
+not a monotone gain --- $\kappa = 0.05$ is worse than $\kappa = 0.10$ on every column, so selecting
+too little is as harmful as selecting nothing and $\kappa$ has to be set. And AOPCR does not track
+$\kappa$ at all, peaking at $\kappa = 0.50$ where \ndcg{} is near its minimum. The final row shows
+the attention-entropy term is a second, independent lever in the same direction: switching it off
+improves accuracy ($0.950$) while costing \ndcg{} ($0.765$) and AOPCR ($2.303$). Every row is a
+single seed, and we read the table for shape rather than for individual values.
+
+\subsection{A caveat about AOPCR}
+\label{sec:res:aopcr}
+
+One number in \Cref{tab:main} needs an explanation, and the explanation generalises. \millet{} under
+its published recipe scores AOPCR $13.268$ on \webtraffic{}, five times every other row, on the same
+architecture, code, metric implementation and data as the matched-budget \millet{} row, which scores
+$2.569$; only the training recipe differs. On \ucr{}-85 the same pair gives $0.812$ against $3.926$,
+a factor of $4.84$. The cause is that AOPCR integrates an \emph{unnormalised} drop in logit
+(\Cref{app:metrics}): a model trained longer and to lower loss has sharper logits, so perturbation
+produces a larger absolute drop whether or not the explanation is better localised. Consistently, the
+same pair moves by only $1.6$ points of \ndcg{} --- the normalised measure --- and moves
+\emph{downwards}, $0.677$ to $0.661$, while AOPCR multiplies by $5.2$. So an AOPCR value from one
+paper cannot be compared with one from another: it should be reported only between models trained
+under a single recipe, or replaced by a normalised measure wherever ground truth allows. That is why
+we retrain every baseline instead of quoting published numbers, and never compare against
+\millet{}'s published AOPCR --- including where it would flatter us.

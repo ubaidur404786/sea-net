@@ -1,0 +1,17 @@
+% !TEX root = ../main.tex
+% =====================================================================
+% 7. CONCLUSION -- page budget 0.20
+% Short. Problem, approach, result, significance. No new claims.
+% =====================================================================
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+Multiple instance learning gives a time series classifier a prediction and a per-time-step
+explanation from one forward pass, but the reference formulation carries a backbone one to two orders
+of magnitude larger than the devices that most need both. We showed that the expense is the encoder
+and not the interpretability, and that a bottlenecked separable dilated encoder with per-class
+\mbox{Top-$k$} pooling gives a 41\,K-parameter, 76.7\,MFLOP model that beats the equally-trained
+baseline at both tasks where ground truth exists, and trails it by two accuracy points across 85
+\ucr{} datasets. Inherent interpretability is not what makes these models large, and does not have to
+be given up to make them small.
