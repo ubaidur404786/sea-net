@@ -1,0 +1,85 @@
+% !TEX root = ../main.tex
+% =====================================================================
+% 2. BACKGROUND -- page budget 1.0
+%
+% Only what a reader needs to follow Sections 5-8: the MIL view, the
+% baseline head we compare everything against, and the two metrics.
+% The notation defined here is never redefined later.
+% =====================================================================
+
+\section{Background}
+\label{sec:bg}
+
+\subsection{Time series as bags of time steps}
+\label{sec:bg:mil}
+
+A univariate series $\bag = (\inst_1, \dots, \inst_{\nsteps})$ carries one label
+$y \in \{1,\dots,\nclz\}$, but in most datasets only a few time steps hold the evidence for it. That
+is exactly the structure of Multiple Instance Learning \citep{dietterich1997mil}, where a labelled
+\emph{bag} contains unlabelled \emph{instances}: take the series as the bag and each time step as an
+instance, and recovering the explanation becomes the standard MIL problem of recovering
+instance-level contributions from a bag-level label.
+
+An encoder maps every step to an embedding, $\emb_j = f_\theta(\bag)_j \in \R^{\dmodel}$, and a MIL
+pooling head reduces the $\nsteps$ embeddings to a bag prediction $\bagpred \in \R^{\nclz}$.
+Attention-based MIL \citep{ilse2018attention} learns how much each instance counts, and because the
+attention weight is the quantity the prediction is built from, it can be read directly as an
+importance score. The most active application of this idea is histopathology, where a slide is a bag
+and a patch is an instance; two methods from that literature -- multi-scale fusion
+\citep{hashimoto2020msdamil} and the dual-stream critical-instance mechanism of
+\citet{li2021dsmil} -- are adapted to time series in \Cref{sec:design}.
+
+\subsection{The baseline: conjunctive pooling}
+\label{sec:bg:conj}
+
+\millet{} \citep{early2024millet} pairs an InceptionTime encoder \citep{fawaz2020inceptiontime} with
+\emph{conjunctive pooling}, which combines one attention gate with a per-time-step classifier:
+\begin{equation}
+  a_j = \sig\!\big(\mathbf{w}_a^\top \tanh(W_a \emb_j)\big) \in [0,1],
+  \qquad
+  \instpred_j = W_c \emb_j + \mathbf{b}_c \in \R^{\nclz},
+  \label{eq:conj_gate}
+\end{equation}
+\begin{equation}
+  \bagpred^{\,k} = \frac{1}{\nsteps}\sum_{j=1}^{\nsteps} a_j \instpred_j^{\,k},
+  \qquad
+  \interp_{k,j} = a_j \instpred_j^{\,k} .
+  \label{eq:conj_bag}
+\end{equation}
+The interpretation $\interp_{k,j}$ is made of the same terms that are summed to give
+$\bagpred^{\,k}$, so the explanation cannot disagree with the prediction: it \emph{is} the
+prediction, decomposed. Three properties of \Cref{eq:conj_bag} bound what the head can express, and
+each one motivates a family of heads in \Cref{sec:design}. \textbf{L1, one gate for all classes:}
+$a_j$ is a single scalar per step, so a step cannot support one class while arguing against another.
+\textbf{L2, weights not normalised over time:} the gate is a sigmoid and the sum is divided by
+$\nsteps$, so the magnitude of $\bagpred^{\,k}$ depends on the series length -- awkward on an archive
+whose lengths span $15$ to $2{,}844$. \textbf{L3, a fixed mean:} evidence concentrated in a few steps
+of a long series contributes a vanishing share of the average, and a fixed operator cannot adapt to
+datasets where the evidence is instead spread out.
+
+\subsection{Measuring explanation quality}
+\label{sec:bg:metrics}
+
+We use the two metrics of \citet{early2024millet}, computed with their implementation, because our
+purpose is to compare against their method on their own terms.
+
+\paragraph{AOPCR (faithfulness to the model).}
+Steps are ranked by the model's own interpretation, masked one at a time in that order, and the
+confidence in the original prediction is tracked; a faithful ranking makes it fall fast. Writing
+$O^k$ for the induced ranking and $\bag^{O^k}_j$ for the series with its $j$ most important steps
+masked \citep{samek2017aopc},
+\begin{equation}
+  \mathrm{AOPC}(\bag, O^k) = \frac{1}{\nsteps-1}\sum_{j=1}^{\nsteps-1}
+  \Big[\bagpred^{k}(\bag) - \bagpred^{k}\big(\bag^{O^k}_{j}\big)\Big],
+  \label{eq:aopc}
+\end{equation}
+and AOPCR reports the margin of \Cref{eq:aopc} over three random maskings, so that a merely fragile
+model is not rewarded. AOPCR needs no ground truth and is therefore available on every dataset. It
+is also, as \Cref{sec:aopcr} shows, \textbf{unnormalised} -- it is built from raw confidence
+differences, so its scale follows the scale of the logits.
+
+\paragraph{\ndcg{} (correctness against ground truth).}
+Normalised Discounted Cumulative Gain \citep{jarvelin2002ndcg} asks whether the steps that
+\emph{genuinely} matter appear at the top of the ranking. It needs per-time-step ground truth, which
+only a synthetic generator provides, but it is normalised to $[0,1]$ and is therefore the metric we
+lean on whenever the two disagree.

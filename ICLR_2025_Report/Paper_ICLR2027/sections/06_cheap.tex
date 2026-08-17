@@ -1,0 +1,163 @@
+% !TEX root = ../main.tex
+% =====================================================================
+% 6. FINDING 2 -- faithfulness is cheap, and the UCR gap is capacity.
+% Budget 1.5 pp. This is the section that corrects the internship
+% report: the WIDE encoder outranks MILLET (issue I2), which is what
+% turns "we lose on UCR" into "we located the effect".
+%
+% Honesty items that MUST stay in: half-ours labels (I14), latency and
+% peak memory (I17), training time (I12).
+% =====================================================================
+
+\section{Faithful Interpretability Is Cheap, and the Remaining Gap Is Capacity}
+\label{sec:cheap}
+
+\begin{finding}
+\label{find:cheap}
+A $41$\,K-parameter model matches or exceeds a $424$\,K-parameter \millet{} baseline on accuracy,
+AOPCR and \ndcg{} at the same time. Where the small models do fall behind -- the \ucr{} archive -- a
+wider version of the same encoder overtakes the baseline, which places the effect in capacity rather
+than in architecture.
+\end{finding}
+
+\subsection{Where explanation correctness can be checked}
+\label{sec:cheap:web}
+
+\webtraffic{} is the only dataset here with per-time-step ground truth, so it is the only place all
+three quantities can be read at once.
+
+\begin{table}[t]
+\caption{\webtraffic{}, ranked by accuracy, with the re-trained baselines below. $S$ is the number of
+seeds; $S = 3$ rows give the mean and the per-seed values are in \Cref{app:seeds}, $S = 1$ rows are a
+single run. Rows marked $^{\dagger}$ pair \emph{our} encoder with \emph{\millet{}'s} head and are
+included so the two halves can be separated. AOPCR is unnormalised (\Cref{sec:aopcr}): this column
+may be compared down its own rows and nowhere else. The full $72$-model table is in
+\Cref{app:leaderboard}.}
+\label{tab:web}
+\begin{center}
+\footnotesize
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lccccr}
+\toprule
+\textbf{Model (encoder $+$ head)} & \textbf{Accuracy} & \textbf{AOPCR} & \textbf{\ndcg{}} &
+\textbf{Params} & \textbf{$S$} \\
+\midrule
+\seanet{} gated (narrow) $+$ Top-$k$              & \textbf{0.955}$\pm$0.003 & 2.225 & 0.750 & 61{,}740 & 3 \\
+\seanet{} wide $+$ conjunctive$^{\dagger}$        & 0.954 & 1.502 & 0.698 & 269{,}083 & 1 \\
+\seanet{} bottleneck (narrow) $+$ Top-$k$         & 0.947$\pm$0.016 & 2.621 & \textbf{0.773} & \textbf{41{,}324} & 3 \\
+\seanet{} wide $+$ class-wise conjunctive         & 0.946 & 1.722 & 0.686 & 269{,}164 & 1 \\
+\seanet{} input-gated (narrow) $+$ adaptive       & 0.905$\pm$0.030 & \textbf{2.651} & 0.732 & 58{,}102 & 3 \\
+\midrule
+\multicolumn{6}{l}{\emph{Baselines, re-trained here under the identical configuration of \Cref{sec:protocol}}}\\
+\millet{} (InceptionTime $+$ conjunctive)         & 0.887$\pm$0.010 & 2.569 & 0.677 & 423{,}707 & 3 \\
+ResNet $+$ conjunctive                            & 0.772 & 2.952 & 0.554 & 506{,}331 & 1 \\
+FCN $+$ conjunctive                               & 0.742 & 3.826 & 0.533 & 267{,}035 & 1 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+The row that carries Finding~\ref{find:cheap} is the third: at $41$\,K parameters it is the smallest
+model in the table and simultaneously holds its best \ndcg{} ($0.773$ against the baseline's
+$0.677$), a higher accuracy ($0.947$ against $0.887$) and a comparable AOPCR ($2.621$ against
+$2.569$, well inside the baseline's own $\pm0.884$ spread). Nothing was traded: the reduction did not
+cost classification quality \emph{or} explanation quality. We deliberately do not call the $0.955$
+model the winner -- the gap to $0.947$ is half of the second model's seed spread, and by the rule of
+\Cref{sec:protocol} that is not a result.
+
+The comparison with the two wide rows is more informative than the ranking. Ranks two and four spend
+about $269$\,K parameters, six times the third row's budget, to land within $0.007$ accuracy of it --
+and both score \emph{worse} on both explanation metrics. On this dataset, capacity bought neither
+accuracy nor faithfulness.
+
+\subsection{Cost, including the parts that do not favour us}
+\label{sec:cheap:cost}
+
+Against the baseline, the $41$\,K model uses $10.3\times$ fewer parameters, $11.1\times$ fewer FLOPs
+and a $2.9\times$ smaller saved file ($1.43$\,MB against $4.11$\,MB), measured on the real
+$1{,}008$-step input. Three qualifications belong in the same sentence, not in an appendix.
+Prediction latency improves by only $1.55\times$ ($0.131$\,ms against $0.203$\,ms), because
+depthwise-separable convolutions trade parameters for memory traffic rather than for time. Peak
+activation memory is \emph{worse} ($179$\,MB against $112$\,MB at batch $32$): fewer weights did not
+mean a smaller footprint. And the \seanet{} models take two to three times longer to reach
+convergence ($117 \pm 14$\,s against $50 \pm 10$\,s). The claim supported here is a reduction in
+parameters, FLOPs and stored size -- which is the budget that matters for shipping a model to a
+constrained device -- and not a general claim of efficiency. Full measurements are in
+\Cref{app:cost}.
+
+\subsection{The \ucr{} archive: where the small models lose, and why}
+\label{sec:cheap:ucr}
+
+One dataset cannot support a general claim, so the same models were run over the $85$ \ucr{} datasets
+for which \millet{} published results.
+
+\begin{table}[t]
+\caption{\ucr{}: mean accuracy and mean accuracy rank, all re-trained here under the identical
+configuration except the first row. Lower rank is better; ranks are over the $84$ datasets shared by
+all $28$ fully-swept models. $^{\dagger}$ = our encoder with \millet{}'s head. The last row is the
+same architecture as the baseline under \emph{\millet{}'s own} $1500$-epoch recipe, and is included
+to size the effect of the training budget against the effect of architecture.}
+\label{tab:ucr}
+\begin{center}
+\footnotesize
+\begin{tabular}{lccc}
+\toprule
+\textbf{Model} & \textbf{Params} & \textbf{Mean accuracy} & \textbf{Mean rank} \\
+\midrule
+\multicolumn{4}{l}{\emph{Wide encoder ($\approx 269$\,K)}}\\
+\seanet{} wide $+$ \millet{} additive$^{\dagger}$   & 269{,}083 & \textbf{0.8298} & 11.98 \\
+\seanet{} wide $+$ class-wise conjunctive           & 269{,}164 & 0.8292 & \textbf{11.53} \\
+\seanet{} wide $+$ \millet{} conjunctive$^{\dagger}$& 269{,}083 & 0.8238 & 12.43 \\
+\midrule
+\multicolumn{4}{l}{\emph{Narrow encoder ($41$--$62$\,K), the models of \Cref{tab:web}}}\\
+\seanet{} input-gated $+$ adaptive                  & 58{,}102 & 0.8153 & 15.47 \\
+\seanet{} bottleneck $+$ Top-$k$                    & 41{,}324 & 0.8097 & 15.40 \\
+\seanet{} gated $+$ Top-$k$                         & 61{,}740 & 0.8083 & 15.29 \\
+\midrule
+\multicolumn{4}{l}{\emph{Baselines}}\\
+\millet{} (InceptionTime $+$ conjunctive)           & 423{,}707 & 0.8274 & 12.60 \\
+ResNet $+$ conjunctive                              & 506{,}331 & 0.8146 & 13.54 \\
+FCN $+$ conjunctive                                 & 267{,}035 & 0.8141 & 14.48 \\
+\midrule
+\millet{}, \emph{their} $1500$-epoch recipe, our code & 423{,}707 & 0.8434 & \textbf{9.41} \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+\Cref{tab:ucr} separates two effects that \Cref{tab:web} cannot.
+
+\textbf{The architecture is not the problem.} At comparable capacity, the \seanet{} encoder with our
+class-wise head reaches mean rank $11.53$ against the baseline's $12.60$, with $36\%$ fewer
+parameters, and the two $^{\dagger}$ rows show the encoder also carries \millet{}'s own heads to
+$11.98$ and $12.43$. Whatever costs the narrow models their $15.3$--$15.5$ ranks, it is not the block
+design.
+
+\textbf{Shrinking is the problem, and we can price it.} Going from $269$\,K to $41$--$62$\,K
+parameters costs three to four rank places and about $0.02$ mean accuracy. On \webtraffic{} the same
+reduction cost nothing at all (\Cref{sec:cheap:web}). A single synthetic dataset with a clear
+generative structure simply does not need the capacity that $85$ heterogeneous real datasets do, and
+a study that stopped at \webtraffic{} -- as the screening protocol of \Cref{sec:protocol} would have
+allowed -- would have reported a general result that is in fact dataset-specific.
+
+\textbf{The training budget outweighs everything we changed.} The last row is the \emph{same
+architecture and the same code} as the baseline, differing only in the recipe, and it moves the mean
+rank by $3.19$ places ($12.60 \to 9.41$). The best architectural change in this entire study moves it
+by $1.07$ ($12.60 \to 11.53$). We could not re-run our own encoders under the longer schedule, so we
+cannot say how much of that $3.19$ would transfer; what the comparison does establish is that
+conclusions drawn from architecture comparisons at a fixed short budget are conclusions about that
+budget as much as about the architectures. It also confirms that our re-implementation is faithful:
+under \millet{}'s own hyperparameters it reproduces their published \ucr{} mean to within a
+thousandth ($0.8434$ against $0.8445$, \Cref{app:published}).
+
+\subsection{Neither axis dominates the other}
+\label{sec:cheap:axes}
+
+Finally, the sweep answers the question that motivated it. Averaged over every partner it was paired
+with, the encoder choice moves \webtraffic{} accuracy over $0.771$--$0.937$ and the pooling-head
+choice over $0.744$--$0.921$ (\Cref{app:ablations}) -- spreads of $0.166$ and $0.177$, effectively
+the same size. The head is not a detail attached to a backbone; it is an axis of comparable weight.
+Moreover, the best pair is not built from the two individually best halves: the gated encoder
+averages $0.902$ and Top-$k$ pooling $0.904$, both mid-table, yet their combination is the most
+accurate model we trained. Encoder and head interact, so the combination has to be searched rather
+than composed -- which is the practical argument for building the sweep in the first place.

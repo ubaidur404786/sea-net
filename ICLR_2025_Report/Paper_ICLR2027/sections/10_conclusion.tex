@@ -1,0 +1,49 @@
+% !TEX root = ../main.tex
+% =====================================================================
+% 10. LIMITATIONS AND CONCLUSION -- page budget 0.4
+%
+% Limitations come FIRST and are stated flatly. A reviewer who finds a
+% limitation we already named reads it as honesty; one who finds a
+% limitation we hid stops trusting the rest.
+% =====================================================================
+
+\section{Limitations}
+\label{sec:limitations}
+
+Five bounds apply to everything above. \textbf{Explanation correctness is measured on one synthetic
+dataset}, because \ndcg{} needs per-step ground truth and only a generator supplies it; how these
+results hold on real, noisier signals is untested, and constructing a second ground-truth dataset is
+the single most valuable extension we can name. \textbf{Finding~\ref{find:selection} rests on
+single-seed runs}: with a per-model spread of $\pm0.016$ accuracy we read only the large steps in
+\Cref{tab:kappa} and refuse the small ones, but repeated runs would settle the shape of the curve
+properly. \textbf{The headline models were selected on the dataset they are headlined on}
+(\Cref{sec:protocol}), which is exactly what \Cref{tab:ucr} exists to bound. \textbf{Only univariate
+series were tested}; the encoder is indifferent to input channel count, so multivariate input should
+work mechanically, but that was not verified. \textbf{Faithfulness is not usefulness}: AOPCR and
+\ndcg{} both ask whether the stated explanation matches something checkable, and neither establishes
+that a person would find the highlighted steps informative -- that requires a human study.
+
+\section{Conclusion}
+\label{sec:conclusion}
+
+We treated a family of inherently interpretable time series classifiers as a design space rather
+than as a sequence of models, and swept it under one configuration. Three of the four results point
+the same way: the aggregator matters more than its reputation suggests. Selection inside the
+aggregation rule, not encoder capacity, is what makes an explanation rank the right time steps, and
+it costs about one accuracy point (\Cref{sec:selection}). The head axis moves accuracy as much as the
+encoder axis, and the two interact, so the pair has to be searched (\Cref{sec:cheap}). And a head's
+reduction property protects it only if the optimiser is given a reason to use it
+(\Cref{sec:safety}).
+
+The fourth result is a caution about how this work is measured. AOPCR moves by $5\times$ under a
+change of training recipe alone (\Cref{sec:aopcr}), which is larger than any difference between the
+methods we compared. Until a normalised replacement exists, faithfulness claims in this literature
+should be made within a single training configuration, against baselines re-trained inside it. That
+is a heavier experimental burden than quoting a published number, and \Cref{tab:aopcr} is our
+argument that it is not optional.
+
+Finally, interpretability turned out to be cheap and capacity turned out not to be: a $41$\,K model
+matched a $424$\,K baseline on accuracy and both explanation metrics simultaneously, while the same
+architecture widened back up recovered the archive-wide performance the small version lost. The gap
+that remains against the best result we measured is not an architectural one at all -- it is a
+training budget of $1500$ epochs against $400$.

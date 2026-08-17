@@ -1,0 +1,50 @@
+% !TEX root = ../main.tex
+% =====================================================================
+% 4. PROTOCOL -- page budget 0.5
+%
+% Short on purpose. Its real job is to state the two things a reviewer
+% would otherwise catch us on: the selection effect (issue I7) and the
+% uneven seed counts (issue I4), BEFORE any result is shown.
+% =====================================================================
+
+\section{Experimental Protocol}
+\label{sec:protocol}
+
+\paragraph{Datasets.}
+\webtraffic{} \citep{early2024millet} is synthetic -- $1{,}000$ series of length $1{,}008$ over $10$
+classes -- and its generator records which time steps it modified to create each class. It is
+therefore the only dataset here on which \ndcg{} can be computed at all, and every claim about
+explanation \emph{correctness} in this paper rests on it. We also use the $85$ \ucr{} datasets
+\citep{dau2019ucr} for which \millet{} published per-dataset results, and run the remaining $43$ so
+that no conclusion depends on a convenient subset.
+
+\paragraph{One configuration for everything.}
+The central methodological choice of this study is that the baselines are \emph{re-trained here}
+rather than quoted. A published accuracy mixes the effect of the architecture with the effect of the
+training recipe its authors used, and the two cannot be separated afterwards. Under one identical
+configuration they can. Every model in this paper -- ours, \millet{}, FCN and ResNet
+\citep{wang2017fcn} -- is trained with Adam \citep{kingma2015adam} at learning rate
+$1.25\times10^{-3}$, weight decay $1.2\times10^{-4}$, at most $400$ epochs with patience $60$, batch
+size $\min(\lfloor n_{\mathrm{train}}/10\rfloor, 16)$, and a stratified $80/20$ validation split
+whenever a dataset has at least $100$ training series. The full list is in \Cref{app:hparams}. The
+price of this choice is that our numbers are not directly comparable with \millet{}'s published
+ones; that comparison is a separate question, answered on its own in \Cref{app:published}, and
+\Cref{sec:aopcr} shows why keeping the two apart is not merely tidiness.
+
+\paragraph{Two things to hold against every result that follows.}
+First, \textbf{\webtraffic{} was the screening set}. Each new encoder and head was evaluated there
+before the expensive \ucr{} runs, and only the strongest went forward. The \webtraffic{} numbers in
+\Cref{sec:cheap} therefore carry a selection effect, and the \ucr{} table in the same section is the
+honest counterweight rather than an afterthought. Second, \textbf{seed coverage is uneven}: four
+models were trained with three seeds and the other $68$ with one. Where three seeds exist the spread
+is not negligible -- accuracy standard deviation ranges from $0.003$ to $0.030$, and AOPCR is
+proportionally noisier still ($\pm 0.884$ for the baseline). We therefore adopt one rule and apply it
+in both directions throughout: \emph{a difference smaller than the relevant seed spread is reported
+as noise, not as a result}, and every single-seed number is marked as such.
+
+\paragraph{Reporting.}
+Classification is measured by accuracy, explanation quality by AOPCR and \ndcg{}, cost by parameter
+count, model size, FLOPs and time per prediction. Over the \ucr{} archive we report the mean accuracy
+\emph{and} the mean accuracy rank across datasets, following \citet{demsar2006statistical}, because a
+mean over datasets this heterogeneous can be dominated by a few of them while a rank cannot; ranks
+are computed over the $84$ datasets shared by all fully-swept models.

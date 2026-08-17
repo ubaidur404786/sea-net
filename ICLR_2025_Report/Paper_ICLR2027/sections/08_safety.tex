@@ -1,0 +1,85 @@
+% !TEX root = ../main.tex
+% =====================================================================
+% 8. FINDING 4 -- capacity-safe is not optimisation-safe. Budget 0.75.
+%
+% A negative result. It is only publishable because the mechanism is
+% identified, so the mechanism paragraph is the important one, not the
+% table.
+% =====================================================================
+
+\section{Capacity-Safety Is Not Optimisation-Safety}
+\label{sec:safety}
+
+\begin{finding}
+\label{find:safety}
+Five of our seven heads provably reduce to the conjunctive baseline for one setting of their
+parameters. That property is routinely used to argue a design ``cannot hurt''. One such head is
+nevertheless the worst we tested, by a wide margin, and the reason is that no term in the objective
+drives the model back to the safe branch.
+\end{finding}
+
+The fourth column of \Cref{tab:heads} is an argument that appears often in the attention and MIL
+literature: if a new head contains the established one as a special case, then in the worst case the
+optimiser recovers the established one, so adding the head is free. \Cref{tab:pooling} tests that
+argument on eight heads averaged over every encoder they were paired with.
+
+\begin{table}[t]
+\caption{\webtraffic{} accuracy, AOPCR and \ndcg{} for each pooling head, averaged over the $n$
+encoders it was paired with. ``Reduces'' repeats the fourth column of \Cref{tab:heads}. The
+$\kappa$-ablation configurations and the alternative-recipe baseline are excluded, so that no
+pairing is counted twice. Groups with small $n$ are not comparable with groups averaged over ten or
+more pairings; the full grid is in \Cref{app:ablations}.}
+\label{tab:pooling}
+\begin{center}
+\footnotesize
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Pooling head} & \textbf{Reduces} & \textbf{Mean acc.} & \textbf{Mean AOPCR} &
+\textbf{Mean \ndcg{}} & \textbf{$n$} \\
+\midrule
+Class-wise conjunctive      & yes & \textbf{0.921} & 2.322 & 0.692 & 10 \\
+Per-class gated attention   & \textbf{no}  & 0.918 & 1.869 & \textbf{0.733} & \phantom{0}4 \\
+Adaptive class-wise         & yes & 0.912 & 2.210 & 0.732 & \phantom{0}9 \\
+Softmax conjunctive         & yes & 0.907 & 1.690 & 0.712 & \phantom{0}9 \\
+Top-$k$ conjunctive         & yes & 0.904 & 2.267 & 0.712 & 16 \\
+Attention-max               & yes & 0.838 & 1.758 & 0.645 & \phantom{0}8 \\
+\textbf{Dual-stream conjunctive} & \textbf{yes} & \textbf{0.744} & 2.007 & 0.636 & \phantom{0}4 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+\paragraph{The counterexample.}
+Dual-stream conjunctive pooling blends the class-wise conjunctive mean with a critical-instance
+stream through a single learnable scalar $\lambda = \sig(\theta)$, initialised at $0.05$. At
+$\lambda \to 0$ it is the baseline exactly. It is nonetheless the weakest head in the study: mean
+accuracy $0.744$ against $0.90$ and above for the three strongest heads, with its four pairings at
+$0.860$, $0.824$, $0.736$ and $0.556$. A head that provably cannot be worse than $0.921$ scored
+$0.556$ on one pairing.
+
+\paragraph{The mechanism.}
+The property is about \emph{representational capacity}; the failure is one of \emph{optimisation}.
+Nothing in \Cref{eq:loss} rewards small $\lambda$. If the critical-instance query learns a poor
+embedding early in training, the gradient through the second stream is not informative, but there is
+also no pressure returning $\lambda$ towards zero -- the model sits in a region where the blend is
+harmful and the safe branch, though reachable in principle, is never searched for. The model
+\emph{can} represent the baseline; it never finds it. This is not specific to the dual stream: any
+``contains the baseline as a special case'' argument has the same gap between what the parameter
+space allows and what the optimiser visits.
+
+\paragraph{The contrast that supports the reading.}
+Two comparisons inside \Cref{tab:pooling} sharpen it. Top-$k$ pooling has the same reduction
+property but implements it through a \emph{hyperparameter} rather than a learned weight: at
+$\kappa = 1$ the baseline is recovered by construction, not by optimisation, and Top-$k$ never
+collapses. Conversely, per-class gated attention is the only head with \emph{no} reduction at all,
+and its behaviour is the mirror image -- a respectable mean of $0.918$ and the best mean \ndcg{}, but
+never the best partner for any encoder. It has no known-good configuration to fall back to, so it
+neither wins nor fails outright.
+
+\paragraph{What a designer should take from this.}
+A reduction property is worth having, but it should be built where the optimiser cannot lose it:
+prefer a fixed hyperparameter over a learned blend, initialise a learned blend at the safe value so
+that leaving it is a deliberate move, or add an explicit penalty holding the blend near the safe
+branch early in training. We initialised $\lambda$ at $0.05$ rather than $0$, which we now regard as
+the error; we did not have the compute to re-run the alternative, so this is a diagnosis with a
+proposed remedy rather than a demonstrated fix.

@@ -1,0 +1,91 @@
+% =====================================================================
+% preamble.tex -- packages, macros and switches for the ICLR 2027 paper.
+%
+% Rule for this file: the official style files are NEVER edited. Anything
+% we need goes here instead. The guidelines say tweaking the style files
+% "may be grounds for rejection".
+% =====================================================================
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{subcaption}
+\usepackage{xcolor}
+\usepackage{microtype}
+
+\usepackage{hyperref}
+\usepackage{url}
+\hypersetup{
+  colorlinks = true,
+  linkcolor  = black,
+  citecolor  = black,
+  urlcolor   = blue!60!black,
+  % Double blind: no author name may leak through the PDF metadata (issue I1).
+  pdfauthor  = {},
+  pdfsubject = {},
+  pdfkeywords= {}
+}
+
+% cleveref must be loaded AFTER hyperref, otherwise the links break.
+\usepackage[capitalise,noabbrev]{cleveref}
+
+% ---------------------------------------------------------------------
+% Where images live. The paper sits two folders below the project root,
+% so "../../" reaches results/ and the generated figures. No file
+% extension is written in \includegraphics, so LaTeX picks the sharp PDF.
+% ---------------------------------------------------------------------
+\graphicspath{{../../}{figures/}}
+
+% ---------------------------------------------------------------------
+% Names we write over and over. One macro each, so a rename is one edit
+% and spelling can never drift between sections.
+% ---------------------------------------------------------------------
+\newcommand{\seanet}{SEA-Net}
+\newcommand{\millet}{MILLET}
+\newcommand{\webtraffic}{WebTraffic}
+\newcommand{\ucr}{UCR}
+\newcommand{\ndcg}{NDCG@$n$}
+
+% Anonymous code link. Replace the placeholder with the real anonymised
+% mirror before submitting -- see issue I18 in PAPER_ISSUES.md.
+\newcommand{\anonrepo}{\url{https://anonymous.4open.science/r/seanet-ANON}}
+
+% ---------------------------------------------------------------------
+% Notation. Defined once here, used everywhere, never redefined.
+% ---------------------------------------------------------------------
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\bag}{\mathbf{X}}              % the input series (the bag)
+\newcommand{\inst}{x}                      % one time step (an instance)
+\newcommand{\emb}{\mathbf{z}}              % embedding of one time step
+\newcommand{\instpred}{\mathbf{y}}         % per-time-step class logits
+\newcommand{\bagpred}{\hat{y}}             % bag logits (the prediction)
+\newcommand{\interp}{\mathbf{I}}           % the interpretation
+\newcommand{\nsteps}{T}                    % number of time steps
+\newcommand{\nclz}{C}                      % number of classes
+\newcommand{\dmodel}{d}                    % encoder width
+\newcommand{\dattn}{d_a}                   % attention width
+\newcommand{\sig}{\sigma}
+\newcommand{\softmaxt}{\operatorname{softmax}_j}
+\newcommand{\softplus}{\operatorname{softplus}}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+% ---------------------------------------------------------------------
+% A "finding" environment, so the four claims of the paper look the same
+% every time they appear and a reviewer can find them by skimming.
+% ---------------------------------------------------------------------
+\newtheorem{finding}{Finding}
+\newtheorem{property}{Property}
+
+% Compact list spacing -- pages are the scarce resource here (issue I9).
+\usepackage{enumitem}
+\setlist[itemize]{topsep=2pt,itemsep=1pt,parsep=0pt,leftmargin=1.4em}
+\setlist[enumerate]{topsep=2pt,itemsep=1pt,parsep=0pt,leftmargin=1.6em}
+
+% Slightly tighter floats, again for the page budget.
+\setlength{\textfloatsep}{10pt plus 2pt minus 2pt}
+\setlength{\intextsep}{10pt plus 2pt minus 2pt}
+\setlength{\abovecaptionskip}{4pt}
+\setlength{\belowcaptionskip}{2pt}

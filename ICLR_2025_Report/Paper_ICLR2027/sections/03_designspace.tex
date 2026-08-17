@@ -1,0 +1,128 @@
+% !TEX root = ../main.tex
+% =====================================================================
+% 3. THE DESIGN SPACE -- page budget 1.25
+%
+% This is the "method" section, but it is written as the axes of the
+% study, not as a product pitch. Full equations for every head and every
+% encoder variant are in Appendix B; here we give the two slots, the
+% reduction properties (which is what makes the sweep controlled), and
+% only the one head that Section 5 needs in closed form.
+% =====================================================================
+
+\section{The Design Space We Sweep}
+\label{sec:design}
+
+A model in this family is a pair \emph{encoder $+$ pooling head}. The encoder consumes
+$(B,1,\nsteps)$ and returns $(B,\dmodel,\nsteps)$; the head returns the prediction $(B,\nclz)$ and
+the interpretation $(B,\nclz,\nsteps)$. Every component below respects that contract, so any encoder
+can be paired with any head from a configuration file alone. That is what makes the sweep of
+\Cref{sec:protocol} controlled rather than a collection of separate models.
+
+\subsection{The encoder axis: capacity at fixed structure}
+\label{sec:design:enc}
+
+We use \seanet{}, a length-preserving convolutional encoder: a stem convolution followed by
+\emph{multi-scale separable residual blocks}. One unit sums three depthwise convolutions of kernel
+size $\{5,11,23\}$ at a shared dilation, mixes channels with a pointwise $1\times1$ convolution, and
+is wrapped in BatchNorm, ReLU, dropout and a residual connection. Dilation grows geometrically and
+is capped at 16. Three properties matter for this study, and all three are constraints rather than
+features. Padding is ``same'' with no stride and no pooling, so $\nsteps$ is preserved at every
+stage -- required, because the interpretation has one value per step and AOPCR masks individual
+steps. The dilation cap keeps each embedding tied to a bounded window, so importance maps stay
+local. And splitting each convolution into a depthwise and a pointwise step
+\citep{chollet2017xception, howard2017mobilenets} costs $\dmodel k + \dmodel^2$ weights instead of
+$\dmodel^2 k$, which is what makes a small setting reachable at all.
+
+The encoder is instantiated at two capacities, and \Cref{sec:cheap} turns that into the paper's
+capacity control: \textbf{narrow} ($\dmodel = 64$, 4 blocks, $41$--$70$\,K parameters) and
+\textbf{wide} ($\dmodel = 128$, 6 blocks, $\approx 269$\,K parameters). Seven variants sit on top of
+the same block -- bottleneck, gated, input-gated, spike/trend, reconstruction-residual, and two
+wrappers (multi-scale input channels, multi-scale pyramid). They are described in
+\Cref{app:encoders}; for this paper they matter only as the spread of the encoder axis, which
+\Cref{sec:cheap} compares against the spread of the head axis.
+
+\subsection{The aggregation axis: seven heads in two slots}
+\label{sec:design:heads}
+
+Every head keeps the two-branch template of \Cref{eq:conj_gate} -- an attention branch deciding
+\emph{where} to look and a per-step classifier deciding \emph{what} each position argues for -- so a
+head is fully specified by two choices: the shape of the attention branch (slot~1) and the operator
+that reduces the $\nsteps$ evidence values $g_j^k$ to one number (slot~2). \Cref{tab:heads} lays the
+seven out on those two axes.
+
+\begin{table}[t]
+\caption{The seven pooling heads as two independent slots. $g_j^k$ is the evidence of step $j$ for
+class $k$. ``Reduces to baseline'' names the parameter setting at which the head becomes conjunctive
+pooling \emph{exactly}; this is what makes the $\kappa$ sweep of \Cref{sec:selection} a controlled
+experiment, and what \Cref{sec:safety} shows is not sufficient in practice. L1--L3 are the
+limitations of \Cref{sec:bg:conj}.}
+\label{tab:heads}
+\begin{center}
+\scriptsize
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{lllcc}
+\toprule
+\textbf{Head} & \textbf{Slot 1: attention} & \textbf{Slot 2: reduction over time} &
+\textbf{Reduces at} & \textbf{Targets} \\
+\midrule
+Conjunctive (baseline)    & shared gate    & mean                            & --- & --- \\
+Class-wise conjunctive    & per-class gate & mean                            & $a_j^k = a_j$ & L1 \\
+Softmax conjunctive       & per-class score& softmax, learnable $\tau$       & $\tau \to \infty$ & L2 \\
+Adaptive class-wise       & per-class gate & soft-argmax, learnable $\beta_k$& $\beta_k \to 0$ & L3 \\
+Top-$k$ conjunctive       & per-class gate & mean of the $k$ largest         & $\kappa = 1$ & L3 \\
+Attention-max             & per-class gate & blend of mean and max           & $\lambda_k \to 0$ & L3 \\
+Per-class gated attention & gated $\tanh\!\odot\!\sig$ & softmax             & \textbf{none} & L1, L3 \\
+Dual-stream conjunctive   & gate $+$ critical query & blend of two streams   & $\lambda \to 0$ & L3 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+Two of the eight rows are adapted from histopathology MIL rather than invented here: gated attention
+is due to \citet{ilse2018attention}, and the dual-stream mechanism to \citet{li2021dsmil}. Our
+contribution to those two is the transfer to time series, the per-class formulation, and -- for the
+dual stream -- removing its contrastive pre-training and adding the learnable blend that gives it
+the reduction property in the fourth column.
+
+\paragraph{Top-$k$ conjunctive pooling, in full.}
+\Cref{sec:selection} rests on this head, so we give it here. Let $g_j^k = a_j^k \instpred_j^{\,k}$
+with $a_j^k$ the per-class gate. Instead of averaging all $\nsteps$ evidence values, average only the
+$k$ largest, with $k$ a fixed fraction $\kappa$ of the series length:
+\begin{equation}
+  k = \max\big(1, \lceil \kappa \nsteps \rceil\big),
+  \qquad
+  \bagpred^{\,k} = \frac{1}{k}\!\!\sum_{j \in \mathcal{S}^k_{\mathrm{top}}}\!\! g_j^k,
+  \qquad
+  \interp_{k,j} = g_j^k ,
+  \label{eq:topk}
+\end{equation}
+where $\mathcal{S}^k_{\mathrm{top}}$ holds the indices of the $k$ largest $g_j^k$. Note that
+$\kappa$ is a hyperparameter, not a weight: this head has \emph{exactly the same parameter count} as
+class-wise conjunctive pooling.
+
+\begin{property}[Exact reduction]
+\label{prop:topk}
+At $\kappa = 1$, \Cref{eq:topk} is class-wise conjunctive pooling, term for term. For $\kappa < 1$
+the gradient reaches only the selected steps.
+\end{property}
+
+Property~\ref{prop:topk} is the reason \Cref{sec:selection} can attribute its result to selection
+and to nothing else: the $\kappa = 1$ row of that experiment is not a different model, it is the
+same model with the selection switched off.
+
+\subsection{Training objective}
+\label{sec:design:loss}
+
+Every model is trained with cross-entropy on the bag logits plus one term that exists for the
+explanation rather than for the classification:
+\begin{equation}
+  \mathcal{L} = \mathrm{CE}(\bagpred, y)
+  \;+\; \lambda_{\mathrm{focus}} \Big({-}\textstyle\sum_{j} \bar a_j \log(\bar a_j + \epsilon)\Big),
+  \label{eq:loss}
+\end{equation}
+with $\bar a_j$ the class-averaged attention. Attention spread evenly over the series has high
+entropy, so adding entropy to a minimised loss pushes the model towards concentrated attention.
+Without it, a model can be right while its importance map is flat, and a reader cannot tell where
+the evidence stops. This is the second, independent selection knob used in \Cref{sec:selection}. We
+set $\lambda_{\mathrm{focus}} = 0.01$ for every \seanet{} model and $0$ for the \millet{} baseline,
+since the term is our addition; label smoothing is $0.13$ throughout.

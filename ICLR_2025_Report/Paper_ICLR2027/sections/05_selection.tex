@@ -1,0 +1,114 @@
+% !TEX root = ../main.tex
+% =====================================================================
+% 5. FINDING 1 -- selection drives explanation quality. Budget 1.25 pp.
+%
+% All five kappa rows are SEED 0 (issue I5). The shape is an optimum,
+% not a monotone gain, and AOPCR does not track kappa at all (issue
+% I19) -- both are stated here, not hidden.
+% =====================================================================
+
+\section{Selection Inside the Aggregator Drives Explanation Quality}
+\label{sec:selection}
+
+\begin{finding}
+\label{find:selection}
+Restricting the bag score to a subset of per-step evidence improves the ground-truth ranking quality
+of the explanation, at a cost of roughly one accuracy point. The effect is caused by the selection
+itself, not by the encoder, and it has an optimum rather than growing without limit.
+\end{finding}
+
+\subsection{A controlled experiment on selection}
+\label{sec:selection:kappa}
+
+Most comparisons between pooling heads confound the aggregation rule with everything else that
+changed. Top-$k$ conjunctive pooling avoids that, because of Property~\ref{prop:topk}: at
+$\kappa = 1$ it \emph{is} class-wise conjunctive pooling, term for term, and $\kappa$ adds no
+parameters. Sweeping $\kappa$ therefore holds the encoder, the head, the parameter count, the
+objective and the seed fixed, and varies one thing -- how much of the evidence the prediction is
+allowed to use.
+
+\begin{table}[t]
+\caption{Top-$k$ fraction $\kappa$, on \webtraffic{}. The model is the \seanet{} bottleneck encoder
+with Top-$k$ pooling and only $\kappa$ changes; $\kappa = 1.00$ recovers class-wise conjunctive
+pooling exactly (Property~\ref{prop:topk}). \textbf{All five rows are a single seed} (seed $0$), so
+the $0.938$/$0.940$ step is inside the seed spread of this model ($\pm 0.016$) and is not read as a
+difference.}
+\label{tab:kappa}
+\begin{center}
+\small
+\begin{tabular}{lcccc}
+\toprule
+\textbf{$\kappa$} & \textbf{Accuracy} & \textbf{Test loss} & \textbf{AOPCR} & \textbf{\ndcg{}} \\
+\midrule
+$0.05$                       & 0.888 & 0.401 & 2.288 & 0.715 \\
+$0.10$ \emph{(default)}      & 0.938 & 0.299 & 2.778 & \textbf{0.777} \\
+$0.25$                       & \textbf{0.940} & \textbf{0.277} & 2.648 & 0.733 \\
+$0.50$                       & 0.882 & 0.418 & \textbf{3.114} & 0.732 \\
+$1.00$ \emph{($=$ class-wise conjunctive)} & 0.908 & 0.395 & 2.436 & 0.722 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+\Cref{tab:kappa} shows three things, and we state the third because it complicates the first two.
+
+\textbf{Selection helps, and the mechanism is identifiable.} \ndcg{} is $0.777$ at $\kappa = 0.10$
+and falls to $0.722$ at $\kappa = 1.00$, an improvement of $0.055$ obtained with zero extra
+parameters. The mechanism follows directly from \Cref{eq:topk}: averaging only the $k$ largest
+evidence values leaves $\interp_{k,j}$ exactly zero wherever the model used nothing, instead of a
+small weight that never quite reaches zero. \ndcg{} scores whether the genuinely modified steps sit
+at the top of the ranking, so removing the background from that ranking is precisely what the metric
+rewards. Accuracy at $\kappa = 1.00$ is $0.908$, clearly below the $0.938$--$0.940$ obtained at
+$\kappa = 0.10$--$0.25$, so the advantage does not come from the encoder either.
+
+\textbf{There is an optimum, not a monotone gain.} At $\kappa = 0.05$ both quantities collapse --
+accuracy to $0.888$ and \ndcg{} to $0.715$, \emph{below} the $\kappa = 1$ baseline. Selecting too few
+steps discards evidence the classifier needs, and the explanation degrades with it. The useful
+statement is therefore not ``sparser is better'' but ``there is a band, and on this dataset it is
+near $\kappa = 0.1$''.
+
+\textbf{AOPCR does not track $\kappa$.} It runs $2.288 \to 2.778 \to 2.648 \to 3.114 \to 2.436$,
+peaking where \ndcg{} is mediocre and the accuracy is worst. Two readings are available: either
+faithfulness-to-the-model and correctness-against-ground-truth genuinely diverge here, or AOPCR is
+too poorly conditioned to resolve a change this size. \Cref{sec:aopcr} gives direct evidence for the
+second, which is why Finding~\ref{find:selection} is stated in terms of \ndcg{}.
+
+\subsection{A second, independent knob points the same way}
+\label{sec:selection:entropy}
+
+If selection is really the operative variable, then a different mechanism that also concentrates the
+evidence should move the same quantities in the same direction. The attention-entropy term of
+\Cref{eq:loss} is that mechanism: it acts on the objective rather than on the aggregation rule, and
+it is switched by one hyperparameter.
+
+\begin{table}[t]
+\caption{The attention-entropy term of \Cref{eq:loss}, on and off, on \webtraffic{}. Same encoder,
+same head, same $\kappa$, same seed ($0$); only $\lambda_{\mathrm{focus}}$ changes. One matched pair,
+so this indicates a direction rather than a measured effect size.}
+\label{tab:entropy}
+\begin{center}
+\small
+\begin{tabular}{lcccc}
+\toprule
+\textbf{$\lambda_{\mathrm{focus}}$} & \textbf{Accuracy} & \textbf{Test loss} & \textbf{AOPCR} & \textbf{\ndcg{}} \\
+\midrule
+$0.01$ \emph{(on, our default)} & 0.938 & 0.299 & \textbf{2.778} & \textbf{0.777} \\
+$0.00$ \emph{(off)}             & \textbf{0.950} & \textbf{0.263} & 2.303 & 0.765 \\
+\bottomrule
+\end{tabular}
+\end{center}
+\end{table}
+
+Switching the penalty off improves classification -- $0.950$ against $0.938$, at a lower test loss --
+and degrades both explanation metrics. Two different interventions, one in the aggregation rule and
+one in the loss, therefore produce the same trade: about one accuracy point in exchange for a more
+concentrated and better-ranked explanation. That consistency is the evidence that the trade is a
+property of concentrating evidence, rather than an artefact of either mechanism.
+
+\paragraph{The practical reading.}
+A designer of an inherently interpretable classifier has a dial here, and it sits in the aggregator
+and the objective, not in the backbone. Turning it costs about a point of accuracy and buys an
+explanation whose support is explicit. Whether that is worth paying is an application question, but
+it is now a priced one. The obvious caveat is that both experiments are single-seed on one dataset;
+with a per-model spread of $\pm0.016$ we read the large steps and refuse the small ones, and we did
+not have the compute to repeat them.
