@@ -10,30 +10,31 @@
 \section{Discussion and Limitations}
 \label{sec:disc}
 
-\paragraph{What the trade actually is.}
-\Cref{sec:results} in one sentence: an order of magnitude of parameters and arithmetic, in exchange
-for about two accuracy points on a broad archive, with the interpretation improved rather than
-degraded where it can be scored. Whether that is a good trade is a property of the deployment, not of
-the model. On a workstation it is a bad one. On a sensor node with a megabyte of flash it is the
-difference between a method that can be considered and one that cannot, and the interpretation, which
-is the reason to use MIL at all, arrives intact. Since the wide encoder recovers the \ucr{} deficit
-(\Cref{sec:res:ucr}), what is being paid for is the size, and the payment can be adjusted by choosing
-a width. The wider point: the tension between ``interpretable'' and ``small'' was never intrinsic to
-MIL --- its head costs $0.25\,\%$ of the baseline --- but inherited from a backbone chosen when cost
-was not a design variable.
+\paragraph{The trade-off.}
+\Cref{sec:results} in one sentence: ten times fewer parameters and ten times less computation, in
+exchange for about two accuracy points on a large archive, with the interpretation better rather than
+worse where we can score it. Whether that is a good trade depends on where the model runs, not on the
+model itself. On a workstation it is a bad trade. On a sensor node with a megabyte of flash it is the
+difference between a method that can be used and one that cannot, and the interpretation, which is
+the reason to use MIL at all, is not lost. Since the wide encoder wins back the \ucr{} points
+(\Cref{sec:res:ucr}), the price is paid for the smaller size, and it can be changed by choosing a
+different width. The wider point: the tension between ``interpretable'' and ``small'' was never part
+of MIL --- its head costs $0.25\,\%$ of the baseline --- but came from a backbone chosen when cost was
+not a design choice.
 
 \paragraph{Limitations.}
-\textbf{No deployment}: we report parameter counts, analytically counted FLOPs and GPU timings; no
-model was quantised, compiled or run on a microcontroller, and the int8 column of \Cref{tab:cost} is
-arithmetic rather than measurement. \textbf{Activation memory did not shrink}: peak memory is worse
-than the baseline's (\Cref{sec:res:cost}) because the encoder preserves length by design, so where
-SRAM rather than flash binds this is the wrong design, and streaming or strided variants that keep a
-per-step interpretation are the obvious next step. \textbf{Interpretation is scored on one dataset}:
-\ndcg{} needs per-time-step ground truth, which only the synthetic \webtraffic{} generator supplies,
-and that is also the screening set --- so the interpretation claim rests on one optimistic benchmark,
-with AOPCR the weaker fallback (\Cref{sec:res:aopcr}). \textbf{Uneven seeds}: three models have three
-seeds and the ablations are single-seed, read for shape against the spreads in \Cref{sec:setup}; a
-full multi-seed sweep over 72 combinations was outside the available compute. \textbf{Training is
-slower}: $117.3 \pm 14.0$\,s to converge on \webtraffic{} against $50.4 \pm 9.5$\,s for the baseline,
-because depthwise convolutions are poorly served by GPU kernels tuned for dense ones. The saving is
-at inference, where the target deployment spends its life, but the training cost is real.
+\textbf{No deployment}: we report parameter counts, FLOPs counted by hand from the layer shapes and
+GPU timings; no model was quantised, compiled or run on a microcontroller, and the int8 column of
+\Cref{tab:cost} is a calculation, not a measurement. \textbf{Activation memory did not shrink}: peak
+memory is worse than the baseline's (\Cref{sec:res:cost}) because the encoder keeps the length
+unchanged by design, so where SRAM and not flash is the limit, this is the wrong design; versions
+that stream the input or use strides while keeping a per-step interpretation are the obvious next
+step. \textbf{Interpretation is scored on one dataset}: \ndcg{} needs per-time-step ground truth,
+which only the synthetic \webtraffic{} generator gives, and that is also the set we chose the design
+on --- so the interpretation claim rests on one optimistic benchmark, with AOPCR as the weaker backup
+(\Cref{sec:res:aopcr}). \textbf{Uneven seeds}: three models have three seeds and the ablations use one
+seed each, read as a pattern against the spreads in \Cref{sec:setup}; running all 72 combinations with
+several seeds needed more compute than we had. \textbf{Training is slower}: $117.3 \pm 14.0$\,s to
+converge on \webtraffic{} against $50.4 \pm 9.5$\,s for the baseline, because GPU kernels are tuned
+for dense convolutions and not for depthwise ones. The saving is at inference time, where the target
+device spends its life, but the training cost is real.

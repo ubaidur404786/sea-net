@@ -189,14 +189,20 @@ our contribution would be a real integrity problem.
 
 ---
 
-### I15 — No statistical test in the report — MED
-`demsar2006statistical` is cited but no Wilcoxon / Nemenyi test is reported.
+### I15 — No statistical test in the paper — OPEN BY DECISION (updated 2026-08-17)
 The critical-difference figure exists
 (`results/paper_figures/01_main_figures/fig4_critical_difference_accuracy.pdf`)
-but the report does not use it.
+and was briefly in the appendix, but it was removed on 2026-08-17 because it is
+hard to read (I29).
 
-**Fix:** put the critical-difference diagram in the paper and say which test
-produced it. ICLR expects this for a multi-dataset comparison.
+**Where the evidence sits now:** `tab:app_ucr` reports mean rank *and* win/tie/loss
+counts for all 28 models, and the surrounding text says plainly that most
+middle-of-the-field pairwise differences are not significant at α = 0.05. That is
+weaker than a diagram but it is not a hidden weakness.
+
+**If a reviewer asks:** restore the figure (git history) or report a plain
+Wilcoxon signed-rank p-value against the matched-budget baseline as a table row,
+which would be easier to read than the diagram was.
 
 ---
 
@@ -304,9 +310,9 @@ unfinished, and the two strongest findings are both visual by nature.
    \Cref{tab:kappa}. It makes the optimum visible instead of asking the reader
    to find it in five rows. Needs a small plotting function and a
    `python main.py paper` run — **you** would run that.
-3. **The critical-difference diagram** (exists,
-   `results/paper_figures/01_main_figures/fig4_critical_difference_accuracy.pdf`),
-   which also closes issue I15.
+3. ~~**The critical-difference diagram**~~ — was added, then removed on
+   2026-08-17 for readability (I29). Issue I15 stays open by decision.
+4. ~~**The Pareto front**~~ — was in the appendix, removed on 2026-08-18 (I30).
 
 Adding these costs about a page, so I20 and I21 must be solved together.
 
@@ -350,17 +356,16 @@ budget. If one exists it must be cited and distinguished, not omitted.
 
 ---
 
-### I24 — The Pareto figure has truncated model labels — LOW
-`pareto_web_acc_vs_params.pdf` prints labels like `sea_bo…k_conj`. It is now in
-the appendix (\Cref{fig:app_pareto}) with a caption that points the reader to
-the full leaderboard, so it is not misleading, but it looks unfinished.
+### I24 — The Pareto figure has truncated model labels — MOOT 2026-08-18 (figure removed, see I30)
+`pareto_web_acc_vs_params.pdf` prints labels like `sea_bo…k_conj`. The figure is
+no longer in the paper, so nothing needs fixing for the submission.
 
-**Fix:** add a display-name map to `seanet/paper/figures.py` and re-run
-`python main.py paper` (a command for you, not me — CLAUDE.md rule 3).
+**If it ever goes back in:** add a display-name map to `seanet/paper/figures.py`
+and re-run `python main.py paper` (a command for you, not me — CLAUDE.md rule 3).
 
 ---
 
-### I25 — The CD diagram's ranks differ from the ranking table — MED (explained, not fixed)
+### I25 — The CD diagram's ranks differ from the ranking table — MOOT 2026-08-17 (diagram removed, see I29)
 `fig4_critical_difference_accuracy.pdf` shows 29 models and ranks like 13.32 for
 the matched-budget MILLET, while `table_ranking_accuracy.csv` has 28 models and
 12.60. The cause is that the diagram includes MILLET's *published* per-dataset
@@ -432,10 +437,111 @@ supporting code; **not** used to generate, select, filter or interpret results,
 design models or produce any reported number.
 
 ### I21 — The draft has no figures — DONE 2026-08-17
-Four floats now: Figure 1 teaser (main), Figure 2 architecture (main, drawn in
+Two floats now: Figure 1 teaser (main) and Figure 2 architecture (main, drawn in
 TikZ in `figures/fig_arch.tex` so it is sharp, anonymous and shows the
-bottleneck), Figure 3 critical-difference diagram (appendix), Figure 4 Pareto
-front (appendix).
+bottleneck). The critical-difference diagram was pulled on 2026-08-17 (I29) and
+the Pareto front on 2026-08-18 (I30).
+
+### I31 — Teaser figure must be regenerated — OPEN (needs a command from you)
+The figure on page 2 is still the old image. The plotting code
+`seanet/paper/teaser.py` is fixed but the PNG/PDF on disk is not, because
+redrawing it retrains the two models (CLAUDE.md rule 3 — your command, not mine):
+
+```
+python main.py teaser --models sv1/millet sv4/seanet_bottleneck_topk --dataset WebTraffic
+```
+
+Roughly 3 minutes (MILLET ≈ 50 s, ours ≈ 117 s to converge). It writes a new
+dated folder under `results/SEA_NET/teaser/`; the `\includegraphics` path in
+`sections/01_introduction.tex` then has to point at that new folder.
+
+What the code fix changes: paper names instead of config names
+(`seanet_bottleneck_topk` → `SEA-Net bottleneck + Top-k`, `millet` → `MILLET`);
+no more collision between the row banner and the colour-bar label; fonts sized
+for a figure printed 5.5 in wide instead of 11 in; and a plain headline instead
+of "and it still explains itself". Page footprint is unchanged, so the 9-page
+budget survives the swap.
+
+### I32 — Main text ran 2 lines past page 9 — DONE 2026-08-18
+Found by rendering the PDF instead of trusting where the Reproducibility
+Statement started: §7's last sentence was sitting alone on page 10, so the main
+text was 9 pages **plus two lines** — over the ICLR limit. Fixed by cutting two
+sentences that repeated numbers already given elsewhere (the trade-off restated
+a third time at the end of §1, and the same restatement closing §5.3; §6 still
+states it in full). The conclusion now ends on page 9 with the Reproducibility
+Statement starting page 10.
+
+**Check this the same way after any edit:** render the pages, do not infer the
+boundary from `pdftotext` alone.
+
+### I30 — Pareto figure removed and the wording simplified — DONE 2026-08-18
+Two changes in one pass, both asked for by you.
+
+**Figure.** Appendix C.3 (`\subsection{Cost against quality across the whole
+sweep}`) is deleted together with `fig:app_pareto`. Nothing referenced that
+label, so there was no `\Cref` to repair; the appendix now runs
+C.1 per-seed → C.2 UCR → C.3 published MILLET → C.4 all combinations. The PDF
+`results/paper_figures/01_main_figures/pareto_web_acc_vs_params.pdf` is still on
+disk and the deleted block is in git history, so it can come back.
+
+**Wording.** Every section was rewritten in plainer English. The words you
+called out are gone from the paper: "sweep"/"swept" (now "combinations we ran",
+"the κ experiment", "all model combinations") and "caveat" (now "warning" /
+"limitation"). Also replaced: surrogate, artefact, verdict, auditable,
+actionable, nominally, monotone, screened, noise floor, first-class, lever,
+instrument, characterise, dominate, formulation, unnormalised ("no fixed
+scale"), priced trade, flatter us. Two prose fixes worth noting because they
+change what a reader is told, not just how:
+- "analytically counted FLOPs" → "FLOPs counted by hand from the layer shapes",
+  which is what the profiler actually does.
+- "supports *eligibility for a budget* rather than *measured operation within
+  it*" → "shows the model **could fit** such a budget, not that we ran it
+  there". Same limitation, said in words a tired reviewer will not misread.
+
+No claim, number, hedge or citation changed. `tools/check_numbers.py` still
+passes.
+
+**Headings** are now plain ICLR ones in template order. Renamed:
+- §3.1 "The baseline we start from" → "Background: Multiple Instance Learning
+  for Time Series"
+- §3.2 "A length-preserving separable encoder" → "Separable Encoder with a
+  Bottleneck"
+- §5.1 "RQ1 and RQ2: classification and interpretation at 41 K parameters" →
+  "Classification and Interpretation on WebTraffic"
+- §5.2 "RQ3: what the cost reduction actually is" → "Model Cost"
+- §5.3 "RQ1 across 85 datasets: where shrinking starts to cost" → "Accuracy on
+  the UCR Archive"
+- §5.4 "RQ4 and RQ5: which component did what" → "Ablation Study"
+- §5.5 "A caveat about AOPCR" → "Sensitivity of AOPCR to the Training Budget"
+- Appendix C.3 "Relation to published MILLET results" → "Comparison with
+  Published MILLET Results"; C.4 "Full sweep" → "All Model Combinations";
+  plus title case on the rest.
+
+The RQ numbers are still in the paper — they are in §4 and in the first line of
+each results subsection, just not in the headings.
+
+Build after the pass: 16 pages, main text still ends exactly on page 9,
+0 errors, 0 undefined references, 0 overfull boxes.
+
+### I29 — Critical-difference diagram removed — DONE 2026-08-17
+You found the diagram confusing to read, so it is out of the paper: the figure
+float and its paragraph are gone from `sections/A1_appendix.tex`, and the
+"critical-difference analysis" promise in `sections/04_setup.tex` §Metrics now
+just promises mean rank. The image file itself is untouched on disk.
+
+Consequences, so nothing silently breaks:
+- I15 (statistical test) reverts to **open by decision**, not by oversight. The
+  multi-dataset evidence is now `tab:app_ucr` — mean rank plus win/tie/loss
+  counts per model — and one sentence stating that most middle-of-the-field
+  pairwise differences are not significant at α = 0.05.
+- I25 (the 28-vs-29-model rank mismatch) is **moot**: only the 28-model table is
+  printed, so there is no second set of ranks to disagree with it.
+- `demsar2006statistical` is still cited, now for mean rank rather than for the
+  diagram, which is a correct use of that reference.
+- Main text still ends exactly on page 9; the paper is 16 pages instead of 17.
+
+If a reviewer asks for the test, the figure can go straight back — the paragraph
+is in git history and the PDF is still in `results/paper_figures/`.
 
 ### I22 — Uncited Related Work claim — DONE 2026-08-17
 The sentence was in Draft 1's §9 and does not exist in Draft 2. The AOPCR

@@ -8,10 +8,10 @@
 \label{sec:conclusion}
 
 Multiple instance learning gives a time series classifier a prediction and a per-time-step
-explanation from one forward pass, but the reference formulation carries a backbone one to two orders
-of magnitude larger than the devices that most need both. We showed that the expense is the encoder
-and not the interpretability, and that a bottlenecked separable dilated encoder with per-class
+explanation from one forward pass, but the standard version carries a backbone ten to a hundred times
+larger than what fits on the devices that need both the most. We showed that the cost is the encoder
+and not the interpretability, and that a separable dilated encoder with a bottleneck and per-class
 \mbox{Top-$k$} pooling gives a 41\,K-parameter, 76.7\,MFLOP model that beats the equally-trained
-baseline at both tasks where ground truth exists, and trails it by two accuracy points across 85
-\ucr{} datasets. Inherent interpretability is not what makes these models large, and does not have to
-be given up to make them small.
+baseline at both jobs where ground truth exists, and stays two accuracy points behind it across 85
+\ucr{} datasets. Built-in interpretability is not what makes these models large, and it does not have
+to be given up to make them small.

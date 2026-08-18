@@ -36,7 +36,7 @@ Read this file and `PAPER_ISSUES.md` before working on the paper.
 | | question | where | verdict |
 |---|---|---|---|
 | RQ1 | Is classification accuracy retained? | §5.1, §5.3 | Yes on WebTraffic (+6.0 pts); **no** on UCR-85 (−1.8 vs matched, −3.4 vs published) |
-| RQ2 | Is the interpretation retained? | §5.1 | Improved: NDCG@n 0.773 vs 0.677; AOPCR tied |
+| RQ2 | Is the interpretation retained? | §5.1 | Improved: NDCG@n 0.772 vs 0.677; AOPCR tied |
 | RQ3 | How much cost is removed? | §5.2 | Params 10.3×, FLOPs 11.1×; latency only 1.6×; **peak memory worse** |
 | RQ4 | What does the bottleneck contribute? | §5.4 | −28 % params at no measurable accuracy cost |
 | RQ5 | What does Top-$k$ contribute? | §5.4 | +0.044/+0.059 NDCG@n (3–4 seed sd); accuracy effect not claimed |
@@ -194,8 +194,9 @@ deliver.
       resource. Current shortlist:
       1. Teaser: same series, three models, prediction + explanation (exists)
       2. The κ curve, NDCG and accuracy against κ (**new figure needed**)
-      3. Critical-difference diagram on UCR-85 (exists, issue I15)
-      4. Quality against cost (exists — `pareto_web_acc_vs_params`)
+      3. ~~Critical-difference diagram on UCR-85~~ (dropped 2026-08-17, I29)
+      4. ~~Quality against cost (`pareto_web_acc_vs_params`)~~ (dropped
+         2026-08-18, I30)
 - [ ] **5.2** The κ figure does not exist yet. Either I add a small plotting
       function to `seanet/paper/` and you run `python main.py paper`, or we
       keep the κ table only and save the page. Decide in Phase 5.
@@ -245,3 +246,6 @@ spread printed next to it.
 | 2026-08-17 | novelty | Literature check run before writing: separable conv, squeeze/expand bottleneck, $k$-max MIL selection and the MCU budget framing all already exist. Six new references added; the paper now states plainly that no component is novel in isolation (issue I23) |
 | 2026-08-17 | 3–5 | **Draft 2 complete.** New sections `02_related`, `03_method`, `04_setup`, `05_results`, `06_discussion`, `07_conclusion`; abstract, introduction, statements and appendix rewritten. New TikZ architecture figure in `figures/fig_arch.tex`. 72-row leaderboard generated from the CSV rather than typed |
 | 2026-08-17 | 6 | **Compliance pass passed.** Main text ends exactly at page 9 (measured, not estimated); 17 pages total; 0 errors, 0 undefined references, 0 undefined citations, 0 overfull boxes, no `??`. Anonymity sweep clean including PDF metadata (`/Author` empty). AI use statement present. Statements and appendices after the references |
+| 2026-08-17 | 6 | **Critical-difference diagram removed on your instruction** — it was confusing to read. Figure float and its paragraph cut from the appendix, and the "critical-difference analysis" promise in §4 Metrics reduced to mean rank. UCR evidence is now `tab:app_ucr` (mean rank + win/tie/loss) plus one honest sentence about non-significant middle-of-field differences. Rebuild: 16 pages, main text still ends exactly at page 9, 0 errors / 0 undefined / 0 overfull. Issue I15 reopened by decision, I25 moot (see I29) |
+| 2026-08-18 | 6 | **Pareto figure removed and the whole paper reworded in plain English, on your instruction.** Appendix C.3 and `fig:app_pareto` deleted (nothing referenced the label). "sweep"/"swept" and "caveat" are gone from the paper, along with surrogate, artefact, verdict, auditable, nominally, monotone, screened, noise floor, lever, instrument, characterise, unnormalised and others. Section headings are now plain ICLR ones in template order — the RQ names moved out of the headings and into the first line of each results subsection. No claim, number, hedge or citation changed; `check_numbers.py` still passes. Rebuild: 16 pages, main text still ends exactly at page 9, 0 errors / 0 undefined / 0 overfull. Issue I24 now moot (see I30) |
+| 2026-08-18 | 6 | **Final read-through with the pages actually rendered.** Four fixes: (1) the main text was 9 pages **plus two lines** — the conclusion's last sentence sat on page 10, over the ICLR limit; cut two repeated sentences and it now ends on page 9 (I32). (2) The teaser was floating to page 3, after the whole introduction; moved up to the top of page 2 where it can do its job. (3) Title was breaking with "TCNs" alone on a line; rebalanced to three lines. (4) The teaser caption claimed the model is "more selective", which the picture does not clearly show — replaced with what a reader can check in the image (0.65 against 0.19 on the true class, strongest evidence inside the marked window). `seanet/paper/teaser.py` fixed for names, fonts and the colour-bar collision, but the image still needs one re-run from you (I31) |

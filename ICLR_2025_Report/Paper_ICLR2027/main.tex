@@ -2,10 +2,10 @@
 % main.tex -- the ONLY file that gets compiled.  DRAFT 2.
 %
 % Build:
-%   pdflatex main
-%   bibtex   main
-%   pdflatex main
-%   pdflatex main
+% pdflatex main
+%  bibtex   main
+% pdflatex main
+% pdflatex main
 %
 % Four passes, because LaTeX only learns page and citation numbers after
 % the first one. "??" or "[?]" in the PDF just means: build again.
@@ -24,8 +24,11 @@
 
 \input{preamble}
 
+% Three balanced lines. Each one must stay under about 40 characters, or the title
+% font wraps it and leaves a stray word alone on a line (which is what the first
+% version did to "TCNs").
 \title{Interpretable Time Series Classification\\
-       on a Tiny Budget: Bottlenecked Separable TCNs\\
+       on a Tiny Budget: Bottlenecked TCNs\\
        with Top-$k$ Conjunctive Pooling}
 
 % Authors are hidden while \iclrfinalcopy is commented out. Do not put
