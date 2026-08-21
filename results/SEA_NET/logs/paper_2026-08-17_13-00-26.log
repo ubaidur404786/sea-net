@@ -1,0 +1,77 @@
+[log] command 'paper' started at 2026-08-17_13-00-26
+[log] a copy of everything below is being saved to: results\SEA_NET\logs\paper_2026-08-17_13-00-26.log
+
+Leaderboard: 72 models
+Per-dataset matrix: 28 fully-swept models x 84 shared datasets
+
+43 figures written to results\paper_figures/ (PDF + SVG + 600dpi PNG each)
+
+  01_main_figures/  (6)
+    fig1_benchmark_strongest_web_acc                     Which models are the strongest on Accuracy?
+    fig2_benchmark_competitive_web_acc                   Which models are the competitive on Accuracy?
+    pareto_web_acc_vs_params                             Does a smaller model stay competitive once parameters is tak
+    topk5_multimetric                                    Which of the top-5 models is preferable once every metric is
+    fig4_critical_difference_accuracy                    Which differences in accuracy are statistically significant?
+    fig5_win_tie_loss_accuracy                           How often does each model actually beat the published baseli
+
+  04_web/  (4)
+    web_top10_web_acc                                    Which models explain and classify WebTraffic best on Accurac
+    web_top10_web_aopcr                                  Which models explain and classify WebTraffic best on AOPCR?
+    web_top10_web_ndcg                                   Which models explain and classify WebTraffic best on NDCG@n?
+    web_top10_web_loss                                   Which models explain and classify WebTraffic best on Loss?
+
+  02_ablation/  (4)
+    ablation_encoder                                     Which encoder gives the best accuracy, independently of the 
+    ablation_pooling                                     Which pooling head gives the best accuracy, independently of
+    ablation_origin                                      Do models with more new components actually perform better?
+    ablation_encoder_pooling_grid                        Which encoder and pooling-head COMBINATION works best, rathe
+
+  05_statistics/  (6)
+    tradeoff_web_acc_vs_web_aopcr                        Does improving accuracy cost aopcr?
+    tradeoff_web_acc_vs_web_ndcg                         Does improving accuracy cost ndcg@n?
+    stats_average_rank_accuracy                          Which model is best overall on accuracy, robust to individua
+    stats_improvement_over_millet_accuracy               By how much does each model improve on the baseline in accur
+    stats_pairwise_wins_accuracy                         Which models beat which other models directly, rather than o
+    stats_metric_correlation                             Are our metrics measuring different things, or repeating eac
+
+  03_appendix/  (23)
+    fig3_benchmark_remaining_web_acc                     Which models are the remaining on Accuracy?
+    appendix_web_all_web_acc                             How does the complete field of models compare on WebTraffic 
+    appendix_web_all_web_aopcr                           How does the complete field of models compare on WebTraffic 
+    appendix_web_all_web_ndcg                            How does the complete field of models compare on WebTraffic 
+    appendix_web_all_web_loss                            How does the complete field of models compare on WebTraffic 
+    pareto_web_acc_vs_size_mb                            Does a smaller model stay competitive once model size is tak
+    pareto_web_acc_vs_flops_m                            Does a smaller model stay competitive once flops is taken in
+    pareto_web_acc_vs_infer_ms                           Does a smaller model stay competitive once inference time is
+    pareto_web_acc_vs_peak_mem_mb                        Does a smaller model stay competitive once gpu memory is tak
+    topk3_multimetric                                    Which of the top-3 models is preferable once every metric is
+    topk5_web_acc                                        How do the top-5 models compare on Accuracy alone?
+    topk5_web_aopcr                                      How do the top-5 models compare on AOPCR alone?
+    topk5_web_ndcg                                       How do the top-5 models compare on NDCG@n alone?
+    topk5_web_loss                                       How do the top-5 models compare on Loss alone?
+    topk5_ucr85_acc                                      How do the top-5 models compare on UCR-85 accuracy alone?
+    topk5_params                                         How do the top-5 models compare on Parameters alone?
+    topk5_size_mb                                        How do the top-5 models compare on Model size alone?
+    topk5_flops_m                                        How do the top-5 models compare on FLOPs alone?
+    topk5_infer_ms                                       How do the top-5 models compare on Inference time alone?
+    topk5_peak_mem_mb                                    How do the top-5 models compare on GPU memory alone?
+    topk10_multimetric                                   Which of the top-10 models is preferable once every metric i
+    appendix_dataset_model_heatmap_accuracy              Where do the gains and losses against the baseline actually 
+    appendix_accuracy_distribution                       How consistent is each model across datasets, not just on av
+
+5 tables written to results\paper_figures/tables/ (.tex + .csv + .md)
+    table1_main_results                                  10 rows
+    table_appendix_full_leaderboard                      72 rows
+    table_ranking_accuracy                               28 rows
+    table_efficiency                                     15 rows
+    table_appendix_per_dataset                           84 rows
+
+LaTeX glue:
+    json           results\paper_figures\figures.json
+    figures_tex    results\paper_figures\figures.tex
+    tables_tex     results\paper_figures\tables.tex
+    readme         results\paper_figures\README.md
+
+Start with results\paper_figures/README.md
+
+[log] finished; full output saved to results\SEA_NET\logs\paper_2026-08-17_13-00-26.log

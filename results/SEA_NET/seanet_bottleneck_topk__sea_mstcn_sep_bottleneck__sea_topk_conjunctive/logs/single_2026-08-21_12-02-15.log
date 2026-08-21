@@ -1,0 +1,11 @@
+[log] command 'single' started at 2026-08-21_12-02-15 for model 'seanet_bottleneck_topk__sea_mstcn_sep_bottleneck__sea_topk_conjunctive'
+[log] a copy of everything below is being saved to: results\SEA_NET\seanet_bottleneck_topk__sea_mstcn_sep_bottleneck__sea_topk_conjunctive\logs\single_2026-08-21_12-02-15.log
+
+
+WebTraffic already done for seanet_bottleneck_topk__sea_mstcn_sep_bottleneck__sea_topk_conjunctive, but run.re_train is true -> training again (its row in results.csv will be replaced).
+=== single: model=seanet_bottleneck_topk__sea_mstcn_sep_bottleneck__sea_topk_conjunctive (config sv4/seanet_bottleneck_topk) dataset=WebTraffic device=cuda mode=full ===
+[params] using DEFAULT recipe (no Optuna record yet - run 'python main.py optuna --model sv4/seanet_bottleneck_topk').
+  [mlflow] logging runs to experiment 'SEA-Net_seanet_bottleneck_topk__sea_mstcn_sep_bottleneck__sea_topk_conjunctive_2026-08-21' at sqlite:///mlflow.db
+  [mlflow] browse later with:  mlflow ui --backend-store-uri sqlite:///mlflow.db
+    stage 1/3: loading data ...
+    stage 2/3: training on 400 series (val=100, C=10, T=1008, batch=16) ...

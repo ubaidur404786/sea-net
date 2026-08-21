@@ -5,18 +5,83 @@ What this file is for:
     This is the command-line entry point for the whole project. You do not import the seanet
     modules yourself; you run "python main.py <command>" and this file calls the right functions.
     It parses the command, sets up the working directory, and prints the results.
-python main.py train --model sv1/millet_paper
-Commands (run "python main.py -h" to see them):
-    python main.py summary [NAME|--all]     look at the data (shapes + a summary row per dataset)
-    python main.py params                   print how much smaller SEA-Net is than the baseline
-    python main.py train [--model M]        the full sweep for ONE model (resumable)
-    python main.py single NAME [--model M]  train + evaluate one dataset
-    python main.py webtraffic [--model M]   train on WebTraffic and compare to MILLET
-    python main.py run [--model M]          config-driven single run (reads configs/main.yaml)
-    python main.py interpret [--model M]    per-sample explanation figures (WebTraffic)
-    python main.py optuna [--model M]       hyperparameter search
-    python main.py results [--model M]      rebuild the comparison vs MILLET (all models, or one)
-    python main.py report                   every figure + summary table
+
+    Every command has the same shape:
+
+        python main.py <command> [POSITIONAL] [--flags]
+
+    Ask the program itself for help any time:
+        python main.py -h               list every command
+        python main.py single -h        list the flags of ONE command
+
+CHEAP COMMANDS - read results that already exist, never train, safe to run any time:
+    summary [NAME] [--all]        dataset stats: length, classes, train/test sizes
+    params                        parameter counts: SEA-Net vs the baselines
+    results [--model M]           rebuild each model's comparison table vs MILLET
+    leaderboard [--fast]          one table of every model, best WebTraffic accuracy first
+    paper [--refresh]             rebuild every report figure + LaTeX table
+    report                        every figure + summary table under results/SEA_NET/
+    web-compare                   WebTraffic-only comparison + accuracy tiers + the winner
+
+EXPENSIVE COMMANDS - these really train a model. Add --smoke to test the flow instead:
+    train [--model M]             train ONE model on EVERY dataset: WebTraffic + 128 UCR (resumable)
+    single NAME [--model M]       train + evaluate ONE dataset and save its row
+    webtraffic [--model M]        train on WebTraffic and sanity-check against MILLET
+    run [--model M]               config-driven single run (whatever configs/main.yaml says)
+    interpret [--model M]         train, then draw the per-sample explanation figures
+    optuna [--model M]            hyperparameter search (reads the model's optuna block)
+    teaser [--models A,B,C]       page-1 figure: several models on ONE WebTraffic series
+
+"single" vs "train" - the ONLY difference is how many datasets:
+    single NAME   trains the model on ONE dataset that you name, writes ONE row, stops.
+                  Takes seconds to minutes. This is the one to use while testing or debugging.
+    train         trains the SAME model on EVERY dataset (WebTraffic + all 128 UCR), one after
+                  another, writing one row each time. Takes hours to days. It remembers what it
+                  already finished, so Ctrl+C and restart later is safe.
+    Same model config, same training code. "train" is just "single" repeated down the whole list
+    of datasets, plus the remembering. Use --limit 5 to try it on the first 5 datasets only.
+
+SHARED FLAGS - accepted by train / single / webtraffic / run / interpret / optuna:
+    --model M         which config under configs/models/, without .yaml (sv4/seanet_bottleneck_topk)
+    --config PATH     path to main.yaml                             (default: configs/main.yaml)
+    --seed N          training seed. A new seed ADDS a repeat row, it never overwrites seed 0
+    --smoke           3 epochs only and nothing is saved - use this when testing or debugging
+    --dataset NAME    override the dataset          (run / interpret / optuna only, not single)
+
+PER-COMMAND FLAGS - only that one command understands these:
+    summary      NAME             one dataset; omit NAME for the WebTraffic+Coffee demo
+    summary      --all            every dataset: WebTraffic + all 128 UCR
+    single       NAME             REQUIRED, which dataset to train on, e.g. Coffee
+    train        --only A B C     train only these datasets instead of all of them
+    train        --limit N        train only the first N datasets of the standard order
+    train        --no-webtraffic  UCR only, skip WebTraffic
+    leaderboard  --fast           reuse model_comparison.csv instead of recomputing everything
+    paper        --refresh        recompute the leaderboard first (slower)
+    teaser       --models A,B,C   comma-separated configs, drawn top to bottom
+    teaser       --dataset NAME   which dataset to draw (default WebTraffic, the only one with
+                                  per-timestep ground truth)
+    teaser       --sample N       force one test-series index (default: auto-pick one every model
+                                  gets right)
+    teaser       --target-class N only auto-pick series of this class
+    teaser       --seed N         training seed, the same for every model (default 0)
+    teaser       --out DIR        where to write (default results/SEA_NET/teaser/<date-time>)
+    teaser       --smoke          3-epoch preview per model, not a saved result
+
+Everyday examples:
+    python main.py summary Coffee                            look at one dataset
+    python main.py single Coffee --model sv2/seanet --smoke  3-epoch check that the flow works
+    python main.py single Coffee --model sv2/seanet          the real single-dataset run
+    python main.py train --model sv1/millet_paper            one model on every dataset
+    python main.py train --model sv2/seanet --limit 5        try it on 5 datasets first
+    python main.py single Coffee --model sv2/seanet --seed 1 a second seed, kept as a repeat
+    python main.py paper                                     rebuild the report figures + tables
+
+Debugging tip (see DEBUG_GUIDE.md):
+    .vscode/launch.json holds one debug config, and its "args" line is just this command line split
+    into pieces: ["single", "Coffee", "--model", "sv2/seanet", "--smoke"] means exactly
+    "python main.py single Coffee --model sv2/seanet --smoke". Edit that line, put a red dot on the
+    line you want, press F5 (NOT Ctrl+F5 - that runs without the debugger and skips breakpoints).
+    Always keep --smoke in a debug run so it trains 3 epochs and saves nothing.
 
 What "--model" means:
     It is the name of a config file under configs/models/, WITHOUT the .yaml - e.g. "--model seanet"
@@ -28,7 +93,7 @@ One config file = one results folder, with a UNIQUE name:
     results/SEA_NET/seanet__sea_mstcn_sep__mil_additive/ - its results.csv, its done_train_dataset.txt, its
     logs, its figures, its interpretation figures. The config file name is in front so two configs
     that build the same encoder+pooling (e.g. seanet_slim vs seanet_classwise) never share a folder.
-    Nothing is shared, so you can sweep several models and compare them fairly afterwards with
+    Nothing is shared, so you can train several models over every dataset and compare them with
     "python main.py results" / "python main.py report".
 
 How resuming works:
@@ -39,6 +104,11 @@ How resuming works:
     its old row in results.csv if the new run beats the old accuracy (save_result_row keeps the
     better result), so the table always holds the best numbers we have seen.
 
+Where the output goes:
+    Every run is logged. Model commands write to results/SEA_NET/<model_id>/logs/, everything else
+    to the shared results/SEA_NET/logs/. A --smoke run goes to a logs/smoke/ subfolder that git
+    ignores, so only real training logs are ever committed.
+
 Related files:
     - seanet/data.py    -> loading, summaries (used by "summary").
     - seanet/model.py   -> the model + size helpers (used by "params").
@@ -47,8 +117,8 @@ Related files:
     - seanet/report.py  -> the figures and the summary tables.
     - analysis.ipynb    -> a thin notebook that calls seanet/report.py.
 
-The training commands (train / single / webtraffic / run without --smoke) really train models, so
-you run them yourself.
+The training commands (train / single / webtraffic / run / interpret / optuna / teaser, without
+--smoke) really train models, so you run them yourself.
 """
 import argparse
 import os
@@ -158,7 +228,9 @@ def _run_context(args):
     args : the parsed command-line arguments.
     returns : (cfg, model_id, device, smoke).
     """
+     
     cfg, model_id = args._cfg, args._model_id
+ 
     device = get_device() if cfg.device == "auto" else torch.device(cfg.device)
     smoke = bool(getattr(args, "smoke", False)) or bool(getattr(cfg.run, "smoke", False))
     return cfg, model_id, device, smoke
@@ -304,11 +376,11 @@ def cmd_params(args):
 
 def cmd_train(args):
     """
-    "train" command: the full sweep for ONE model.
+    "train" command: train ONE model on every dataset, one after another.
 
     It trains, in MILLET's order, WebTraffic then the 85 datasets MILLET published then the rest of
-    UCR (see seanet.results.sweep_order - the 85 come first so the head-to-head comparison is ready
-    early). It is resumable (skips datasets already in this model's done_train_dataset.txt) and
+    UCR (the order comes from seanet.results.sweep_order() - the 85 come first so the head-to-head
+    comparison is ready early). It is resumable (skips datasets already in this model's done_train_dataset.txt) and
     fault-tolerant (a failure on one dataset is logged and the loop keeps going).
 
     args : parsed arguments (args.model, args.only, args.limit, args.no_webtraffic, args.smoke).
@@ -323,7 +395,7 @@ def cmd_train(args):
         D.discover_ucr_datasets()                            # check the archive first
         names = sweep_order(include_webtraffic=not args.no_webtraffic)
         if args.limit is not None:
-            names = names[: args.limit]                      # only the first N of the sweep order
+            names = names[: args.limit]                      # only the first N of the standard order
 
     total = len(names)
     print(f"=== train: model={model_id} (config {cfg.model}) device={device} "
@@ -629,7 +701,7 @@ def cmd_leaderboard(args):
 
     This is the "which model do we keep?" table. WebTraffic is our fast screen (every model runs it),
     so ranking by it puts every model on the same page. The UCR columns are filled in for the models
-    that went on to the full 129-dataset sweep and left EMPTY for the ones that were only screened -
+    that went on to all 129 datasets and left EMPTY for the ones that were only screened -
     empty means "not run yet", never zero.
 
     It rebuilds from each model's own results.csv every time, so a new model shows up by itself and a
@@ -740,6 +812,7 @@ def main():
     """
     D.chdir_to_repo_root()   # move to the repo root so the "data/..." paths work from anywhere
     parser = argparse.ArgumentParser(prog="main.py", description="SEA-Net: run every part of the pipeline.")
+    # add all arguments by group in sub parsers, so each command has its own help and usage
     sub = parser.add_subparsers(dest="command", required=True)   # each command is its own sub-parser
 
     # summary
@@ -752,11 +825,11 @@ def main():
     p = sub.add_parser("params", help="SEA-Net vs baseline parameter counts")
     p.set_defaults(func=cmd_params)
 
-    # train (the full sweep, for one model)
-    p = sub.add_parser("train", help="full sweep for ONE model: WebTraffic + all 128 UCR (resumable)")
+    # train (one model, every dataset)
+    p = sub.add_parser("train", help="train ONE model on EVERY dataset: WebTraffic + 128 UCR (resumable)")
     _add_model_flags(p)
     p.add_argument("--only", nargs="+", metavar="NAME", help="only these datasets")
-    p.add_argument("--limit", type=int, help="only the first N datasets of the sweep order")
+    p.add_argument("--limit", type=int, help="only the first N datasets of the standard order")
     p.add_argument("--no-webtraffic", action="store_true", help="UCR only")
     p.set_defaults(func=cmd_train)
 

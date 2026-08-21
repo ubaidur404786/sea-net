@@ -1,0 +1,7 @@
+[log] command 'single' started at 2026-08-21_11-03-46 for model 'seanet_bottleneck_topk__sea_mstcn_sep_bottleneck__sea_topk_conjunctive'
+[log] a copy of everything below is being saved to: results\SEA_NET\seanet_bottleneck_topk__sea_mstcn_sep_bottleneck__sea_topk_conjunctive\logs\single_2026-08-21_11-03-46.log
+
+
+WebTraffic already done for seanet_bottleneck_topk__sea_mstcn_sep_bottleneck__sea_topk_conjunctive -> skip
+  (set 're_train: true' in configs/main.yaml to train it again, or delete the line
+   'WebTraffic' from results\SEA_NET\seanet_bottleneck_topk__sea_mstcn_sep_bottleneck__sea_topk_conjunctive\done_train_dataset.txt.)

@@ -489,6 +489,9 @@ class MultiScaleChannels(nn.Module):
         for s in stats:
             if s not in self.KNOWN_STATS:
                 raise ValueError(f"Unknown stat {s!r}. Options: {self.KNOWN_STATS}")
+
+
+                
         self.windows = tuple(windows)
         self.stats = tuple(stats)
         self.add_diff_sign = bool(add_diff_sign)

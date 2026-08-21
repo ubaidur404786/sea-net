@@ -405,6 +405,7 @@ def fit_model(
         train_ds, val_ds = train_full, None
 
     batch_size = max(min(len(train_ds) // 10, max_batch), 2)     # small batch for small datasets
+# Actual model create here 
     model = make_model(train_full.n_clz, device, lambda_entropy=lambda_entropy, model_cfg=model_cfg, n_in=n_in)
 
     # --- stage 2: train ---
