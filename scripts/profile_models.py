@@ -29,7 +29,7 @@ How to run
     python scripts/profile_models.py                     # every config, on the best device available
     python scripts/profile_models.py --device cpu        # force CPU (inference speed on CPU)
     python scripts/profile_models.py --length 500 --batch 32 --classes 5     # change the dummy input
-    python scripts/profile_models.py --models sv2/seanet sv4/seanet_slim     # only these
+    python scripts/profile_models.py --models seanet/seanet seanet/seanet_slim     # only these
 
 Writes results/SEA_NET/profile.csv, which the paper figures read for the efficiency panels.
 """
@@ -45,7 +45,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from seanet.config import load_config, model_folder_name            # noqa: E402
 from seanet.data import chdir_to_repo_root                          # noqa: E402
-from seanet.model import build_model_from_config, num_params, state_dict_size_mb   # noqa: E402
+from seanet.models import build_model_from_config, num_params, state_dict_size_mb   # noqa: E402
 from seanet.results import RESULTS_ROOT                             # noqa: E402
 
 PROFILE_CSV = os.path.join(RESULTS_ROOT, "profile.csv")
@@ -164,7 +164,7 @@ def peak_memory_mb(model, example: torch.Tensor, device: str) -> float:
 
 
 def list_config_names() -> list:
-    """Every model config under configs/models/, as "sv4/seanet_slim"-style names."""
+    """Every model config under configs/models/, as "seanet/seanet_slim"-style names."""
     names = []
     for path in sorted(glob.glob(os.path.join("configs", "models", "**", "*.yaml"), recursive=True)):
         rel = os.path.relpath(path, os.path.join("configs", "models"))
@@ -176,7 +176,7 @@ def profile_one(config_name: str, device: str, length: int, batch: int, classes:
     """
     Build ONE model from its config and measure everything about it.
 
-    config_name : e.g. "sv4/seanet_slim".
+    config_name : e.g. "seanet/seanet_slim".
     returns : a dict of measurements (or None if the config cannot be built, e.g. the placeholder).
     """
     cfg = load_config(overrides={"model": config_name})
@@ -259,7 +259,7 @@ def main():
             print(f"  {name}: {why}")
 
     print("\nNow draw the figures that use these numbers:")
-    print("  python main.py paper")
+    print("  python main.py analyse")
 
 
 if __name__ == "__main__":

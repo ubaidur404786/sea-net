@@ -24,8 +24,8 @@ Output:
 Related files:
     - configs/main.yaml            -> the top-level settings (which model, which dataset, seed...).
     - configs/models/<model>.yaml  -> that model's encoder / pooling / training settings.
-    - seanet/model.py              -> build_model_from_config() turns cfg.model_config into a network.
-    - seanet/train.py              -> train_one_from_config() reads cfg.model_config.training.
+    - seanet/models/build.py              -> build_model_from_config() turns cfg.model_config into a network.
+    - seanet/training.py              -> train_one_from_config() reads cfg.model_config.training.
     - main.py ("run" command)      -> calls load_config() and hands the config to the trainer.
 
 Why a SimpleNamespace and not a plain dict:
@@ -42,6 +42,11 @@ import yaml
 # Where the config files live. Kept here so there is one place to change if the folder moves.
 CONFIGS_DIR = "configs"
 MODELS_DIR = os.path.join(CONFIGS_DIR, "models")
+ENVIRONMENTS_DIR = os.path.join(CONFIGS_DIR, "environments")
+
+# Which environment file to load when nothing says otherwise. Override it per machine with the
+# SEANET_ENV environment variable (SEANET_ENV=grid5000) or with `--env grid5000` on any command.
+DEFAULT_ENV = "local"
 
 
 def _read_yaml(path: str) -> Dict:
@@ -94,19 +99,115 @@ def _to_namespace(obj):
     return obj
 
 
+def find_model_file(model_name: str) -> str:
+    """
+    Turn a --model value into the path of its YAML file.
+
+    Two spellings are accepted, so you never have to remember which folder a config sits in:
+
+        --model seanet/seanet_bottleneck_topk    the full path under configs/models/  (exact)
+        --model seanet_bottleneck_topk           just the file name    (searched for)
+
+    The search looks in every folder under configs/models/ and fails loudly if the name is
+    ambiguous or unknown, listing what IS available - a wrong --model should never silently
+    train the wrong model.
+
+    model_name : the value of --model (or configs/main.yaml's `model:` key), with no .yaml.
+    returns : the path to the YAML file.
+    raises FileNotFoundError : if nothing matches.
+    raises ValueError : if the short name matches more than one file.
+    """
+    exact = os.path.join(MODELS_DIR, f"{model_name}.yaml")
+    if os.path.exists(exact):
+        return exact
+
+    wanted = os.path.basename(model_name)
+    matches = []
+    for folder, _dirs, files in os.walk(MODELS_DIR):
+        for f in files:
+            if f == f"{wanted}.yaml":
+                matches.append(os.path.join(folder, f))
+    if len(matches) == 1:
+        return matches[0]
+    if len(matches) > 1:
+        pretty = [os.path.relpath(m, MODELS_DIR).replace(os.sep, "/")[:-5] for m in matches]
+        raise ValueError(f"--model {model_name!r} matches several configs ({', '.join(pretty)}). "
+                         f"Use the full name, e.g. --model {pretty[0]}")
+    known = available_models()
+    raise FileNotFoundError(
+        f"No model config named {model_name!r}. Looked for {exact!r} and for a file "
+        f"{wanted}.yaml anywhere under {MODELS_DIR}/. "
+        f"There are {len(known)} configs; run `python main.py models` to list them."
+    )
+
+
+def available_models() -> list:
+    """
+    List every model config in the repo, as the names you can pass to --model.
+
+    returns : sorted list like ["ablations/seanet_topk_k005", "baselines/millet", ...].
+    """
+    names = []
+    for folder, _dirs, files in os.walk(MODELS_DIR):
+        for f in sorted(files):
+            if f.endswith(".yaml"):
+                rel = os.path.relpath(os.path.join(folder, f), MODELS_DIR)
+                names.append(rel.replace(os.sep, "/")[:-5])
+    return sorted(names)
+
+
+def load_environment(env=None) -> Dict:
+    """
+    Load the settings that depend on WHERE the code runs, not on WHAT it runs.
+
+    The same pipeline runs on a Windows laptop and on a Grid5000 GPU node. Only a handful of
+    settings differ between them - the device, the MLflow store, how many dataloader workers make
+    sense - so those live in their own small file:
+
+        configs/environments/local.yaml
+        configs/environments/grid5000.yaml
+
+    Which one is used, in order of precedence:
+        1. the `env` argument (from `--env grid5000` on the command line)
+        2. the SEANET_ENV environment variable
+        3. "local"
+
+    Nothing else about the pipeline changes between machines - that is the whole point.
+
+    env : the environment name, or None to auto-detect as described above.
+    returns : the environment settings as a plain dict.
+    """
+    name = env or os.environ.get("SEANET_ENV") or DEFAULT_ENV
+    path = os.path.join(ENVIRONMENTS_DIR, f"{name}.yaml")
+    if not os.path.exists(path):
+        print(f"  [config] no environment file {path!r} - using the defaults in main.yaml")
+        return {"env": name}
+    settings = _read_yaml(path)
+    settings["env"] = name
+    return settings
+
+
 def load_config(main_path: str = os.path.join(CONFIGS_DIR, "main.yaml"),
                 overrides: Optional[Dict] = None,
-                use_params: Optional[str] = None) -> SimpleNamespace:
+                use_params: Optional[str] = None,
+                env: Optional[str] = None) -> SimpleNamespace:
     """
     Load main.yaml + the model file it points at, and return one merged config object.
 
+    The four layers, each one able to override the one before it:
+
+        configs/main.yaml            WHAT to run (dataset, seed, output paths, mlflow defaults)
+        configs/environments/X.yaml  WHERE it runs (device, mlflow store) - see load_environment
+        configs/models/.../M.yaml    the MODEL itself (encoder, pooling, training recipe)
+        --flags on the command line  the last word
+
     Steps:
       1. read main.yaml,
-      2. work out the model name (an override wins over the file),
-      3. read configs/models/<model>.yaml and attach it under the key "model_config",
+      2. lay the environment file on top (device / mlflow / paths for this machine),
+      3. work out the model name (an override wins over the file) and find its YAML,
       4. choose the DEFAULT recipe or Optuna's BEST recipe (both live in the SAME model file, under
          the "records" block - see record_metrics below), and merge the best params in if chosen,
-      5. apply any leftover overrides,
+      5. apply any leftover overrides from the command line,
       6. convert the whole thing to a SimpleNamespace so it can be read with dots.
 
     main_path : path to main.yaml.
@@ -116,16 +217,18 @@ def load_config(main_path: str = os.path.join(CONFIGS_DIR, "main.yaml"),
     use_params : force which recipe to use ("default" | "optuna_best" | "auto"); None reads the
                  model file's own `use_params` setting. The chosen recipe (and the default-vs-best
                  comparison) is stashed under the private key "_param_choice" for param_choice_message.
+    env : which environment file to lay on top ("local" / "grid5000"); None auto-detects.
     returns : the merged config as a nested SimpleNamespace.
     """
     overrides = overrides or {}
     main = _read_yaml(main_path)
+    main = _merge(main, load_environment(env))           # layer 2: this machine's settings
 
     # which model file to load (an override beats the value in main.yaml)
     model_name = overrides.get("model", main.get("model"))
     if not model_name:
         raise ValueError(f"No model specified in {main_path!r} and none given as an override.")
-    model_path = os.path.join(MODELS_DIR, f"{model_name}.yaml")
+    model_path = find_model_file(model_name)             # accepts "seanet/x" or just "x"
     model_cfg = _read_yaml(model_path)
 
     # decide default vs Optuna-best recipe from the recorded results in the SAME file (no .best.yaml)
@@ -136,6 +239,7 @@ def load_config(main_path: str = os.path.join(CONFIGS_DIR, "main.yaml"),
     # apply the remaining overrides (model was already handled, but merging it again is harmless)
     merged = _merge(merged, overrides)
     merged["_param_choice"] = choice                     # private: read by param_choice_message()
+    merged["_model_path"] = model_path                   # private: which YAML this run came from
 
     return _to_namespace(merged)
 
@@ -235,8 +339,9 @@ def param_choice_message(cfg) -> str:
 
 def read_records(model_name: str) -> Dict:
     """Read the "records" block from a model yaml (or an empty dict if the file/block is missing)."""
-    path = os.path.join(MODELS_DIR, f"{model_name}.yaml")
-    if not os.path.exists(path):
+    try:
+        path = find_model_file(model_name)
+    except (FileNotFoundError, ValueError):
         return {}
     return _read_yaml(path).get("records") or {}
 
@@ -278,7 +383,7 @@ def write_records(model_name: str, records: Dict) -> str:
     records : the full records dict to write (e.g. {"default": {...}, "optuna_best": {...}}).
     returns : the path written.
     """
-    path = os.path.join(MODELS_DIR, f"{model_name}.yaml")
+    path = find_model_file(model_name)
     with open(path, "r") as f:
         text = f.read()
     idx = text.find(RECORDS_MARKER)
@@ -395,7 +500,7 @@ def model_folder_name(cfg) -> str:
     if not config_name:
         raise ValueError("model_folder_name needs the full config (with cfg.model set) so the "
                          "folder name can start with the config file name.")
-    # configs now live in version folders (sv1/.. sv4/..), so cfg.model can be "sv4/seanet_gated_last".
+    # configs live in folders (baselines/ seanet/ ablations/), so cfg.model can be "seanet/seanet_gated_last".
     # We keep only the file name here, so the RESULTS layout stays flat (results/SEA_NET/<name>__...)
     # exactly as before - the version prefix must not turn into a nested results folder (that would
     # hide the results from discover_models, which only scans the top level).

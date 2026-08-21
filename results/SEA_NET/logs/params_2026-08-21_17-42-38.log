@@ -1,0 +1,19 @@
+[log] command 'params' started at 2026-08-21_17-42-38
+[log] a copy of everything below is being saved to: results\SEA_NET\logs\params_2026-08-21_17-42-38.log
+
+model                           n_clz       params   size (MB)
+--------------------------------------------------------------
+SEA-Net                             2      268,051       3.532   (for Coffee)
+InceptionTime+Conjunctive           2      422,675       4.104   (for Coffee)
+  -> SEA-Net / baseline                    63.42%     86.06%
+
+SEA-Net                            10      269,083       3.536   (for WebTraffic)
+InceptionTime+Conjunctive          10      423,707       4.108   (for WebTraffic)
+  -> SEA-Net / baseline                    63.51%     86.08%
+
+SEA-Net                            24      270,889       3.543   (for Crop)
+InceptionTime+Conjunctive          24      425,513       4.115   (for Crop)
+  -> SEA-Net / baseline                    63.66%     86.10%
+
+
+[log] finished; full output saved to results\SEA_NET\logs\params_2026-08-21_17-42-38.log

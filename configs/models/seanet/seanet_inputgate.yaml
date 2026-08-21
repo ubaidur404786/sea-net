@@ -1,0 +1,53 @@
+# seanet/seanet_inputgate.yaml - encoder re-weighted by a gate built from the RAW input.
+#
+# A small conv reads the raw series and makes a per-timestep, per-channel gate; features are multiplied
+# by (1 + gate). So a sharp event in the input can switch feature channels on right where it happens
+# (this is our "input x stem" multiplicative-skip idea). Paired with our best pooling. Same recipe as
+# the gated runs, so the only change is the encoder.
+#
+# Run it (WebTraffic by default):  python main.py run --model seanet/seanet_inputgate
+
+name: seanet_inputgate
+use_params: default
+
+encoder:
+  type: sea_mstcn_sep_inputgate
+  d: 64
+  n_blocks: 4
+  dropout: 0.2
+  max_dilation: 16
+  kernels: [5, 11, 23]
+  gate_kernel: 7          # window of the conv that reads the raw input to build the gate
+
+pooling:
+  type: sea_classwise_conjunctive
+  d_attn: 8
+  dropout: 0.2
+  positional_encoding: true
+
+training:
+  n_epochs: 400
+  patience: 60
+  max_batch: 16
+  learning_rate: 0.00125
+  weight_decay: 0.00012
+  label_smoothing: 0.13
+  lambda_entropy: 0.01
+  min_train_for_val: 100
+  val_frac: 0.2
+  optimizer: adam
+
+# ===== AUTO-FILLED RESULTS (managed by main.py - do not edit below this line) =====
+# These records let you compare the DEFAULT recipe against Optuna's BEST without opening MLflow,
+# and (with `use_params: auto`) train with whichever scored higher. They are filled in for you:
+#   records.default     : metrics from our last real `python main.py run` (default recipe).
+#   records.optuna_best : the params Optuna found + their metrics (`python main.py optuna`).
+
+records:
+  default:
+    metrics:
+      test_acc: 0.914
+      test_loss: 0.3976
+      test_auroc: 0.9909
+      dataset: WebTraffic
+      recorded: '2026-07-23 13:39:35'

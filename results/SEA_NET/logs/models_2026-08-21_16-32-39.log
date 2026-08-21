@@ -1,0 +1,87 @@
+[log] command 'models' started at 2026-08-21_16-32-39
+[log] a copy of everything below is being saved to: results\SEA_NET\logs\models_2026-08-21_16-32-39.log
+
+72 model configs under configs/models/
+
+ablations/   one-knob-at-a-time studies
+    ablations/seanet_topk_k005
+    ablations/seanet_topk_k025
+    ablations/seanet_topk_k050
+    ablations/seanet_topk_k100
+    ablations/seanet_topk_nofocus
+
+baselines/   MILLET and the classic baselines - the models we compare against
+    baselines/conventional
+    baselines/fcn
+    baselines/millet
+    baselines/millet_paper
+    baselines/resnet
+    baselines/transformer
+
+seanet/   our own encoder x pooling combinations
+    seanet/seanet
+    seanet/seanet_acp
+    seanet/seanet_bottleneck
+    seanet/seanet_bottleneck_adaptive
+    seanet/seanet_bottleneck_attnmax
+    seanet/seanet_bottleneck_dualstream
+    seanet/seanet_bottleneck_gatedattn
+    seanet/seanet_bottleneck_mschan
+    seanet/seanet_bottleneck_mschan_lean
+    seanet/seanet_bottleneck_mschan_pyramid
+    seanet/seanet_bottleneck_pyramid
+    seanet/seanet_bottleneck_shallow
+    seanet/seanet_bottleneck_softmax
+    seanet/seanet_bottleneck_topk
+    seanet/seanet_classwise
+    seanet/seanet_conjunctive
+    seanet/seanet_gated_last
+    seanet/seanet_gated_last_adaptive
+    seanet/seanet_gated_last_attnmax
+    seanet/seanet_gated_last_dualstream
+    seanet/seanet_gated_last_gatedattn
+    seanet/seanet_gated_last_softmax
+    seanet/seanet_gated_last_topk
+    seanet/seanet_gated_max
+    seanet/seanet_gated_max_adaptive
+    seanet/seanet_gated_max_attnmax
+    seanet/seanet_gated_max_softmax
+    seanet/seanet_gated_max_topk
+    seanet/seanet_gated_mean
+    seanet/seanet_gated_mean_adaptive
+    seanet/seanet_gated_mean_attnmax
+    seanet/seanet_gated_mean_softmax
+    seanet/seanet_gated_mean_topk
+    seanet/seanet_gated_mschan
+    seanet/seanet_gated_pyramid
+    seanet/seanet_inputgate
+    seanet/seanet_inputgate_adaptive
+    seanet/seanet_inputgate_attnmax
+    seanet/seanet_inputgate_mschan
+    seanet/seanet_inputgate_softmax
+    seanet/seanet_inputgate_topk
+    seanet/seanet_recon
+    seanet/seanet_recon_adaptive
+    seanet/seanet_recon_attnmax
+    seanet/seanet_recon_softmax
+    seanet/seanet_recon_topk
+    seanet/seanet_slim
+    seanet/seanet_slim_adaptive
+    seanet/seanet_slim_attnmax
+    seanet/seanet_slim_dualstream
+    seanet/seanet_slim_gatedattn
+    seanet/seanet_slim_softmax
+    seanet/seanet_slim_topk
+    seanet/seanet_softmax
+    seanet/seanet_spiketrend
+    seanet/seanet_spiketrend_adaptive
+    seanet/seanet_spiketrend_attnmax
+    seanet/seanet_spiketrend_dualstream
+    seanet/seanet_spiketrend_gatedattn
+    seanet/seanet_spiketrend_softmax
+    seanet/seanet_spiketrend_topk
+
+Pass any of these to --model. The folder is optional when the file name is unique:
+    python main.py single Coffee --model seanet_bottleneck_topk --smoke
+
+[log] finished; full output saved to results\SEA_NET\logs\models_2026-08-21_16-32-39.log

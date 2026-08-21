@@ -3,7 +3,7 @@ seanet/interpretability.py - drawing "why did the model say that?" figures.
 
 What this file is for:
     A big point of MILLET/SEA-Net is that the model does not only predict a class - it also says how
-    important each instance (timestep, or window) was to that prediction. This file turns that into
+    important each instance (one timestep) was to that prediction. This file turns that into
     pictures, one per test sample, similar to the figures in the MILLET paper.
 
     Each figure has seven panels (see make_sample_figure for the exact layout):
@@ -37,7 +37,7 @@ Where the numbers come from (the model output dict):
     - AOPCR curves come from millet.interpretability_metrics.calculate_aopcr (panel 3).
 
 Related files:
-    - seanet/train.py  -> fit_model_from_config() gives us the trained model to explain.
+    - seanet/training.py  -> fit_model_from_config() gives us the trained model to explain.
     - main.py ("interpret" command) -> trains a model then calls generate_interpretations().
     - configs/main.yaml -> the "interpretability" block picks the dataset / how many classes.
 """
@@ -90,16 +90,16 @@ def _model_explanation(model, item: Dict) -> Dict:
     removed_frac = np.linspace(0, 1 - _AOPCR_STOP, len(morf_curve)) * 100   # x-axis: % of instances removed
     aopcr = float(aopcr_t[0])
 
-    # a single value to draw per instance: the timestep value (single_point) or the window mean
+    # a single value to draw per instance (one timestep = one instance, so normally just its value)
     bag_np = bag.detach().cpu().numpy()
     if bag_np.shape[1] == 1:
-        series = bag_np[:, 0]                                # single_point: one value per timestep
+        series = bag_np[:, 0]                                # one value per timestep
         xlabel = "timestep"
     else:
-        series = bag_np.mean(axis=1)                         # sliding_window: mean of each window
+        series = bag_np.mean(axis=1)                         # multi-channel bag: average the channels
         xlabel = "window index"
 
-    # ground-truth important instances, if the dataset has them (WebTraffic single_point only)
+    # ground-truth important instances, if the dataset has them (WebTraffic only)
     gt_mask = None
     inst_targets = item.get("instance_targets")
     if inst_targets is not None:

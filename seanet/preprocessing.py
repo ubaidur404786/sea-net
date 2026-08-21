@@ -1,121 +1,143 @@
 """
-seanet/preprocessing.py - the preprocessing module (how a series becomes "instances").
+seanet/preprocessing.py - everything that happens to the data BETWEEN loading it and training on it.
 
 What this file is for:
-    In Multiple Instance Learning a time series is a "bag" of "instances". There are two ways to
-    decide what one instance is, and this file switches between them (chosen by config):
+    seanet/data.py only LOADS a dataset from disk. This file does the two preparation steps that
+    come next, and nothing else:
 
-      - single_point : one instance = one timestep. A series of length T becomes T instances.
-        This is MILLET's original setup and stays exactly as before (this file does nothing to it).
+      1. normalisation  - each series is z-normalised (mean 0, std 1). MILLET's dataset classes
+                          already do this inside apply_bag_transform(), so here we only expose a
+                          tiny helper that says whether it is on, plus the maths itself for anyone
+                          who wants to normalise an array by hand.
+      2. train/val split - cut the training file into a real training part and a validation part,
+                          keeping each class's proportion the same in both (a "stratified" split).
 
-      - sliding_window : one instance = a small window of the series. A series of length T becomes
-        N windows, each of `window_size` values, stepped by `window_stride`. The bag is still the
-        whole series - only what counts as one instance changes.
+    In Multiple Instance Learning a time series is a "bag" and each timestep is an "instance".
+    That is the ONLY instance representation this project uses: one instance = one timestep. The
+    old sliding-window mode (one instance = a window of W timesteps) was removed in seanetv7,
+    because every result in results/ was produced with the per-timestep pipeline and the window
+    mode could not produce NDCG (windows have no per-timestep ground truth to compare against).
 
-    The dataset module (seanet/data.py) only LOADS data; this module re-shapes each series into the
-    chosen instance representation. Switching modes needs no code change, only a config change.
-
-How a bag changes shape:
-    single_point : bag is (T, 1)      -> T instances, each 1 value.
-    sliding_window: bag is (N, W)     -> N instances, each a window of W values.
-    The model then transposes to (channels, instances), so W becomes the number of input channels
-    and N becomes the sequence length. That is why the model is built with n_in = W in this mode.
-
-What about the metrics:
-    - AOPCR works either way (it just removes "instances", which are now windows).
-    - NDCG@n needs per-timestep ground-truth labels (only WebTraffic has them), and those cannot be
-      lined up with windows, so NDCG is only produced in single_point mode. In sliding_window mode
-      the windowed dataset carries no instance labels, so NDCG is simply skipped (like every UCR set).
+How a bag is shaped:
+    one series of length T  ->  bag of shape (T, 1)  ->  the model sees (batch, 1, T).
 
 Related files:
-    - seanet/data.py   -> load_dataset() gives us the dataset we re-shape here.
-    - seanet/train.py  -> train_one() calls apply_instance_representation() right after loading, and
-      builds the model with n_in = window_size when windowing is on.
-    - configs/main.yaml -> the "preprocessing" block picks instance_type / window_size / window_stride.
+    - seanet/data.py      -> load_dataset() gives us the dataset we prepare here.
+    - seanet/training.py  -> calls split_train_val() before it builds the model.
+    - configs/main.yaml   -> the "preprocessing" block (normalise, val_frac, min_train_for_val).
 """
+import copy
+from typing import List, Tuple
+
 import torch
 
 from millet.data.mil_tsc_dataset import MILTSCDataset
 
 
-def make_windows(series: torch.Tensor, window_size: int, window_stride: int) -> torch.Tensor:
+# --------------------------------------------------------------------------------------
+# 1. Normalisation
+# --------------------------------------------------------------------------------------
+def z_normalise(series: torch.Tensor, eps: float = 1e-8) -> torch.Tensor:
     """
-    Turn one series into a stack of sliding windows.
+    Z-normalise one series: subtract its mean, divide by its standard deviation.
 
-    Example (window_size=5, window_stride=5): a length-20 series becomes 4 windows:
-    [0:5], [5:10], [10:15], [15:20]. Timesteps at the end that do not fill a whole window are
-    dropped (this is standard sliding-window behaviour).
+    Why we do it: UCR datasets come in wildly different units (some series live around 0.001,
+    some around 5000). Without normalising, the network would spend its capacity learning the
+    scale instead of the shape. After it, every series has mean 0 and std 1, so only the SHAPE
+    is left for the model to learn.
 
-    series : one series, shape (T, 1) (or (T,)).
-    window_size : how many timesteps are in each window (W).
-    window_stride : how far the window moves each step.
-    returns : the windows, shape (N, W), where N is the number of windows.
+    series : one series, any shape.
+    eps : tiny number so a flat series (std = 0) does not divide by zero.
+    returns : the normalised series, same shape.
     """
-    x = series.reshape(-1)                                    # (T, 1) -> (T,)
-    length = x.shape[0]
-    if length < window_size:                                 # series shorter than one window -> pad it out
-        pad = torch.zeros(window_size - length, dtype=x.dtype)
-        x = torch.cat([x, pad])                              # zeros ~= the mean, since the series is normalised
-    windows = x.unfold(0, window_size, window_stride)        # (N, W): slide a window of size W with the stride
-    return windows.contiguous()
+    mean = series.mean()
+    std = series.std()
+    return (series - mean) / (std + eps)
 
 
-class WindowedDataset(MILTSCDataset):
+def normalisation_is_on(dataset: MILTSCDataset) -> bool:
     """
-    A dataset whose bags are sliding windows instead of single timesteps.
+    Say whether this dataset normalises its bags when you index it.
 
-    It is built FROM an already-loaded dataset. For each series we first z-normalise it the same way
-    MILLET does, then cut it into windows. The windowed bags are stored ready to use, so no transform
-    is applied again when you index this dataset. It deliberately carries no instance targets, so the
-    NDCG metric is skipped in this mode (see the note at the top of the file).
+    MILLET's dataset classes carry an `apply_transform` flag and do the z-normalisation inside
+    apply_bag_transform(). We do not repeat that work here; this helper just lets the pipeline
+    print/log which setting was used, so a run can be reproduced.
+
+    dataset : a loaded dataset.
+    returns : True when the dataset normalises each bag as it is read.
     """
-
-    def __init__(self, source: MILTSCDataset, window_size: int, window_stride: int):
-        """
-        source : an already-loaded dataset (from seanet.data.load_dataset).
-        window_size : window length W.
-        window_stride : step between windows.
-        """
-        # copy the small bits of state the rest of the pipeline reads
-        self.dataset_name = source.dataset_name
-        self.split = source.split
-        self.window_size = window_size
-        self.window_stride = window_stride
-        self.n_clz = source.n_clz
-        self.targets = source.targets
-        self.apply_transform = False                         # bags are already normalised + windowed below
-
-        # normalise each series first (exactly like MILLET), THEN cut it into windows
-        self.ts_collection = []
-        for i in range(len(source)):
-            bag = source.get_bag(i)                          # raw series (T, 1)
-            if getattr(source, "apply_transform", True):     # apply the same z-normalisation MILLET uses
-                bag = source.apply_bag_transform(bag)
-            self.ts_collection.append(make_windows(bag, window_size, window_stride))
-
-    def get_time_series_collection_and_targets(self, split):
-        """
-        Required by the base class. The data is already built in __init__, so we just return it.
-        """
-        return self.ts_collection, self.targets
+    return bool(getattr(dataset, "apply_transform", True))
 
 
-def apply_instance_representation(dataset: MILTSCDataset, instance_type: str,
-                                  window_size: int = 5, window_stride: int = 5) -> MILTSCDataset:
+# --------------------------------------------------------------------------------------
+# 2. Train / validation split (stratified: each class keeps its proportion)
+# --------------------------------------------------------------------------------------
+def _subset(dataset: MILTSCDataset, idx: List[int]) -> MILTSCDataset:
     """
-    Return the dataset re-shaped into the chosen instance representation.
+    Make a small "view" of a dataset that only contains the chosen rows.
 
-    dataset : a loaded dataset (from seanet.data.load_dataset).
-    instance_type : "single_point" (leave it alone) or "sliding_window" (cut into windows).
-    window_size : window length W (only used for sliding_window).
-    window_stride : step between windows (only used for sliding_window).
-    returns : the same dataset for single_point, or a WindowedDataset for sliding_window.
-    raises ValueError : if instance_type is not one of the two options.
+    It shallow-copies the dataset object and swaps in the filtered series/labels, so all the
+    original methods (dataloader, indexing, normalisation) keep working. We reuse the class
+    instead of writing a new one.
+
+    dataset : the full dataset.
+    idx : the row indices to keep.
+    returns : a dataset containing only those rows.
     """
-    if instance_type == "single_point":
-        return dataset                                       # nothing to do - MILLET's original behaviour
-    if instance_type == "sliding_window":
-        return WindowedDataset(dataset, window_size, window_stride)
-    raise ValueError(
-        f"Unknown instance_type {instance_type!r} (options: 'single_point', 'sliding_window')."
-    )
+    idx = [int(i) for i in idx]
+    sub = copy.copy(dataset)
+    sub.ts_collection = [dataset.ts_collection[i] for i in idx]   # keep only these series
+    sub.targets = dataset.targets[idx]                           # and their labels
+    if hasattr(dataset, "_metadata"):                            # WebTraffic also has per-series metadata
+        sub._metadata = [dataset._metadata[i] for i in idx]
+    sub.n_clz = dataset.n_clz                                    # keep the original class count
+    return sub
+
+
+def split_train_val(
+    dataset: MILTSCDataset, val_frac: float = 0.2, seed: int = 0
+) -> Tuple[MILTSCDataset, MILTSCDataset]:
+    """
+    Split a dataset into (train, validation), keeping each class's proportion the same in both.
+
+    "Stratified" means we split class by class instead of shuffling everything together. On a
+    small dataset a plain random split can easily put every example of a rare class in one side,
+    which makes the validation loss meaningless.
+
+    dataset : the dataset to split.
+    val_frac : fraction to put in validation (e.g. 0.2 = 20%).
+    seed : random seed, so the split is the same every run.
+    returns : (train_subset, val_subset).
+    """
+    g = torch.Generator().manual_seed(seed)
+    targets = torch.as_tensor(dataset.targets)
+    train_idx, val_idx = [], []
+    for c in torch.unique(targets):                              # do the split class by class (stratified)
+        c_idx = (targets == c).nonzero(as_tuple=True)[0]         # all rows of this class
+        c_idx = c_idx[torch.randperm(len(c_idx), generator=g)]   # shuffle them
+        n_val = int(len(c_idx) * val_frac)
+        if n_val == 0 and len(c_idx) > 1 and val_frac > 0:       # rare class -> still give val 1 row
+            n_val = 1
+        val_idx.append(c_idx[:n_val])
+        train_idx.append(c_idx[n_val:])
+    return _subset(dataset, torch.cat(train_idx)), _subset(dataset, torch.cat(val_idx))
+
+
+def prepare_splits(train_full: MILTSCDataset, min_train_for_val: int = 100,
+                   val_frac: float = 0.2, seed: int = 0):
+    """
+    Decide whether this dataset is big enough to hold out a validation set, and split it if so.
+
+    The rule: a validation set of 5 series is pure noise, so on tiny datasets we train on all of
+    the training file and let early stopping watch the TRAINING loss instead. This is the one
+    place that rule is written down.
+
+    train_full : the whole training split, straight from load_dataset(name, "train").
+    min_train_for_val : need at least this many series before holding a validation set out.
+    val_frac : how much to hold out when we do.
+    seed : random seed for the split.
+    returns : (train_ds, val_ds) - val_ds is None when the dataset was too small.
+    """
+    if len(train_full) >= min_train_for_val:
+        return split_train_val(train_full, val_frac=val_frac, seed=seed)
+    return train_full, None

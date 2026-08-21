@@ -1,0 +1,76 @@
+# seanet/seanet_bottleneck_mschan.yaml - Technique 3 (multi-scale INPUT CHANNELS) on the smallest encoder.
+#
+# WHAT IS NEW: instead of feeding the encoder one channel (the raw series), we feed it extra channels
+# that describe every timestep at bigger windows - the rolling max, min and std over 3, 7, 15 and 31
+# points around it, plus one channel that says "is the series going up, down or flat here".
+#
+# WHY max/min/std AND NOT the rolling mean: a rolling mean is a LINEAR operation, and the stem conv is
+# linear too, so a mean channel is mostly something the encoder could already learn on its own. A max,
+# a min or a std is NON-linear - a convolution can never compute them however long you train it. So
+# those channels carry real new information. (Same trick that made MultiRocket work.)
+#
+# WHY IT IS SAFE: the length T never changes, so every timestep still lines up with its original
+# position. AOPCR and NDCG keep working exactly as they do today, and results stay comparable to the plain encoders.
+#
+# COST: only the STEM gets wider, Conv1d(1, 64, 7) -> Conv1d(14, 64, 7). That is about +5k parameters
+# and almost no extra compute - the cheapest of the multi-scale wrappers.
+#
+# Baseline to beat: seanet/seanet_bottleneck_topk = 0.938 acc, 2.7784 AOPCR, 0.7768 NDCG, 41,324 params.
+#
+# Run it (WebTraffic by default):  python main.py run --model seanet/seanet_bottleneck_mschan
+
+name: seanet_bottleneck_mschan
+use_params: default
+
+encoder:
+  type: sea_multiscale_channels
+  windows: [3, 7, 15, 31]   # rolling window sizes, all ODD so they stay centred on their timestep
+  stats: [max, min, std]    # the NON-linear ones (a conv cannot compute these itself)
+  add_diff_sign: true       # one more channel: sign(x[t] - x[t-1]) -> -1 down / 0 flat / +1 up
+  norm_channels: true       # FIX after run 1: BatchNorm the channels before the encoder sees them.
+                            # The raw series is z-normalised but the built ones are not - a rolling max
+                            # sits high, a min sits low, a std is small and always positive, and the sign
+                            # channel is only -1/0/+1. Mixing those raw made the big channels hog the
+                            # gradient. Run 1 (without this) scored 0.920 acc / 2.288 AOPCR.
+  base:                     # the encoder being wrapped - unchanged from seanet/seanet_bottleneck_topk
+    type: sea_mstcn_sep_bottleneck
+    d: 64
+    n_blocks: 4
+    dropout: 0.2
+    max_dilation: 16
+    kernels: [5, 11, 23]
+    bottleneck_ratio: 4
+
+pooling:
+  type: sea_topk_conjunctive
+  d_attn: 8
+  dropout: 0.2
+  positional_encoding: true
+  top_frac: 0.1
+
+training:
+  n_epochs: 400
+  patience: 60
+  max_batch: 16
+  learning_rate: 0.00125
+  weight_decay: 0.00012
+  label_smoothing: 0.13
+  lambda_entropy: 0.01
+  min_train_for_val: 100
+  val_frac: 0.2
+  optimizer: adam
+
+# ===== AUTO-FILLED RESULTS (managed by main.py - do not edit below this line) =====
+# These records let you compare the DEFAULT recipe against Optuna's BEST without opening MLflow,
+# and (with `use_params: auto`) train with whichever scored higher. They are filled in for you:
+#   records.default     : metrics from our last real `python main.py run` (default recipe).
+#   records.optuna_best : the params Optuna found + their metrics (`python main.py optuna`).
+
+records:
+  default:
+    metrics:
+      test_acc: 0.926
+      test_loss: 0.3573
+      test_auroc: 0.9917
+      dataset: WebTraffic
+      recorded: '2026-08-03 22:28:32'

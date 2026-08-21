@@ -1,5 +1,5 @@
 dataset,model,encoder,pooling,seed,device,params,model_size_mb,n_train,n_val,n_test,series_length,n_classes,lambda_entropy,test_acc,test_bal_acc,test_auroc,test_loss,test_aopcr,test_ndcg,train_time_s,run_datetime
-WebTraffic,seanet_bottleneck_topk,sea_mstcn_sep_bottleneck,sea_topk_conjunctive,0,cuda,41324,1.4279,400,100,500,1008,10,0.01,0.938,0.938,0.9968,0.2992,2.7784,0.7768,132.95,2026-07-23 16:36:17
+WebTraffic,seanet_bottleneck_topk,sea_mstcn_sep_bottleneck,sea_topk_conjunctive,0,cuda,41324,1.4279,400,100,500,1008,10,0.01,0.888,0.888,0.993,0.3907,2.4092,0.7549,1087.04,2026-08-21 14:44:25
 WebTraffic,seanet_bottleneck_topk,sea_mstcn_sep_bottleneck,sea_topk_conjunctive,1,cuda,41324,1.4279,400,100,500,1008,10,0.01,0.938,0.938,0.9963,0.3107,2.7079,0.7829,112.98,2026-08-04 15:35:27
 WebTraffic,seanet_bottleneck_topk,sea_mstcn_sep_bottleneck,sea_topk_conjunctive,2,cuda,41324,1.4279,400,100,500,1008,10,0.01,0.966,0.966,0.9986,0.2358,2.3779,0.7578,105.97,2026-08-04 17:54:38
 Adiac,seanet_bottleneck_topk,sea_mstcn_sep_bottleneck,sea_topk_conjunctive,0,cuda,43322,1.4355,328,62,391,176,37,0.01,0.7366,0.7432,0.984,0.9187,-1.6048,,24.33,2026-07-28 18:12:06

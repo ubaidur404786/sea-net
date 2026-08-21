@@ -1,0 +1,34 @@
+# grid5000.yaml - settings for a Grid5000 GPU compute node (Lille, Sophia, ...).
+#
+# WHAT THIS FILE IS FOR
+#   Exactly the same pipeline as local.yaml runs here. Only the machine-dependent values differ.
+#   There is deliberately NO separate Grid5000 training script: scripts/run_all.sh just calls
+#   `python main.py train --env grid5000`, so the training and evaluation code can never drift
+#   apart between the two environments.
+#
+# HOW IT IS PICKED
+#       python main.py train --model baselines/millet --env grid5000
+#   or, once per shell (what scripts/env.sh does):
+#       export SEANET_ENV=grid5000
+
+env: grid5000
+
+# The compute nodes have GPUs; "auto" finds them. Kept explicit so a broken CUDA install is
+# a loud error here rather than a silently very slow CPU run.
+device: cuda
+
+mlflow:
+  # WHERE the runs are stored on the cluster.
+  #
+  # Default: a SQLite file in the project folder on the node's shared home (NFS), so a job that
+  # is killed still leaves its record behind. Copy it back to your laptop after the run:
+  #     scp <site>:~/SEA_NET/mlflow.db  mlflow_grid5000.db
+  #
+  # TO LOG STRAIGHT INTO THE SAME TRACKING SYSTEM AS YOUR LAPTOP, set the standard MLflow
+  # environment variable before launching the job - it overrides this line:
+  #     export MLFLOW_TRACKING_URI=http://<your-mlflow-host>:5000
+  # Grid5000 compute nodes usually have no internet, so this only works with a server reachable
+  # from inside the cluster (or through the frontend). See guide/09_mlflow.md.
+  tracking_uri: "sqlite:///mlflow.db"
+  # Real sweeps happen here, so keep the trained weights.
+  log_model_weights: true

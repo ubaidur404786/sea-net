@@ -1,0 +1,62 @@
+# seanet/seanet_gated_last_gatedattn.yaml
+# Our WebTraffic champion encoder (gated, summary=last) + the NEW gated-attention pooling head.
+#
+# ENCODER = mstcn_sep_gated: multi-scale separable TCN + one summary gate (residual H*(1+gate)).
+#
+# POOLING = gated_attention  (Ilse et al. 2018 gated-attention MIL; the MS-DA-MIL paper-1 family)
+#   For each timestep j and class k, over encoder features z_j:
+#     A_j       = tanh(V z_j) * sigmoid(U z_j)   # gated attention features (* = elementwise)
+#     alpha_j^k = softmax_j( (W A_j)_k )         # attention distribution OVER TIME (sums to 1 per class)
+#     p_j^k     = classifier(z_j)_k              # per-timestep class logit
+#     Y^k       = sum_j alpha_j^k * p_j^k        # weighted average over time (length-invariant)
+#   The extra sigmoid gate (the U branch) lets the attention PASS or SUPPRESS each feature, making it
+#   richer than plain tanh attention (softmax_conjunctive). interpretation = alpha * p.
+#   Layers: Linear(d->d_attn) [V], Linear(d->d_attn) [U], Linear(d_attn->C) [W], Linear(d->C) [classifier].
+#   Aimed at broad-UCR accuracy via a more expressive attention.
+#
+# Run it (WebTraffic by default):  python main.py run --model seanet/seanet_gated_last_gatedattn
+
+name: seanet_gated_last_gatedattn
+use_params: default
+
+encoder:
+  type: sea_mstcn_sep_gated   # MSTCN-separable encoder + one summary gate on top
+  d: 64                   # channel width (the main size knob)
+  n_blocks: 4             # how many multi-scale residual blocks are stacked
+  dropout: 0.2
+  max_dilation: 16        # dilation grows 1,2,4,8 (capped at 16) - keeps each view local
+  kernels: [5, 11, 23]    # three depthwise kernel sizes, summed in every block
+  summary: last           # the gate summary that won on WebTraffic: max | mean | last
+
+pooling:
+  type: sea_gated_attention
+  d_attn: 8               # width of the two attention branches (tanh V and sigmoid U)
+  dropout: 0.2
+  positional_encoding: true
+
+training:
+  n_epochs: 400
+  patience: 60
+  max_batch: 16
+  learning_rate: 0.00125
+  weight_decay: 0.00012
+  label_smoothing: 0.13
+  lambda_entropy: 0.01
+  min_train_for_val: 100
+  val_frac: 0.2
+  optimizer: adam
+
+# ===== AUTO-FILLED RESULTS (managed by main.py - do not edit below this line) =====
+# These records let you compare the DEFAULT recipe against Optuna's BEST without opening MLflow,
+# and (with `use_params: auto`) train with whichever scored higher. They are filled in for you:
+#   records.default     : metrics from our last real `python main.py run` (default recipe).
+#   records.optuna_best : the params Optuna found + their metrics (`python main.py optuna`).
+
+records:
+  default:
+    metrics:
+      test_acc: 0.918
+      test_loss: 0.3653
+      test_auroc: 0.9936
+      dataset: WebTraffic
+      recorded: '2026-07-25 02:11:40'

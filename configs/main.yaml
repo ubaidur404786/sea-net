@@ -1,84 +1,120 @@
-# main.yaml - the top-level settings for a run.
+# main.yaml - WHAT to run.
 #
-# This is the ONE file you edit to control a run. It says which model to use, which
-# dataset to run, the random seed, and where the results go. The actual model settings
-# (encoder, pooling, training hyperparameters) live in a separate file per model, under
-# configs/models/<model>.yaml, and are loaded automatically based on the "model" value below.
+# Configuration is layered. Each layer can override the one above it:
 #
-# Nothing here is hardcoded in the Python code any more: "python main.py run" reads this
-# file and builds everything from it. You can also override a few things on the command
-# line, e.g. "python main.py run --model millet --dataset Coffee --smoke".
+#   1. configs/main.yaml            <- THIS FILE: what to run (model, dataset, seed, outputs)
+#   2. configs/environments/*.yaml  <- where it runs (device, MLflow store). Picked with
+#                                      --env grid5000, or the SEANET_ENV variable. Default: local.
+#   3. configs/models/**/*.yaml     <- the model: encoder, MIL pooling, training recipe, optuna
+#   4. command-line flags           <- the last word (--model, --dataset, --seed, --smoke)
+#
+# So: nothing about an experiment is hard-coded in the Python. To run something different you
+# change a config value or pass a flag - you never edit the pipeline.
+#
+#   python main.py single Coffee --model seanet_bottleneck_topk
+#   python main.py train  --model baselines/millet --env grid5000
 
-# which model to run. Must match a file configs/models/<model>.yaml
-# Configs now live in VERSION folders, so the name includes the folder, e.g. "sv2/seanet" or
-# "sv4/seanet_gated_last". Versions: sv1 = paper baselines (millet/fcn/resnet), sv2 = original SEA-Net,
-# sv3 = pooling family (acp/classwise/conjunctive/softmax), sv4 = new encoder+pooling experiments.
-model: sv2/seanet
+# ---------------------------------------------------------------------------------------
+# WHICH MODEL
+# ---------------------------------------------------------------------------------------
+# The name of a file under configs/models/, without the .yaml. You may give the folder
+# ("seanet/seanet_bottleneck_topk") or just the file name ("seanet_bottleneck_topk") - the
+# loader searches for it and tells you if the name is unknown or ambiguous.
+#
+# The three folders say what a config IS:
+#   configs/models/baselines/   MILLET and the classic baselines (fcn, resnet, ...)
+#   configs/models/seanet/      our own encoder x pooling combinations
+#   configs/models/ablations/   one-knob-at-a-time studies (top_frac, no focus penalty)
+#
+# List them all with:  python main.py models
+model: seanet/seanet_bottleneck_topk
 
-# what to run
+# ---------------------------------------------------------------------------------------
+# WHAT TO RUN
+# ---------------------------------------------------------------------------------------
 run:
   mode: single # single = train + evaluate one dataset (the only mode for now)
   dataset: WebTraffic # the dataset to use when mode is "single"
   smoke: false # true = quick 3-epoch check (for testing the pipeline, NOT a real result)
-  re_train:
-    true # false = if this dataset is already done for this model, skip it (the normal,
-    #         safe behaviour). true = train it AGAIN even if it is already done, and
-    #         REPLACE its old row in results.csv with the new numbers. Turn this on
-    #         when you just want to re-check a model's accuracy without hand-deleting
-    #         the dataset's line from done_train_dataset.txt. (MLflow still keeps the
-    #         old run too, so you never lose the previous result.)
+  re_train: false # false = skip a dataset this model already finished (safe, resumable).
+    # true  = train it AGAIN and replace its row in results.csv. Useful when
+    #         you want to re-check a model without hand-editing the done list.
+    #         MLflow keeps the old run either way, so nothing is lost.
 
-# preprocessing: how each series is turned into "instances" for the MIL model.
-#   single_point   = one instance is one timestep (MILLET's original setup; NDCG works here).
-#   sliding_window = one instance is a window of the series; window_size / window_stride control it
-#                    (NDCG is skipped in this mode - windows have no per-timestep ground truth).
+# ---------------------------------------------------------------------------------------
+# PREPROCESSING - how a series becomes MIL "instances"
+# ---------------------------------------------------------------------------------------
+# One instance = one timestep. That is the only representation the project uses; the old
+# sliding-window mode was removed in seanetv7 because every result in results/ was produced
+# per-timestep and windows cannot produce NDCG (they have no per-timestep ground truth).
+#
+# The train/validation split lives here too, because it is a preprocessing decision:
+# a dataset smaller than min_train_for_val trains on everything and early-stops on the
+# training loss instead (a 5-series validation set is noise, not a signal).
 preprocessing:
-  instance_type: single_point # single_point | sliding_window
-  window_size: 5
-  window_stride: 5
+  normalise: true # z-normalise each series (mean 0, std 1). Keep true - UCR units vary wildly.
+  # NOTE: min_train_for_val / val_frac are part of the model's training block,
+  # because they change the training recipe. See configs/models/**/<model>.yaml.
 
-# random seed, so a run can be reproduced exactly
+# ---------------------------------------------------------------------------------------
+# REPRODUCIBILITY
+# ---------------------------------------------------------------------------------------
+# One seed drives python's random, numpy and torch (see seanet/utils.set_seed), so the same
+# seed really does give the same run. A NEW seed ADDS a repeat row to results.csv; it never
+# overwrites the seed-0 row, which is how we get the mean +- std numbers.
 seed: 0
 
-# device to train on. "auto" picks cuda -> mps -> cpu; you can also force "cpu" or "cuda".
-device: auto
-
-# where our output files are written. Each model gets its OWN folder under here, named after what
-# the model is: "<encoder>_<pooling>", e.g. results/SEA_NET/mstcn_sep_additive/. That folder holds
-# that model's results.csv, done_train_dataset.txt, logs, figures and interpretation figures, so two
-# models can never mix their numbers up. See seanet/results.py.
+# ---------------------------------------------------------------------------------------
+# OUTPUT PATHS
+# ---------------------------------------------------------------------------------------
+# Every model gets its OWN folder under results_dir, named "<config>__<encoder>__<pooling>",
+# so two models can never mix their numbers up. See seanet/results.py for the layout.
 output:
   results_dir: results/SEA_NET
+  analysis_dir: results/analysis # the cross-model comparison figures and tables
 
-# interpretability: MILLET-style per-sample explanation figures.
-# These are produced by "python main.py interpret" - running that command IS the on/off switch.
-#
-# Why WebTraffic: it is the only dataset that ships per-timestep ground truth, so it is the only one
-# where the figure can shade the truly important region and let you CHECK that the model highlighted
-# the right points. On a UCR dataset the same picture would be unverifiable.
-# Why only correctly-predicted samples: a figure is meant to show what good evidence looks like -
-# which points the model leaned on when it got the answer right.
+# ---------------------------------------------------------------------------------------
+# INTERPRETABILITY FIGURES  (python main.py interpret)
+# ---------------------------------------------------------------------------------------
+# Why WebTraffic: it is the only dataset that ships per-timestep ground truth, so it is the only
+# one where the figure can shade the truly important region and let you CHECK that the model
+# highlighted the right points. On a UCR dataset the same picture would be unverifiable.
+# Why only correctly-predicted samples: the figure is meant to show what good evidence looks
+# like - which points the model leaned on when it got the answer right.
 interpretability:
-  dataset: WebTraffic # which dataset to explain (WebTraffic is the one with ground truth)
+  dataset: WebTraffic
   n_classes: 3 # cover the first N classes (0, 1, 2)
-  per_class: 1 # how many correctly-predicted examples per class -> 3 figures per run
+  per_class: 1 # correctly-predicted examples per class -> 3 figures per run
 
-# mlflow: your automatic "lab notebook". EVERY training/evaluation run (run / single / webtraffic /
-# train) AND every Optuna trial is recorded here: its inputs (hyperparameters), its results (train /
-# validation / test accuracy + loss, AOPCR, NDCG), and the trained model saved as a *versioned* model.
-# Open the web page to compare all models/datasets side by side and see which settings won. Browse with:
-#   mlflow ui --backend-store-uri sqlite:///mlflow.db      (then open http://127.0.0.1:5000)
-# See MLFLOW_GUIDE.md for how to view results locally and how to copy them back from Grid5000.
+# ---------------------------------------------------------------------------------------
+# MLFLOW  (defaults; the STORE is set per environment - see configs/environments/)
+# ---------------------------------------------------------------------------------------
+# MLflow is the project's lab notebook. Every real training run and every Optuna trial is
+# recorded: the hyperparameters, the per-epoch train/val loss and accuracy, the final test
+# metrics (accuracy, AOPCR, NDCG), the parameter count, the training time, and the weights.
+#
+# ONE experiment holds everything, on purpose, so a laptop run and a Grid5000 run of the same
+# model can sit side by side in one table. Filter with the tags instead:
+#     tags.env = 'grid5000'      tags.model_id = '...'      tags.encoder = '...'
+#
+# WHERE the runs go is decided by, in order:
+#     1. the MLFLOW_TRACKING_URI environment variable  (point both machines at one server)
+#     2. mlflow.tracking_uri from configs/environments/<env>.yaml
+#     3. sqlite:///mlflow.db in the repo
+# See guide/09_mlflow.md.
 mlflow:
-  enabled: true # turn all MLflow tracking on/off
-  experiment_name: SEA-Net # runs + trials are grouped under this experiment
-  tracking_uri: "sqlite:///mlflow.db" # a small local database file (mlflow.db) in the repo.
-  log_model_weights:
-    true # also save each trained model as a versioned model (Models tab +
-    # loading later). Set false to log only params + metrics (no weight
-    # files) - e.g. to save disk during the full 129-dataset "train" sweep.
-  # NOTE: recent MLflow dropped the old "./mlruns folder" store, so we use a SQLite file instead (this
-  # is also what lets us save versioned models). mlflow.db + the saved weights under mlartifacts/ are
-  # git-ignored and copy cleanly from Grid5000 to your laptop. Browse with:
-  #   mlflow ui --backend-store-uri sqlite:///mlflow.db      (then open http://127.0.0.1:5000)
-  # Leave tracking_uri blank to fall back to sqlite:///mlflow.db anyway. See MLFLOW_GUIDE.md.
+  enabled: true
+  experiment_name: SEA-Net
+  log_model_weights: true # false logs only params + metrics (saves disk on the 129-dataset sweep)
+  split_by_model: false # true restores the old "one experiment per model per day" grouping
+
+# ---------------------------------------------------------------------------------------
+# OPTUNA  (defaults; the search space is per model - see the model file's optuna block)
+# ---------------------------------------------------------------------------------------
+# Optuna is OPTIONAL. Normal training never touches it. When you do run it
+# (python main.py optuna), it calls exactly the same training pipeline, one trial at a time.
+optuna:
+  n_trials: 20
+  sampler: tpe # tpe | random
+  pruner: median # median | none
+  direction: minimize # we search for the lowest validation loss

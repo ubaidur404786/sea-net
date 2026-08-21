@@ -1,0 +1,77 @@
+# seanet/seanet_bottleneck_mschan_lean.yaml - the same channel idea, but with FEWER channels.
+#
+# WHY: run 1 of seanet/seanet_bottleneck_mschan scored 0.920 acc against a 0.938 baseline. Two things could
+# explain that small loss, and they need separate tests:
+#
+#   1. the channels were not normalised   -> tested by seanet/seanet_bottleneck_mschan (norm_channels: true)
+#   2. there were simply too MANY channels -> tested by THIS file
+#
+# The dilution worry is real: with 13 channels the raw series is only 1/13 of what the stem reads, so
+# early in training the signal that actually matters gets outvoted by 12 derived ones. Here we keep only
+# the strongest few: two windows instead of four, and max/min only (dropping std), which gives
+# 1 + 2*2 + 1 = 6 channels instead of 13.
+#
+# WHY THESE WINDOWS: 7 and 31 are far apart, so they say genuinely different things. Keeping 3, 7, 15 and
+# 31 means neighbouring windows mostly repeat each other - 7 already contains most of what 3 sees.
+#
+# WHY DROP std: max and min bracket the local range, which already implies most of the spread. std is the
+# most likely of the three to be redundant, so it is the first to cut.
+#
+# HOW TO READ IT: compare all three on WebTraffic.
+#   - lean wins        -> too many channels was the problem, keep it small
+#   - full (normed) wins -> normalisation was the problem, more channels are fine once they are scaled
+#   - neither beats 0.938 -> the technique does not help here, and that is a clean negative result
+#
+# Run it (WebTraffic by default):  python main.py run --model seanet/seanet_bottleneck_mschan_lean
+
+name: seanet_bottleneck_mschan_lean
+use_params: default
+
+encoder:
+  type: sea_multiscale_channels
+  windows: [7, 31]          # two FAR-apart windows instead of four overlapping ones
+  stats: [max, min]         # drop std - max/min already bracket the local range
+  add_diff_sign: true
+  norm_channels: true       # 6 channels: raw + 2 windows x 2 stats + sign
+  base:                     # unchanged from seanet/seanet_bottleneck_topk
+    type: sea_mstcn_sep_bottleneck
+    d: 64
+    n_blocks: 4
+    dropout: 0.2
+    max_dilation: 16
+    kernels: [5, 11, 23]
+    bottleneck_ratio: 4
+
+pooling:
+  type: sea_topk_conjunctive
+  d_attn: 8
+  dropout: 0.2
+  positional_encoding: true
+  top_frac: 0.1
+
+training:
+  n_epochs: 400
+  patience: 60
+  max_batch: 16
+  learning_rate: 0.00125
+  weight_decay: 0.00012
+  label_smoothing: 0.13
+  lambda_entropy: 0.01
+  min_train_for_val: 100
+  val_frac: 0.2
+  optimizer: adam
+
+# ===== AUTO-FILLED RESULTS (managed by main.py - do not edit below this line) =====
+# These records let you compare the DEFAULT recipe against Optuna's BEST without opening MLflow,
+# and (with `use_params: auto`) train with whichever scored higher. They are filled in for you:
+#   records.default     : metrics from our last real `python main.py run` (default recipe).
+#   records.optuna_best : the params Optuna found + their metrics (`python main.py optuna`).
+
+records:
+  default:
+    metrics:
+      test_acc: 0.894
+      test_loss: 0.4389
+      test_auroc: 0.9894
+      dataset: WebTraffic
+      recorded: '2026-08-03 22:26:14'

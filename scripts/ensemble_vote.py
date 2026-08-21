@@ -27,13 +27,13 @@ WHAT "PAIRED WILCOXON" MEANS (the statistics part, in plain words)
     is also the test the MILLET paper itself uses.
 
 HOW TO RUN IT
-    python scripts/ensemble_vote.py --models sv4/seanet_bottleneck_topk sv1/millet
-    python scripts/ensemble_vote.py --models sv4/seanet_bottleneck_topk sv4/seanet_inputgate_adaptive \
-                                    --baseline sv1/millet
+    python scripts/ensemble_vote.py --models seanet/seanet_bottleneck_topk baselines/millet
+    python scripts/ensemble_vote.py --models seanet/seanet_bottleneck_topk seanet/seanet_inputgate_adaptive \
+                                    --baseline baselines/millet
     python scripts/ensemble_vote.py --models A B --datasets all      # all 128 UCR, not just the 85
 
 Related files:
-    seanet/train.py    -> save_predictions() writes the .npz files this reads.
+    seanet/training.py    -> save_predictions() writes the .npz files this reads.
     seanet/results.py  -> load_results / mean_over_seeds / millet_datasets.
 """
 from __future__ import annotations
@@ -66,7 +66,7 @@ def resolve_model_id(name: str) -> str:
     Turn what the user typed into the results folder id.
 
     Two forms are accepted, so you can use whichever you have to hand:
-      - a config name  ("sv4/seanet_bottleneck_topk")  -> loaded, then turned into its full id
+      - a config name  ("seanet/seanet_bottleneck_topk")  -> loaded, then turned into its full id
       - a full id already ("seanet_bottleneck_topk__sea_mstcn_sep_bottleneck__sea_topk_conjunctive")
 
     name : what the user passed to --models.
@@ -271,9 +271,9 @@ def paired_test(ours: pd.Series, theirs: pd.Series) -> Dict[str, float]:
 def main() -> int:
     p = argparse.ArgumentParser(description="Compare models across seeds and try ensembling them.")
     p.add_argument("--models", nargs="+", required=True,
-                   help="two or more model configs (sv4/seanet_bottleneck_topk) or full ids")
-    p.add_argument("--baseline", default="sv1/millet",
-                   help="model to run the paired test against (default: sv1/millet, our MILLET rerun)")
+                   help="two or more model configs (seanet/seanet_bottleneck_topk) or full ids")
+    p.add_argument("--baseline", default="baselines/millet",
+                   help="model to run the paired test against (default: baselines/millet, our MILLET rerun)")
     p.add_argument("--datasets", choices=["millet85", "all"], default="millet85",
                    help="millet85 = the 85 datasets MILLET published (default); all = all 128 UCR")
     p.add_argument("--out", default=os.path.join("results", "SEA_NET", "ensemble_vote.csv"),

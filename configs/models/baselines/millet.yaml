@@ -1,0 +1,52 @@
+# millet.yaml - the MILLET baseline model.
+#
+# This is the original paper's model: an InceptionTime encoder + Conjunctive pooling head.
+# In the current pipeline the baseline is used mainly for the parameter-count comparison
+# ("python main.py params"); the paper's published numbers come from results/UCR/InceptionTime/.
+# This file lets you also TRAIN the baseline through the same config-driven path as SEA-Net,
+# so the two models share one training recipe and only differ by their config.
+#
+# The encoder/pooling values match how the baseline is built in seanet/models/build.py (make_baseline).
+# The training block is the same generic recipe as SEA-Net, except lambda_entropy is 0 because the
+# entropy "focus" penalty is a SEA-Net idea, not part of MILLET.
+
+name: millet
+
+# ---- the encoder: MILLET's InceptionTime feature extractor (outputs 128 channels) ----
+encoder:
+  type: mil_inceptiontime
+
+# ---- the pooling head: MILLET's Conjunctive pooling ----
+pooling:
+  type: mil_conjunctive
+  d_attn: 8
+  dropout: 0.1
+  positional_encoding: true
+
+# ---- the training recipe (same generic loop as SEA-Net) ----
+training:
+  n_epochs: 400
+  patience: 60
+  max_batch: 16
+  learning_rate: 0.00125
+  weight_decay: 0.00012
+  label_smoothing: 0.13
+  lambda_entropy: 0.0    # baseline has no attention-focus penalty
+  min_train_for_val: 100
+  val_frac: 0.2
+  optimizer: adam
+
+# ===== AUTO-FILLED RESULTS (managed by main.py - do not edit below this line) =====
+# These records let you compare the DEFAULT recipe against Optuna's BEST without opening MLflow,
+# and (with `use_params: auto`) train with whichever scored higher. They are filled in for you:
+#   records.default     : metrics from our last real `python main.py run` (default recipe).
+#   records.optuna_best : the params Optuna found + their metrics (`python main.py optuna`).
+
+records:
+  default:
+    metrics:
+      test_acc: 0.894
+      test_loss: 0.515
+      test_auroc: 0.9898
+      dataset: WebTraffic
+      recorded: '2026-07-23 13:27:10'

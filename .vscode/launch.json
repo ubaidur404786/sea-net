@@ -1,0 +1,26 @@
+{
+  // ONE config. Put red dots where you want to stop, then press F5.
+  //
+  // IMPORTANT: press F5 (Start Debugging).
+  // Ctrl+F5 and the small play button at the top-right of the editor mean
+  // "Run WITHOUT Debugging" - they start the same command but with the
+  // debugger switched off, so every breakpoint is skipped.
+  //
+  // To debug a different command, just change the "args" line below.
+  // Keep --smoke on anything that trains. See guide/13_debugging.md.
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug main.py",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/main.py",
+      // "args": ["single", "Coffee", "--model", "seanet_bottleneck_topk", "--smoke"],
+      "args": ["single", "Coffee", "--model", "seanet_bottleneck_topk", "--smoke"],
+
+      "console": "integratedTerminal",
+      "cwd": "${workspaceFolder}",
+      "justMyCode": true
+    }
+  ]
+}

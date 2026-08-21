@@ -19,7 +19,7 @@ Output:
 Related files:
     - It reuses three classes from the original MILLET code (millet/data/...): UCRDataset,
       WebTrafficDataset, and the base MILTSCDataset (which does the z-normalisation).
-    - seanet/train.py calls load_dataset to get the train/test sets.
+    - seanet/training.py calls load_dataset to get the train/test sets.
     - main.py ("summary" command) calls summarise_dataset + write_summary_row.
 
 The one thing we change vs MILLET:

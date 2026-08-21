@@ -1,5 +1,5 @@
 """
-scripts/check_multiscale.py - a quick safety check for the sv6 multi-scale encoders.
+scripts/check_multiscale.py - a quick safety check for the multi-scale encoders.
 
 WHY THIS SCRIPT EXISTS:
     The dangerous bug in any multi-scale code is not a crash - it is a SHIFT. You average the series
@@ -15,7 +15,7 @@ WHAT IT CHECKS:
     1. shapes   - every wrapper returns (B, d, T) with T unchanged (pooling heads depend on this).
     2. alignment- a spike at index i still comes out at index i.
     3. short    - very short UCR series (T = 8, 15) do not crash the pyramid.
-    4. size     - how many parameters each sv6 config adds over its sv4 baseline.
+    4. size     - how many parameters each multi-scale config adds over its plain baseline.
 
 This script only BUILDS models and runs one forward pass. It does not train anything.
 
@@ -33,8 +33,8 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from seanet import features as FT
 from seanet.config import load_config
-from seanet.features import build_encoder
-from seanet.model import build_model_from_config, num_params
+from seanet.models.encoders import build_encoder
+from seanet.models import build_model_from_config, num_params
 
 PASS = "  [ok]  "
 FAIL = "  [FAIL]"
@@ -183,15 +183,15 @@ PARAM_COUNT_CLASSES = 10
 
 
 def check_real_configs() -> bool:
-    """Build every sv6 config for real and show what it costs against its sv4 baseline."""
-    print(f"\n4) the real sv6 configs (built from YAML, {PARAM_COUNT_CLASSES} classes)")
+    """Build every multi-scale config for real and show what it costs against its plain baseline."""
+    print(f"\n4) the real multi-scale configs (built from YAML, {PARAM_COUNT_CLASSES} classes)")
     pairs = [
-        ("sv6/seanet_bottleneck_mschan", "sv4/seanet_bottleneck_topk"),
-        ("sv6/seanet_bottleneck_pyramid", "sv4/seanet_bottleneck_topk"),
-        ("sv6/seanet_bottleneck_mschan_pyramid", "sv4/seanet_bottleneck_topk"),
-        ("sv6/seanet_gated_mschan", "sv4/seanet_gated_mean_topk"),
-        ("sv6/seanet_gated_pyramid", "sv4/seanet_gated_mean_topk"),
-        ("sv6/seanet_inputgate_mschan", "sv4/seanet_inputgate_topk"),
+        ("seanet/seanet_bottleneck_mschan", "seanet/seanet_bottleneck_topk"),
+        ("seanet/seanet_bottleneck_pyramid", "seanet/seanet_bottleneck_topk"),
+        ("seanet/seanet_bottleneck_mschan_pyramid", "seanet/seanet_bottleneck_topk"),
+        ("seanet/seanet_gated_mschan", "seanet/seanet_gated_mean_topk"),
+        ("seanet/seanet_gated_pyramid", "seanet/seanet_gated_mean_topk"),
+        ("seanet/seanet_inputgate_mschan", "seanet/seanet_inputgate_topk"),
     ]
     ok = True
     x = torch.randn(2, 1, 1008)                           # WebTraffic is 1008 long
@@ -253,13 +253,13 @@ def check_receptive_fields() -> bool:
     A scale is only meaningful while the receptive field still FITS inside the shrunk series. Once the
     receptive field is bigger than the sequence, every position sees everything, the features stop
     varying along time, and that scale contributes smeared mush to the fusion. This is exactly what
-    sank the first sv6 pyramid runs, so we now measure it instead of assuming.
+    sank the first pyramid runs, so we now measure it instead of assuming.
     """
     print("\n5) receptive field vs scale length (WebTraffic is 1008 long)")
     series_length = 1008
     ok = True
-    for config_name in ("sv6/seanet_bottleneck_pyramid", "sv6/seanet_gated_pyramid",
-                        "sv6/seanet_bottleneck_mschan_pyramid"):
+    for config_name in ("seanet/seanet_bottleneck_pyramid", "seanet/seanet_gated_pyramid",
+                        "seanet/seanet_bottleneck_mschan_pyramid"):
         try:
             cfg = load_config(overrides={"model": config_name})
             enc_cfg = cfg.model_config.encoder
@@ -290,7 +290,7 @@ def check_receptive_fields() -> bool:
 
 def main() -> int:
     print("=" * 78)
-    print("sv6 multi-scale check - shapes, alignment, short series, size")
+    print("multi-scale encoder check - shapes, alignment, short series, size")
     print("=" * 78)
     results = [
         check_channel_shapes_and_alignment(),

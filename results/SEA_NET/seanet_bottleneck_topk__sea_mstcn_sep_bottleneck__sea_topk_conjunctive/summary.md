@@ -17,7 +17,7 @@
 | overall_mean_acc | 0.8058 |
 | overall_mean_loss | 0.599 |
 | overall_mean_aopcr | 1.3239 |
-| webtraffic_acc | 0.9473 |
-| webtraffic_ndcg | 0.7725 |
+| webtraffic_acc | 0.9307 |
+| webtraffic_ndcg | 0.7652 |
 | params | 41324 |
 | model_size_mb | 1.428 |

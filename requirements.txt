@@ -1,15 +1,21 @@
-jupyter
-latextable
-matplotlib
-mlflow>=3.1
-numpy
-optuna
-pandas
-pyyaml
-scienceplots
-scikit-learn
-scipy
-seaborn
-texttable
-torch
-tqdm
+# SEA-Net dependencies.
+#
+# Install PyTorch FIRST, with the build that matches your machine (CPU vs a specific CUDA
+# version) - see https://pytorch.org. Then:  pip install -r requirements.txt
+# For the exact versions a working run was made with, use requirements_versioned.txt instead.
+
+# --- required: the pipeline will not run without these -------------------------------
+torch                 # the model, training, and every tensor
+numpy                 # arrays, seeding
+pandas                # every results table is a DataFrame
+pyyaml                # reading configs/
+scikit-learn          # accuracy, balanced accuracy, AUROC
+tqdm                  # the training progress bar
+matplotlib            # the history curves, and every figure
+
+# --- optional: each one degrades to a printed note, never a crash --------------------
+mlflow>=3.1           # run tracking (guide/09_mlflow.md). Without it: a one-line warning.
+optuna                # hyperparameter search (guide/10_optuna.md). Without it: only that command stops.
+scipy                 # the Wilcoxon-Holm critical-difference bars in `main.py analyse`.
+                      # Without it: that ONE figure is skipped, not faked.
+jupyter               # only for the upstream MILLET notebooks in millet/notebooks/

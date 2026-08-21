@@ -26,9 +26,11 @@ lives in its own folder, so two models can never mix their numbers up:
         done_train_dataset.txt           <- the "what is finished" list (the resume switch)
         comparison_vs_millet.csv         <- our numbers next to MILLET's, per dataset
         summary.csv / summary.md         <- the headline means (over the 85, and overall)
+        history/<dataset>__seed<N>.csv   <- per-epoch train/val loss + accuracy, and its 2 curves
+        predictions/<dataset>__seed<N>.npz  <- per-series test probabilities (for ensembling)
         logs/<command>_<date-time>.log   <- one log per run of THIS model
-        figures/                         <- this model's figures
-        interpretation/                  <- this model's explanation figures
+        figures/                         <- this model's comparison figures
+        interpretation/                  <- this model's per-sample explanation figures
 
       seanet_acp__sea_mstcn_sep__sea_adaptive_classwise/   <- another model, same layout
         ...
@@ -51,7 +53,7 @@ Related files:
     - seanet/config.py  -> model_folder_name(cfg) builds the model id this module keys everything on.
     - main.py           -> calls result_exists() to skip finished datasets, save_result_row() after
                            each dataset, and build_comparison() / compare_models() to report.
-    - seanet/report.py  -> draws the figures from the tables this module writes.
+    - seanet/analysis/model_figures.py  -> draws the figures from the tables this module writes.
 
 Note on this machine: some tool keeps re-aligning .csv files (padding columns with spaces), which
 once corrupted a results file mid-run. Two defences stay in place:
@@ -73,6 +75,33 @@ from seanet.data import UCR_128_DATASETS, WEB_TRAFFIC, read_our_csv
 # 1. Paths - everything is keyed by the model id ("<config>__<encoder>__<pooling>")
 # --------------------------------------------------------------------------------------
 RESULTS_ROOT = os.path.join("results", "SEA_NET")     # everything SEA-Net writes lives under here
+
+
+def set_results_root(path: str) -> str:
+    """
+    Point every results path at a different folder.
+
+    main.py calls this once, with configs/main.yaml's `output.results_dir`, before anything is
+    read or written. Without it the folder in the config would be a lie - the code would keep
+    using the hard-coded default no matter what the YAML said.
+
+    Useful for a throwaway experiment that must not touch the real results:
+        output:
+          results_dir: results/scratch
+
+    path : the new root folder.
+    returns : the path that was set.
+    """
+    global RESULTS_ROOT, MODEL_COMPARISON_CSV, SHARED_FIGURES_DIR, SHARED_LOGS_DIR
+    global WEBTRAFFIC_COMPARISON_CSV, LEADERBOARD_CSV
+    RESULTS_ROOT = str(path)
+    # the shared (not per-model) files are derived from the root, so they move with it
+    MODEL_COMPARISON_CSV = os.path.join(RESULTS_ROOT, "model_comparison.csv")
+    SHARED_FIGURES_DIR = os.path.join(RESULTS_ROOT, "figures")
+    SHARED_LOGS_DIR = os.path.join(RESULTS_ROOT, "logs")
+    WEBTRAFFIC_COMPARISON_CSV = os.path.join(RESULTS_ROOT, "webtraffic_comparison.csv")
+    LEADERBOARD_CSV = os.path.join(RESULTS_ROOT, "leaderboard.csv")
+    return RESULTS_ROOT
 
 # The per-model file names. They are the same inside every model folder, so you always know where
 # to look; the folder name is what tells the models apart.
@@ -129,16 +158,23 @@ def predictions_dir(model_id: str) -> str:
     return os.path.join(model_dir(model_id), "predictions")
 
 
-def curves_dir(model_id: str) -> str:
+def history_dir(model_id: str) -> str:
     """
-    Where that model's training curves are saved (one small CSV per dataset per seed).
+    Where that model's TRAINING HISTORY is saved: one CSV + two PNGs per dataset per seed.
+
+        <model_id>/history/Coffee__seed0.csv         epoch, train_loss, train_acc, val_loss, val_acc
+        <model_id>/history/Coffee__seed0_loss.png    training vs validation loss
+        <model_id>/history/Coffee__seed0_acc.png     training vs validation accuracy
 
     results.csv only keeps the FINAL test numbers, so it cannot answer "did this model overfit?" or
-    "at which epoch did early stopping fire?". The per-epoch loss lives in model.history, which used
-    to go to MLflow only - and MLflow lives on whichever machine trained the model. Writing the same
-    curve next to results.csv means the answer travels with the results when we copy them back.
+    "at which epoch did early stopping fire?". The per-epoch record lives in model.history, which
+    used to go to MLflow only - and MLflow lives on whichever machine trained the model. Writing it
+    next to results.csv means the answer travels with the results when we copy them back.
+
+    The file name carries the dataset AND the seed, and the folder carries the model + its
+    encoder/pooling, so every figure says exactly which experiment produced it.
     """
-    return os.path.join(model_dir(model_id), "curves")
+    return os.path.join(model_dir(model_id), "history")
 
 
 def logs_dir(model_id: str) -> str:
@@ -156,7 +192,7 @@ RESULT_COLUMNS = [
     "dataset", "model", "encoder", "pooling", "seed", "device", "params", "model_size_mb",
     "n_train", "n_val", "n_test", "series_length", "n_classes", "lambda_entropy",
     "test_acc", "test_bal_acc", "test_auroc", "test_loss", "test_aopcr", "test_ndcg",
-    "train_time_s", "run_datetime",
+    "train_time_s", "epochs_run", "best_epoch", "overfit_gap", "run_datetime",
 ]
 
 # --------------------------------------------------------------------------------------
@@ -693,7 +729,7 @@ def _print_model_comparison(df: pd.DataFrame, out: str) -> None:
 # one with NDCG). This table ranks every model on WebTraffic alone, next to TWO baselines kept apart on
 # purpose:
 #   - "MILLET (paper)"  : the numbers the paper published (results/WebTraffic/InceptionTime/), and
-#   - our own rerun of the same baseline model (millet/fcn/resnet in sv1), which usually scores a bit
+#   - our own rerun of the same baseline model (configs/models/baselines/), which usually scores a bit
 #     lower - seeing the gap between the two is exactly what we want.
 # --------------------------------------------------------------------------------------
 WEBTRAFFIC_COMPARISON_CSV = os.path.join(RESULTS_ROOT, "webtraffic_comparison.csv")

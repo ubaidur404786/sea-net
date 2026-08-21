@@ -1,0 +1,118 @@
+# seanet.yaml - the SEA-Net model (our model).
+#
+# SEA-Net = a small multi-scale depthwise-separable TCN encoder + MILLET's Additive pooling head.
+# These numbers are the EXACT values that were baked into the Python code before the config system
+# existed (seanet/models/build.py and seanet/training.py). They are copied here so results do not change:
+# running with this file gives the same model and the same training recipe as before.
+
+name: seanet
+
+# which recipe to train with:
+#   default     = use the encoder / pooling / training blocks below, as written.
+#   optuna_best = use the params Optuna found (saved in the "records" block at the bottom of this file).
+#   auto        = use optuna_best IF it scored a higher test accuracy than default, otherwise default.
+# `python main.py run` prints which one it picked and how the two compare. Typical flow: run normal
+# first (fills records.default), then `python main.py optuna` (fills records.optuna_best), then leave
+# this on `auto` so the better recipe is used automatically.
+use_params: auto
+
+# ---- the encoder (feature extractor): turns each timestep into a 128-d feature vector ----
+encoder:
+  type: sea_mstcn_sep        # our "Multi-Scale separable TCN" encoder
+  d: 128                 # channel width the encoder works with
+  n_blocks: 6            # how many residual blocks are stacked
+  dropout: 0.2           # dropout inside the encoder blocks
+  max_dilation: 16       # dilation grows 1,2,4,8,16 but is capped here (keeps each view local)
+  kernels: [5, 11, 23]   # the three depthwise kernel sizes, summed in every block
+
+# ---- the pooling head: turns per-timestep features into a prediction + importance scores ----
+pooling:
+  type: mil_additive         # MILLET's MILAdditivePooling (reused unchanged)
+  d_attn: 8              # width of the small attention MLP
+  dropout: 0.2
+  positional_encoding: true
+
+# ---- the training recipe (same for every dataset) ----
+training:
+  n_epochs: 400          # max epochs (early stopping usually stops sooner)
+  patience: 60           # stop if the watched loss has not improved for this many epochs
+  max_batch: 16          # batch size = clamp(n_train // 10, 2, max_batch)
+  learning_rate: 0.00125 # 1.25e-3
+  weight_decay: 0.00012  # 1.2e-4
+  label_smoothing: 0.13  # softens the labels a little (helps avoid over-confident mistakes)
+  lambda_entropy: 0.01   # strength of the attention "focus" penalty (0 turns it off)
+  min_train_for_val: 100 # need at least this many train series to hold out a validation set
+  val_frac: 0.2          # size of the validation split (20%)
+  optimizer: adam        # the only optimizer wired up right now
+
+# ---- Optuna hyperparameter search (disabled by default) ----
+# Run with:  python main.py optuna    (uses WebTraffic by default). Each trial trains a model with
+# sampled hyperparameters and Optuna minimises the validation loss. When it finishes, the best config
+# is retrained + scored on the test set and saved into the "records" block at the BOTTOM of this file
+# (records.optuna_best: the params AND their test_acc/loss/auroc), so you can compare it with the
+# default recipe and switch via `use_params` above. No separate .best.yaml file is created.
+optuna:
+  enabled: true           # must be true for "python main.py optuna" to run a search
+  n_trials: 30             # how many combinations to try (this is a big space, so use plenty)
+  timeout: null            # stop after this many seconds (null = no time limit)
+  sampler: tpe             # how to pick the next trial: tpe (smart) or random
+  pruner: median           # stop hopeless trials early: median or none
+  save_best_parameters: true   # after the search, save the winners into records.optuna_best (below)
+  # search_space: which hyperparameters to tune and their ranges. Grouped like the config above, so the
+  # dotted path (training.learning_rate / encoder.d / pooling.d_attn) is set straight into this model.
+  # Each leaf has a type (float/int/categorical) and its range (low/high[/log], or choices). This is the
+  # DETAILED search: the training recipe, the ENCODER (feature extractor) AND the POOLING head together.
+  search_space:
+    training:
+      learning_rate: {type: float, low: 0.0003, high: 0.005, log: true}
+      weight_decay: {type: float, low: 0.00001, high: 0.0005, log: true}
+      label_smoothing: {type: float, low: 0.0, high: 0.2}
+      lambda_entropy: {type: float, low: 0.0, high: 0.05}
+      max_batch: {type: categorical, choices: [8, 16, 32]}
+    encoder:                                        # the feature extractor (MSTCN-separable)
+      d: {type: categorical, choices: [64, 96, 128]}         # channel width the encoder works with
+      n_blocks: {type: int, low: 3, high: 8}                 # depth = number of residual blocks
+      dropout: {type: float, low: 0.1, high: 0.4}
+      max_dilation: {type: categorical, choices: [8, 16, 32]}   # how wide the receptive field grows
+    pooling:                                        # the MIL pooling head
+      d_attn: {type: categorical, choices: [4, 8, 16, 32]}   # width of the small attention MLP
+      dropout: {type: float, low: 0.1, high: 0.4}
+
+# ===== AUTO-FILLED RESULTS (managed by main.py - do not edit below this line) =====
+# These records let you compare the DEFAULT recipe against Optuna's BEST without opening MLflow,
+# and (with `use_params: auto`) train with whichever scored higher. They are filled in for you:
+#   records.default     : metrics from our last real `python main.py run` (default recipe).
+#   records.optuna_best : the params Optuna found + their metrics (`python main.py optuna`).
+
+records:
+  optuna_best:
+    params:
+      training:
+        learning_rate: 0.0005076417815298255
+        weight_decay: 4.091626401527854e-05
+        label_smoothing: 0.014544866656788336
+        lambda_entropy: 0.007608685664283788
+        max_batch: 8
+      encoder:
+        d: 128
+        n_blocks: 3
+        dropout: 0.15583378869148168
+        max_dilation: 16
+      pooling:
+        d_attn: 16
+        dropout: 0.28079526048212006
+    metrics:
+      test_acc: 0.906
+      test_loss: 0.3068
+      test_auroc: 0.9922
+      val_loss: 0.3982
+      dataset: WebTraffic
+      n_trials: 30
+      recorded: '2026-07-14 14:37:20'
+  default:
+    metrics:
+      test_acc: 0.942
+      test_loss: 0.2597
+      test_auroc: 0.9975
+      dataset: WebTraffic
+      recorded: '2026-07-23 13:30:06'

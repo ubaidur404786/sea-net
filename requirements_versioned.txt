@@ -1,16 +1,17 @@
-jupyter==1.0.0
-latextable==1.0.0
-matplotlib==3.7.2
-mlflow==3.14.0
+# The exact versions a working SEA-Net run was made with (local, 2026-08).
+# Use this when something behaves strangely and you want to rule the environment out:
+#     pip install -r requirements_versioned.txt
+# The Grid5000 environment is NOT guaranteed to match - check it there before installing.
+
+torch==2.0.1
 numpy==1.24.4
-optuna==4.9.0
-overrides==7.4.0
 pandas==2.0.3
 pyyaml==6.0.1
-scienceplots==2.1.0
 scikit-learn==1.3.0
-scipy==1.10.1
-seaborn==0.12.2
-texttable==1.6.7
-torch==2.0.1
 tqdm==4.66.1
+matplotlib==3.7.2
+
+mlflow==3.14.0
+optuna==4.9.0
+scipy==1.10.1
+jupyter==1.0.0

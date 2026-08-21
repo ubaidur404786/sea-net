@@ -13,7 +13,7 @@ source scripts/env.sh        # turn the environment on (module load conda + acti
 
 echo ""
 echo "=== SMOKE TEST: seanet on Coffee (3 epochs, NOT saved) ==="
-python main.py single Coffee --model seanet --smoke
+python main.py single Coffee --model seanet_bottleneck_topk --env grid5000 --smoke
 
 echo ""
 echo "=== smoke test finished. ==="
