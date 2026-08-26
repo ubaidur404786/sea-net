@@ -15,8 +15,14 @@
       "type": "debugpy",
       "request": "launch",
       "program": "${workspaceFolder}/main.py",
-      // "args": ["single", "Coffee", "--model", "seanet_bottleneck_topk", "--smoke"],
-      "args": ["single", "Coffee", "--model", "seanet_bottleneck_topk", "--smoke"],
+      // "args": ["single", "Coffee", "--model", "seanet_bottleneck_mschan", "--smoke"],
+      "args": [
+        "single",
+        "Coffee",
+        "--model",
+        "seanet_bottleneck_topk",
+        "--smoke"
+      ],
 
       "console": "integratedTerminal",
       "cwd": "${workspaceFolder}",
