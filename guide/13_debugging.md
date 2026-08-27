@@ -129,6 +129,19 @@ Because each component has one job, the last few frames tell you where to look:
 | `seanet/results.py` | writing the results file |
 | `seanet/analysis/` | a figure; nothing to do with training |
 
+### Error messages that point at the wrong file
+
+Some crashes end deep inside `millet/`, but the cause is in our code (or in an edit you have not
+saved/undone yet). The two that come up most:
+
+| message | what it really means |
+|---|---|
+| `torch.stack(...): expected Tensor as element 0 ... but got dict` (in `millet/model/millet_model.py`) | the dataloader handed the model a list of **item dicts** instead of a list of bag tensors. `mil_collate_fn` should pass `item["bag"]`, so the dataset's `__getitem__` / any dataset wrapper you added is returning the wrong thing |
+| `KeyError: 'targets'` in `fit` | the dataloader was built without `collate_fn=mil_collate_fn` - always create it with `dataset.create_dataloader(...)`, never `DataLoader(dataset, ...)` by hand |
+
+If a crash appears out of nowhere in code that worked an hour ago, check `git status` and
+`git diff` first - an unfinished edit is the likeliest cause, and `git checkout <file>` undoes it.
+
 Every run's full console output is also saved to
 `results/SEA_NET/<model_id>/logs/<command>_<date-time>.log` (smoke runs go to `logs/smoke/`), and
 `main.py` writes the traceback into that log too - so a crash on the cluster leaves a readable

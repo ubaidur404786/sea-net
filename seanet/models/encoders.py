@@ -542,7 +542,8 @@ class MultiScaleChannels(nn.Module):
                     channels.append(self._roll_max(x, k) - self._roll_min(x, k))
         if self.add_diff_sign:
             d = torch.zeros_like(x)
-            d[:, :, 1:] = torch.sign(x[:, :, 1:] - x[:, :, :-1])   # first step has no "previous", stays 0
+            d[:, :, 1:] = torch.sign(x[:, :, 1:] - x[:, :, :-1])  # diff=current - previous  # first step has no "previous", stays 0 , check difference from previous values 
+# +1 increase / going up , -1 decrease / going down, 0 flat 
             channels.append(d)
         return torch.cat(channels, dim=1)
 
