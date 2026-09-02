@@ -34,7 +34,9 @@ Conjunctive baseline - only better):
     - "sea_classwise_conjunctive" : one attention gate PER CLASS (sharper class-specific explanations)
     - "sea_softmax_conjunctive"   : attention normalised OVER TIME (a real distribution + learnable temperature)
     - "sea_adaptive_classwise"    : per-class gate + a learnable mean<->max aggregator  <- recommended default
-    - "sea_topk_conjunctive"      : average only the top-k most-supporting timesteps per class
+    - "sea_topk_conjunctive"      : use only the top-k most-supporting timesteps per class -
+                                    either their MEAN (pooling_method: topk_mean, the default) or a
+                                    VOTE between the classes (pooling_method: voting)
     - "sea_attention_max"         : learnable per-class blend of mean-over-time and max-over-time
 
 OURS too, but the IDEA was taken from two cancer / pathology MIL papers on whole-slide images
@@ -123,9 +125,10 @@ def build_pooling(pooling_cfg, d_in: int, n_clz: int) -> nn.Module:
     # to softmax_conjunctive, and init_beta only to adaptive_classwise. Adding a knob to a new head
     # later needs no change here: just name it in the config and as a constructor argument.
     accepted = inspect.signature(pooling_cls).parameters
-    for opt in ("d_attn", "temperature", "init_beta", "top_frac", "init_lam"):
-        if opt in accepted and hasattr(pooling_cfg, opt):
-            kwargs[opt] = getattr(pooling_cfg, opt)
+    already = {"type", "dropout", "positional_encoding"}     # handled above (or not a constructor arg)
+    for opt, value in vars(pooling_cfg).items():
+        if opt not in already and opt in accepted:
+            kwargs[opt] = value
     return pooling_cls(d_in, n_clz, **kwargs)
 
 
@@ -300,7 +303,7 @@ class AdaptiveClasswisePooling(_AttnPoolingBase):
         a = self.attention_head(x)                           # (B, T, C) per-class gates
         p = self.instance_classifier(x)                      # (B, T, C)
         g = a * p                                            # (B, T, C) gated evidence
-        beta = F.softplus(self.beta_param).view(1, 1, -1)    # (1, 1, C) >= 0
+        beta = F.softplus(self.beta_param).view(1, 1, -1)    # (1, 1, C) >= 0 it wil give always positive values , just add the dim  here view(1, 1, -1) so then it will be eay to multiply because the original was beta.shape=(2,) and g.shape=(2, 100, 2) so we need to add the dim to beta to be able to multiply it with g
         w = torch.softmax(beta * g, dim=1)                   # (B, T, C) soft-argmax weights over time
         bag_logits = (w * g).sum(dim=1)                      # (B, C): mean<->max controlled by beta
         return {
@@ -313,23 +316,70 @@ class AdaptiveClasswisePooling(_AttnPoolingBase):
 
 class TopKConjunctivePooling(_AttnPoolingBase):
     """
-    Classwise Conjunctive, but the whole-series logit averages ONLY the top-k most-supporting
-    timesteps per class (instead of all T of them).
+    Classwise Conjunctive, but the whole-series logit is built from only the k most-supporting
+    timesteps instead of all T of them. Two ways of building it, chosen by "pooling_method".
 
         a_j^k = sigmoid( (W_A z_j)_k )        # per-class gate
-        p_j^k = classifier(z_j)_k
+        p_j^k = classifier(z_j)_k             # per-time-point class logit
         g_j^k = a_j^k * p_j^k                 # gated evidence per timestep
-        Y^k   = mean of the k LARGEST g_j^k over time j   ,   k = ceil(top_frac * T)  (>= 1)
+        k     = ceil(top_frac * T)   (>= 1)   # how many timesteps are kept
 
-    Why: on long series most timesteps are just background. Averaging over ALL of them dilutes a few
-    strong evidence points. Keeping only the top-k concentrates the decision on the points that matter,
-    which suits spike-like evidence AND should raise AOPCR (deleting the key points now really hurts the
-    score). top_frac = 1.0 recovers ordinary classwise Conjunctive, so it only ever adds capacity.
+    pooling_method = "topk_mean"   (the DEFAULT - this is the original behaviour)
+        Y^k = mean of the k LARGEST g_j^k over time j, chosen SEPARATELY for each class.
+        Why: on long series most timesteps are background. Averaging over all of them dilutes a few
+        strong evidence points. top_frac = 1.0 recovers ordinary classwise Conjunctive.
+
+    pooling_method = "voting"   (the supervisor's idea)
+        1. Score every timestep by its strongest class, s_j = max_k g_j^k, and keep the k best.
+           The k timesteps are now SHARED by all classes - voting only makes sense if every class is
+           judged at the same time points (per-class top-k would compare different points).
+        2. Each kept timestep casts ONE vote, split over the classes by a softmax of its own
+           evidence:  v_j = softmax(g_j / vote_temperature).  A small temperature makes the vote
+           nearly "all of it to the winner"; vote_hard=True makes it exactly that (see below).
+        3. Add the votes up   ->  n^k = sum_j v_j^k     (this is the [15, 10, 5] vector),
+           and divide by how many timesteps actually voted  ->  share^k = n^k / n_kept.
+        4. Y^k = log(share^k).
+
+        WHY log AND NOT softmax. The training loss is nn.CrossEntropyLoss, which applies its own
+        log-softmax to whatever we return. So "bag_logits" must be RAW LOGITS, never probabilities.
+        The vote share already IS a probability vector (it sums to 1), so the logits that reproduce
+        it exactly are its logarithm: softmax(log share) == share. Feeding the counts straight in
+        would instead make CrossEntropy compute softmax(counts), a different, exponentially
+        distorted distribution - and its scale would depend on k, i.e. on the length of the series.
+        Dividing by n_kept (not by a fixed k) is what keeps a 100-step and a 1000-step series
+        comparable. "vote_scale" is one learned number that lets the model sharpen or flatten that
+        distribution, because a pure vote share can never be more confident than "all k agree".
+
+    vote_hard = True  -> straight-through voting. The FORWARD pass casts a real hard vote (one whole
+        vote to the arg-max class, exactly the supervisor's description); the BACKWARD pass uses the
+        soft vote's gradient. A plain arg-max has zero gradient everywhere, so a plain hard vote
+        would train nothing at all - the encoder would never receive a signal. The straight-through
+        trick is the standard, honest fix; see guide/15_voting_pooling.md for the trade-off.
+
+    confidence_threshold (default 0.0 = OFF, i.e. exactly the old behaviour)
+        A timestep whose best two classes are almost tied carries no class-specific evidence. We
+        measure that tie on the per-timestep class PROBABILITIES, q_j = softmax over classes of g_j,
+        so the margin  q_top1 - q_top2  always lives in [0, 1] and the same threshold means the same
+        thing on every model and every dataset. (The raw margin on g is a difference of unnormalised
+        logits - it has no fixed scale, so a number like 0.002 would mean nothing there.)
+        Timesteps under the threshold are dropped: for "voting" they are pushed out of the
+        selection AND silenced if they still get picked; for "topk_mean" they are removed from the
+        average. If the threshold wipes out EVERY kept timestep of a series, we fall back to keeping
+        them all for that series - otherwise the average would be 0/0 = NaN and the run would die.
     """
 
+    POOLING_METHODS = ("topk_mean", "voting")
+
     def __init__(self, d_in: int, n_clz: int, d_attn: int = 8, dropout: float = 0.1,
-                 apply_positional_encoding: bool = True, top_frac: float = 0.1):
+                 apply_positional_encoding: bool = True, top_frac: float = 0.1,
+                 pooling_method: str = "topk_mean", confidence_threshold: float = 0.0,
+                 vote_temperature: float = 1.0, vote_hard: bool = False):
         super().__init__(d_in, n_clz, dropout=dropout, apply_positional_encoding=apply_positional_encoding)
+        if pooling_method not in self.POOLING_METHODS:
+            raise ValueError(f"Unknown pooling_method {pooling_method!r}. "
+                             f"Options: {self.POOLING_METHODS}")
+        if vote_temperature <= 0:
+            raise ValueError(f"vote_temperature must be > 0 (got {vote_temperature}).")
         self.attention_head = nn.Sequential(
             nn.Linear(d_in, d_attn),
             nn.Tanh(),
@@ -338,6 +388,75 @@ class TopKConjunctivePooling(_AttnPoolingBase):
         )
         self.instance_classifier = nn.Linear(d_in, n_clz)
         self.top_frac = float(top_frac)                      # fraction of timesteps to keep (0<..<=1)
+        self.pooling_method = str(pooling_method)
+        self.confidence_threshold = float(confidence_threshold)
+        self.vote_temperature = float(vote_temperature)
+        self.vote_hard = bool(vote_hard)
+        if self.pooling_method == "voting":
+            # ONE extra number: logits = softplus(param) * log(vote share). softplus(0.5413) = 1,
+            # so training starts exactly at "the logits ARE the log vote share".
+            self.vote_scale = nn.Parameter(torch.tensor(0.5413))
+        # the last batch's vote counts, kept so a figure can show the [15, 10, 5] vector
+        self.last_vote_counts = None
+
+    # ------------------------------------------------------------------ small helpers
+    def _confident_mask(self, g: torch.Tensor) -> torch.Tensor:
+        """
+        1.0 where a timestep clearly prefers ONE class, 0.0 where its top two classes are near-tied.
+
+        g : (B, T, C) gated evidence.
+        returns : (B, T, 1) float mask. With confidence_threshold = 0 it is all ones, because the
+                  margin can never be negative - so the whole feature switches itself off.
+        """
+        if self.confidence_threshold <= 0.0 or g.shape[-1] < 2:
+            return torch.ones_like(g[..., :1])
+        q = torch.softmax(g, dim=-1)                         # over CLASSES -> a scale-free score
+        top2 = torch.topk(q, k=2, dim=-1).values             # (B, T, 2) best and second best
+        margin = top2[..., 0] - top2[..., 1]                 # (B, T) in [0, 1]
+        return (margin >= self.confidence_threshold).to(g.dtype).unsqueeze(-1)
+
+    @staticmethod
+    def _never_empty(w: torch.Tensor) -> torch.Tensor:
+        """
+        Guard against a column that the threshold emptied completely.
+
+        w : (B, k, C) or (B, k, 1) weights of 1 (keep) and 0 (drop).
+        returns : the same weights, except that any column summing to 0 is put back to all ones.
+                  That is what stops a 0/0 = NaN loss when every kept timestep was ambiguous.
+        """
+        total = w.sum(dim=1, keepdim=True)                   # (B, 1, C)
+        return torch.where(total > 0, w, torch.ones_like(w))
+
+    # ------------------------------------------------------------------ the two aggregations
+    def _topk_mean(self, g: torch.Tensor, k: int, keep: torch.Tensor) -> torch.Tensor:
+        """The original head: mean of the k largest g values, chosen per class. keep = (B, T, 1)."""
+        top_vals, top_idx = torch.topk(g, k=k, dim=1)        # (B, k, C) values and their positions
+        if self.confidence_threshold <= 0.0:
+            return top_vals.mean(dim=1)                      # (B, C) - exactly the old formula
+        # drop the ambiguous ones from the average: gather the mask at the positions we selected
+        w = self._never_empty(keep.expand_as(g).gather(1, top_idx))    # (B, k, C)
+        return (top_vals * w).sum(dim=1) / w.sum(dim=1)      # weighted mean over the survivors
+
+    def _voting(self, g: torch.Tensor, k: int, keep: torch.Tensor) -> torch.Tensor:
+        """Every kept timestep casts one vote; the bag logits are the log of the vote share."""
+        C = g.shape[2]
+        score = g.max(dim=2).values                          # (B, T) strength of this point's best class
+        if self.confidence_threshold > 0.0:                  # ambiguous points go to the back of the queue
+            score = score.masked_fill(keep.squeeze(-1) == 0, float("-inf"))
+        idx = torch.topk(score, k=k, dim=1).indices          # (B, k) ONE shared set of timesteps
+        g_top = g.gather(1, idx.unsqueeze(-1).expand(-1, -1, C))       # (B, k, C)
+        w = self._never_empty(keep.gather(1, idx.unsqueeze(-1)))       # (B, k, 1) may this point vote?
+
+        votes = torch.softmax(g_top / self.vote_temperature, dim=-1)   # (B, k, C), 1 vote per point
+        if self.vote_hard:
+            # forward = a real hard vote, backward = the soft vote's gradient (straight-through).
+            hard = F.one_hot(votes.argmax(dim=-1), num_classes=C).to(votes.dtype)
+            votes = hard.detach() - votes.detach() + votes
+        counts = (votes * w).sum(dim=1)                      # (B, C) the [15, 10, 5] vector
+        self.last_vote_counts = counts.detach()              # kept so a figure can show it
+        share = counts / w.sum(dim=1).clamp_min(1.0)         # (B, C) sums to 1 -> a probability
+        # log turns that probability back into logits, which is what CrossEntropyLoss expects.
+        return F.softplus(self.vote_scale) * torch.log(share.clamp_min(1e-8))
 
     def forward(self, instance_embeddings: torch.Tensor, pos=None) -> Dict[str, torch.Tensor]:
         x = self._prepare(instance_embeddings, pos)          # (B, T, d)
@@ -346,8 +465,12 @@ class TopKConjunctivePooling(_AttnPoolingBase):
         g = a * p                                            # (B, T, C) gated evidence
         T = g.shape[1]
         k = max(1, int(math.ceil(self.top_frac * T)))        # how many top timesteps to keep (>=1)
-        topk = torch.topk(g, k=k, dim=1).values              # (B, k, C) the k largest per class over time
-        bag_logits = topk.mean(dim=1)                        # (B, C) mean of just those top-k
+        k = min(k, T)                                        # a very short series cannot give more
+        keep = self._confident_mask(g)                       # (B, T, 1) 1 = confident, 0 = ambiguous
+        if self.pooling_method == "voting":
+            bag_logits = self._voting(g, k, keep)
+        else:
+            bag_logits = self._topk_mean(g, k, keep)
         return {
             "bag_logits": bag_logits,
             "interpretation": g.transpose(1, 2),             # (B, C, T) class-specific importance
@@ -519,7 +642,7 @@ class DualStreamConjunctivePooling(_AttnPoolingBase):
         m = g.argmax(dim=1)                                  # (B, C) index of the critical timestep per class
         # pick the query at each class's critical timestep. one-hot over time, then matrix-multiply:
         onehot = F.one_hot(m, num_classes=T).to(q.dtype)     # (B, C, T) a 1 at the critical timestep
-        q_crit = torch.bmm(onehot, q)                        # (B, C, dq) = the critical query for each class
+        q_crit = torch.bmm(onehot, q)                        # (B, C, dq) = the critical query for each class,batch matrix multiplication
         # similarity of every timestep's query to the critical query, per class (dot product over dq):
         sim = (q.unsqueeze(2) * q_crit.unsqueeze(1)).sum(dim=-1)   # (B, T, C)  <q_j, q_{m_k}>
         U = torch.softmax(sim, dim=1)                        # (B, T, C) attention OVER TIME (sums to 1)

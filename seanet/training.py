@@ -294,7 +294,11 @@ def make_model(n_clz: int, device: torch.device, lambda_entropy: float = LAMBDA_
     else:
         net = build_model_from_config(model_cfg, n_clz, n_in=n_in)   # config-driven path
         name = getattr(model_cfg, "name", "model")
-    return SeaNetModel(name, device, n_clz, net, lambda_entropy=lambda_entropy)
+    model = SeaNetModel(name, device, n_clz, net, lambda_entropy=lambda_entropy)
+    # keep the config that built this network. seanet/deployment.py saves it next to the weights,
+    # which is what makes a trained model rebuildable months later on another machine.
+    model.model_cfg = model_cfg
+    return model
 
 
 # --------------------------------------------------------------------------------------
@@ -464,6 +468,7 @@ def train_one(
     log_model_weights: bool = True,
     pred_dir: Optional[str] = None,
     history_dir: Optional[str] = None,
+    deploy_dir: Optional[str] = None,
 ) -> Dict:
     """
     Train a model on one dataset and score it on the test set. This is the single path used for
@@ -496,6 +501,7 @@ def train_one(
     log_model_weights : also save the trained network's weights as an artifact.
     pred_dir : if given, save the per-series test probabilities there.
     history_dir : if given, save the per-epoch history CSV + curve figures there.
+    deploy_dir : if given, save the complete deployment bundle there (weights + config + ONNX).
     returns : one flat results-row dict (metrics + footprint + metadata).
     """
     from seanet.evaluation import score_model                    # imported here to avoid a cycle
@@ -523,7 +529,7 @@ def train_one(
                       train_time_s, verbose=verbose, mlf=mlf, mlf_params=mlf_params,
                       mlf_tags=mlf_tags, logged_model_name=logged_model_name,
                       log_model_weights=log_model_weights, pred_dir=pred_dir,
-                      history_dir=history_dir)
+                      history_dir=history_dir, deploy_dir=deploy_dir)
     del model                                                    # free the model
     if device.type == "cuda":                                    # free GPU memory before the next dataset
         torch.cuda.empty_cache()

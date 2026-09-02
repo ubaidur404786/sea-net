@@ -78,16 +78,24 @@ scripts/telegram_secrets.sh
 /optuna*.db
 
 # Raw per-series probability arrays (~30 MB). Only scripts/ensemble_vote.py
-# reads them, and its OUTPUT (results/SEA_NET/ensemble_vote.csv) is committed,
-# so the arrays themselves are not worth the space.
-results/SEA_NET/*/predictions/
+# reads them, and its OUTPUT (ensemble_vote.csv) is committed, so the arrays
+# themselves are not worth the space. The ** covers both results roots
+# (results/old_results/SEA_NET/... and results/top_results/SEA_NET/...).
+results/**/predictions/
 
 # Smoke-test output. `--smoke` runs are throwaway 3-epoch pipeline checks.
 # Real training output IS committed, so a run's record travels with the repo.
-/results/SEA_NET/*/logs/smoke/
-/results/SEA_NET/*/interpretation/*/smoke/
-/results/SEA_NET/logs/smoke/
+results/**/logs/smoke/
+results/**/interpretation/*/smoke/
 /results/_selftest/
+
+# TorchScript and ONNX exports inside a deploy/ bundle. They are REGENERATED from
+# the committed <stem>.pt (weights + config) by seanet/deployment.py, so keeping
+# them out saves ~3 MB per model without losing anything. The .pt, _config.yaml
+# and _meta.json ARE committed - those are what make a model rebuildable.
+# Delete these two lines if you want the ONNX files to travel with the repo.
+results/**/deploy/*_traced.pt
+results/**/deploy/*.onnx
 
 # Raw Grid5000 job dumps: the console output of a job (one was 23 MB) that
 # nothing reads back - the numbers are already in results.csv. logs/ is
@@ -112,12 +120,13 @@ core.*
 # WHAT IS DELIBERATELY *NOT* IGNORED
 # =============================================================================
 # Do not add these - they are the point of the repo:
-#   results/SEA_NET/*/results.csv         the numbers themselves
-#   results/SEA_NET/*/history/            per-epoch train/val loss + accuracy, and the curves
-#   results/SEA_NET/*/summary.*           the per-model headline
-#   results/SEA_NET/*/comparison_vs_millet.csv
-#   results/SEA_NET/leaderboard.csv, model_comparison.csv, profile.csv, data_summary.csv
-#   results/analysis/                     the comparison figures + tables (PNG/CSV/MD, ~11 MB)
+#   results/*/SEA_NET/*/results.csv       the numbers themselves
+#   results/*/SEA_NET/*/history/          per-epoch train/val loss + accuracy, and the curves
+#   results/*/SEA_NET/*/summary.*         the per-model headline
+#   results/*/SEA_NET/*/comparison_vs_millet.csv
+#   results/*/SEA_NET/*/deploy/*.pt       weights + the config that built them (the ESP32 bundle)
+#   results/*/SEA_NET/leaderboard.csv, model_comparison.csv, profile.csv, data_summary.csv
+#   results/*/analysis/                   the comparison figures + tables (PNG/CSV/MD, ~11 MB)
 #   results/UCR/, results/WebTraffic/     the MILLET paper's PUBLISHED numbers - never regenerate
 #   configs/                              every experiment definition
 #   guide/                                the documentation
@@ -130,3 +139,4 @@ core.*
 CLAUDE.md
 PROJECT_STATE.md
 workflow.md
+changes.md

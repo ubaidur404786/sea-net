@@ -20,7 +20,7 @@
         "single",
         "Coffee",
         "--model",
-        "seanet_bottleneck_topk",
+        "seanet_gated_last_topk",
         "--smoke"
       ],
 

@@ -1,0 +1,11 @@
+# top/top_spiketrend_topk.yaml - BEST ALL-ROUNDER of the dual-branch encoders.
+#
+# Why it is on the short list: 0.950 acc / 2.316 AOPCR / 0.756 NDCG. The encoder splits the signal
+# into a smooth trend branch and a high-pass spike branch, which is the closest thing we have to a
+# model that handles both kinds of class evidence. It is the biggest of the five (67,020 params),
+# so keep it for accuracy work rather than for the microcontroller.
+#
+# Run it:  python main.py webtraffic --model top/top_spiketrend_topk
+
+extends: seanet/seanet_spiketrend_topk
+name: top_spiketrend_topk

@@ -31,7 +31,8 @@ How to run
     python scripts/profile_models.py --length 500 --batch 32 --classes 5     # change the dummy input
     python scripts/profile_models.py --models seanet/seanet seanet/seanet_slim     # only these
 
-Writes results/SEA_NET/profile.csv, which the paper figures read for the efficiency panels.
+Writes <results root>/profile.csv (results/top_results/SEA_NET/ by default), which the analysis
+figures read for the efficiency panels.
 """
 import argparse
 import glob

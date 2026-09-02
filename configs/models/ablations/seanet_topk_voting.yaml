@@ -1,0 +1,26 @@
+# ablations/seanet_topk_voting.yaml - VOTING instead of the top-k mean (SOFT votes).
+#
+# The idea (from the supervisor): take the k best timesteps, and let each one VOTE for the class it
+# supports most. With k = ceil(0.1 * 1008) = 101 points on WebTraffic and 3 classes, the vote vector
+# might come out as [60, 30, 11] and the prediction is the class with the most votes.
+#
+# What "soft" means here: a hard arg-max vote has ZERO gradient, so a model built on it would never
+# learn anything. Instead each timestep splits its single vote over the classes with a softmax of
+# its own evidence (temperature below). The counts still add up to k, so it is still a vote - it is
+# just a vote that can be differentiated. See guide/15_voting_pooling.md.
+#
+# The bag logits are log(vote share), because nn.CrossEntropyLoss wants RAW LOGITS and applies its
+# own softmax. log(share) is the one function with softmax(log share) == share, so the loss sees
+# exactly the vote proportion and nothing is distorted.
+#
+# Baseline to beat: seanet/seanet_bottleneck_topk = 0.938 acc, 2.7784 AOPCR, 0.7768 NDCG.
+#
+# Run it:  python main.py webtraffic --model ablations/seanet_topk_voting
+
+extends: seanet/seanet_bottleneck_topk
+name: seanet_topk_voting
+
+pooling:
+  pooling_method: voting    # topk_mean (default) | voting
+  vote_temperature: 0.5     # < 1 makes each vote sharper (closer to "all of it to the winner")
+  vote_hard: false          # soft votes: the honest differentiable version

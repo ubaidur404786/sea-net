@@ -25,7 +25,7 @@ use_params: default
 encoder:
   type: sea_multiscale_channels
   windows: [3, 7, 15, 31]   # rolling window sizes, all ODD so they stay centred on their timestep
-  stats: [max, min, std]    # the NON-linear ones (a conv cannot compute these itself)
+  stats: [mean, max, min, std]    # the NON-linear ones (a conv cannot compute these itself)
   add_diff_sign: true       # one more channel: sign(x[t] - x[t-1]) -> -1 down / 0 flat / +1 up
   norm_channels: true       # FIX after run 1: BatchNorm the channels before the encoder sees them.
                             # The raw series is z-normalised but the built ones are not - a rolling max

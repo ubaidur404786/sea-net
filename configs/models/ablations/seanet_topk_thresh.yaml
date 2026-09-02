@@ -1,0 +1,27 @@
+# ablations/seanet_topk_thresh.yaml - drop AMBIGUOUS timesteps before pooling.
+#
+# The idea: if at one timestep the best class and the second-best class score almost the same, that
+# timestep is not really evidence for anybody. Measure the gap, and if it is smaller than the
+# threshold, take that timestep out of the top-k average.
+#
+# IMPORTANT - what the number means. The gap is measured on the per-timestep class PROBABILITIES,
+# q = softmax over classes of the gated evidence g, so the margin (q_top1 - q_top2) always sits in
+# [0, 1]. It has to be done this way: g is an unnormalised logit, so a raw margin of "0.002" would
+# mean something completely different in a well-trained model than in a fresh one, and something
+# different again on another dataset. On the probability scale the same number always means the
+# same thing.
+#
+# 0.002 is a very small gap (a near-perfect tie), so it will only remove a few points. Sweep it:
+# 0.002 -> 0.01 -> 0.05 -> 0.10 and watch accuracy AND AOPCR. If nothing moves, the threshold is
+# too small to matter; if accuracy drops a lot, it is throwing away real evidence.
+#
+# Safety: if the threshold removes EVERY selected timestep of a series, the head falls back to
+# using all of them for that series, so the loss can never become NaN.
+#
+# Run it:  python main.py webtraffic --model ablations/seanet_topk_thresh
+
+extends: seanet/seanet_bottleneck_topk
+name: seanet_topk_thresh
+
+pooling:
+  confidence_threshold: 0.002   # 0.0 = off (the default everywhere else)

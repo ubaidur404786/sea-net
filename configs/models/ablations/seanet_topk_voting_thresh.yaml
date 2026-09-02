@@ -1,0 +1,20 @@
+# ablations/seanet_topk_voting_thresh.yaml - voting AND the ambiguity threshold together.
+#
+# This is the full version of the supervisor's idea: pick the k best timesteps, throw away the ones
+# that cannot decide between their top two classes, and let the rest vote. The vote share is then
+# divided by how many timesteps ACTUALLY voted, not by k - otherwise removing points would silently
+# make the model less confident instead of more.
+#
+# Only run this after seanet_topk_voting and seanet_topk_thresh, so you can tell which of the two
+# changes is responsible for whatever happens.
+#
+# Run it:  python main.py webtraffic --model ablations/seanet_topk_voting_thresh
+
+extends: seanet/seanet_bottleneck_topk
+name: seanet_topk_voting_thresh
+
+pooling:
+  pooling_method: voting
+  vote_temperature: 0.5
+  vote_hard: false
+  confidence_threshold: 0.002

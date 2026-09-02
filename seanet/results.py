@@ -15,7 +15,7 @@ A model's folder is named "<config file name>__<encoder>__<pooling>", e.g.
 so two configs that build the same encoder+pooling never share a folder. Everything a model produces
 lives in its own folder, so two models can never mix their numbers up:
 
-    results/SEA_NET/
+    results/top_results/SEA_NET/
       data_summary.csv           <- shared: facts about the DATA, not about any model
       model_comparison.csv       <- shared: the cross-model ranking (written by compare_models)
       figures/                   <- shared: the cross-model figure
@@ -28,6 +28,7 @@ lives in its own folder, so two models can never mix their numbers up:
         summary.csv / summary.md         <- the headline means (over the 85, and overall)
         history/<dataset>__seed<N>.csv   <- per-epoch train/val loss + accuracy, and its 2 curves
         predictions/<dataset>__seed<N>.npz  <- per-series test probabilities (for ensembling)
+        deploy/<dataset>__seed<N>.*      <- the complete model: weights + config + ONNX
         logs/<command>_<date-time>.log   <- one log per run of THIS model
         figures/                         <- this model's comparison figures
         interpretation/                  <- this model's per-sample explanation figures
@@ -74,7 +75,10 @@ from seanet.data import UCR_128_DATASETS, WEB_TRAFFIC, read_our_csv
 # --------------------------------------------------------------------------------------
 # 1. Paths - everything is keyed by the model id ("<config>__<encoder>__<pooling>")
 # --------------------------------------------------------------------------------------
-RESULTS_ROOT = os.path.join("results", "SEA_NET")     # everything SEA-Net writes lives under here
+# Where new results go. configs/main.yaml (output.results_dir) normally overrides this through
+# set_results_root(); the default matches it so a script that forgets to call it still writes to the
+# live folder and not into the archive (results/old_results/).
+RESULTS_ROOT = os.path.join("results", "top_results", "SEA_NET")
 
 
 def set_results_root(path: str) -> str:
@@ -118,7 +122,7 @@ SHARED_LOGS_DIR = os.path.join(RESULTS_ROOT, "logs")                        # lo
 
 
 def model_dir(model_id: str) -> str:
-    """The one folder that holds everything for a model, e.g. results/SEA_NET/seanet__sea_mstcn_sep__mil_additive."""
+    """The one folder that holds everything for a model, e.g. results/top_results/SEA_NET/seanet__sea_mstcn_sep__mil_additive."""
     return os.path.join(RESULTS_ROOT, model_id)
 
 
@@ -175,6 +179,22 @@ def history_dir(model_id: str) -> str:
     encoder/pooling, so every figure says exactly which experiment produced it.
     """
     return os.path.join(model_dir(model_id), "history")
+
+
+def deploy_dir(model_id: str) -> str:
+    """
+    Where that model's DEPLOYMENT BUNDLES are saved (one per dataset per seed).
+
+        <model_id>/deploy/WebTraffic__seed0.pt          weights + the config that built them
+        <model_id>/deploy/WebTraffic__seed0_config.yaml the same config, readable
+        <model_id>/deploy/WebTraffic__seed0_meta.json   input shape, preprocessing, metrics
+        <model_id>/deploy/WebTraffic__seed0_traced.pt   TorchScript
+        <model_id>/deploy/WebTraffic__seed0.onnx        ONNX (the road to the ESP32)
+
+    results.csv only keeps numbers, and you cannot put an accuracy on a microcontroller. This is the
+    folder that lets us rebuild the EXACT trained model later. See seanet/deployment.py.
+    """
+    return os.path.join(model_dir(model_id), "deploy")
 
 
 def logs_dir(model_id: str) -> str:
@@ -642,7 +662,7 @@ def discover_models() -> List[str]:
     """
     List the models that have results, so they can be compared.
 
-    A model is "there" if results/SEA_NET/<model_id>/results.csv exists. The shared folders
+    A model is "there" if results/top_results/SEA_NET/<model_id>/results.csv exists. The shared folders
     (figures/, logs/) have no results.csv, so they are skipped automatically.
 
     returns : a sorted list of model ids (empty if nothing has been swept yet).
@@ -664,7 +684,7 @@ def compare_models(models: Optional[List[str]] = None, out: str = MODEL_COMPARIS
     comparison_vs_millet.csv), so the per-model and cross-model numbers can never disagree.
 
     models : which models to include (default: every model with a results folder).
-    out : where to write the table (default: results/SEA_NET/model_comparison.csv).
+    out : where to write the table (default: results/top_results/SEA_NET/model_comparison.csv).
     verbose : if True, print the ranking.
     returns : the cross-model DataFrame (also saved to `out`), best mean accuracy first.
     """
@@ -922,7 +942,7 @@ def build_leaderboard(models: Optional[List[str]] = None, out: str = LEADERBOARD
     to screen. Empty cells are the honest answer.
 
     models : which models to include (default: every model that has a results.csv).
-    out : where to write the table (default: results/SEA_NET/leaderboard.csv).
+    out : where to write the table (default: results/top_results/SEA_NET/leaderboard.csv).
     refresh : True = recompute each model's UCR comparison first (slower, always correct).
               False = reuse the model_comparison.csv already on disk (fast, for a quick re-look).
     verbose : print the table after writing it.

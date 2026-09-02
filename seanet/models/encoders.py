@@ -452,6 +452,10 @@ class MSTCNSepReconEncoder(nn.Module):
 # trained. So those channels are real new information. (This is the same trick that made MultiRocket
 # work: add cheap non-linear summaries instead of more layers.)
 #
+# "mean" and "range" are available too (KNOWN_STATS below). A rolling MEAN is linear, so it is the
+# weakest of the five - keep it only if an experiment says it helps. A rolling RANGE (max - min) is
+# non-linear and free, because max and min are already computed.
+#
 # Cost: only the STEM gets wider (Conv1d(1, d, 7) -> Conv1d(C, d, 7)). With d=64 and C=13 that is
 # about +5k parameters and almost no extra compute. It is by far the cheapest thing we can try.
 # --------------------------------------------------------------------------------------
@@ -484,16 +488,20 @@ class MultiScaleChannels(nn.Module):
         """
         super().__init__()
         for k in windows:
-            if k % 2 == 0:
-                raise ValueError(f"window {k} must be ODD so it stays centred on its timestep.")
+            if k % 2 == 0 or k < 1:
+                raise ValueError(f"window {k} must be an ODD positive number so it stays centred "
+                                 f"on its timestep.")
+        # keep the order the config gave, but drop repeats - asking for "max" twice would only
+        # build two identical channels and waste parameters in the stem.
+        kept, seen = [], set()
         for s in stats:
             if s not in self.KNOWN_STATS:
                 raise ValueError(f"Unknown stat {s!r}. Options: {self.KNOWN_STATS}")
-
-
-                
+            if s not in seen:
+                seen.add(s)
+                kept.append(s)
         self.windows = tuple(windows)
-        self.stats = tuple(stats)
+        self.stats = tuple(kept)
         self.add_diff_sign = bool(add_diff_sign)
         # how many channels we make PER input channel: the original + every (window, stat) pair + sign
         self.n_out = 1 + len(self.windows) * len(self.stats) + (1 if self.add_diff_sign else 0)
@@ -525,21 +533,36 @@ class MultiScaleChannels(nn.Module):
         m2 = self._roll_mean(x * x, k)
         return torch.sqrt(torch.clamp(m2 - m * m, min=1e-8))
 
+    def _window_channels(self, x: torch.Tensor, k: int) -> list:
+        """
+        Every statistic we were asked for, inside ONE window of size k, in the config's order.
+
+        The rolling max and min are computed at most once each and then reused, because "range" is
+        just max - min. So asking for [max, min, range] costs the same as asking for [max, min].
+        """
+        need_max = ("max" in self.stats) or ("range" in self.stats)
+        need_min = ("min" in self.stats) or ("range" in self.stats)
+        roll_max = self._roll_max(x, k) if need_max else None
+        roll_min = self._roll_min(x, k) if need_min else None
+        out = []
+        for stat in self.stats:
+            if stat == "mean":
+                out.append(self._roll_mean(x, k))
+            elif stat == "max":
+                out.append(roll_max)
+            elif stat == "min":
+                out.append(roll_min)
+            elif stat == "std":
+                out.append(self._roll_std(x, k))
+            else:                                            # "range" = how far the signal swings
+                out.append(roll_max - roll_min)
+        return out
+
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         """x : (B, n_in, T) -> (B, n_in * n_out, T). The length T is unchanged."""
         channels = [x]                                       # channel 0 is always the raw series
-        for k in self.windows:
-            for stat in self.stats:
-                if stat == "mean":
-                    channels.append(self._roll_mean(x, k))
-                elif stat == "max":
-                    channels.append(self._roll_max(x, k))
-                elif stat == "min":
-                    channels.append(self._roll_min(x, k))
-                elif stat == "std":
-                    channels.append(self._roll_std(x, k))
-                else:                                        # "range" = how far the signal swings
-                    channels.append(self._roll_max(x, k) - self._roll_min(x, k))
+        for k in self.windows:                               # order stays window-major, then stat
+            channels.extend(self._window_channels(x, k))
         if self.add_diff_sign:
             d = torch.zeros_like(x)
             d[:, :, 1:] = torch.sign(x[:, :, 1:] - x[:, :, :-1])  # diff=current - previous  # first step has no "previous", stays 0 , check difference from previous values 
@@ -655,8 +678,20 @@ class MultiScalePyramid(nn.Module):
     ==============================================================================
     """
 
+    # F.interpolate looks at how many dimensions the tensor has. Ours is 3-D, (B, d, T), so only
+    # these four modes are legal. "bilinear" / "bicubic" are 2-D image modes and "trilinear" is 3-D
+    # volume - PyTorch raises on them here, so we refuse them ourselves with a clearer message.
+    #   "linear"        : straight line between the two nearest feature values (the default, smooth).
+    #   "nearest"       : copy the closest value - NO blending, so a feature is never invented.
+    #   "nearest-exact" : the same idea with the off-by-half-a-pixel bug fixed (prefer it to nearest).
+    #   "area"          : average pooling; when stretching UP it behaves like nearest.
+    KNOWN_INTERPOLATIONS = ("linear", "nearest", "nearest-exact", "area")
+    # only the "linear" family accepts align_corners; passing it to the others is a TypeError
+    ALIGN_CORNERS_MODES = ("linear",)
+
     def __init__(self, base_cfg, n_in: int = 1, scales: Tuple[int, ...] = (1, 2, 4, 8),
-                 fusion: str = "attention", d_attn: int = 8, per_scale_bn: bool = True):
+                 fusion: str = "attention", d_attn: int = 8, per_scale_bn: bool = True,
+                 interpolation: str = "linear", align_corners: bool = False):
         """
         base_cfg : the nested "base" block of the config - the encoder to run at every scale.
         n_in : input channels.
@@ -666,12 +701,22 @@ class MultiScalePyramid(nn.Module):
         per_scale_bn : give each scale its own BatchNorm. A shrunk series has different statistics
                        from the raw one, and one shared BatchNorm would be dragged to a bad middle.
                        Costs only 2*d numbers per scale, so it is nearly free.
+        interpolation : how a shrunk scale is stretched back to length T (see KNOWN_INTERPOLATIONS).
+                        "linear" is the old behaviour. "nearest" / "nearest-exact" invent nothing -
+                        they only repeat values - which is the honest choice if we do not want a
+                        made-up value sitting between two real timesteps.
+        align_corners : only used by "linear". False keeps the old behaviour.
         """
         super().__init__()
         if fusion not in ("attention", "mean", "max", "concat"):
             raise ValueError(f"Unknown fusion {fusion!r} (options: attention, mean, max, concat).")
+        if interpolation not in self.KNOWN_INTERPOLATIONS:
+            raise ValueError(f"Unknown interpolation {interpolation!r}. On a 3-D (B, d, T) tensor "
+                             f"only these work: {self.KNOWN_INTERPOLATIONS}.")
         self.scales = tuple(scales)
         self.fusion = fusion
+        self.interpolation = str(interpolation)
+        self.align_corners = bool(align_corners)
         self.base = build_encoder(base_cfg, n_in=n_in)        # ONE encoder, reused at every scale
         d = self.base.d_out
         self.d_out = d
@@ -703,7 +748,11 @@ class MultiScalePyramid(nn.Module):
             if self.norms is not None:
                 h = self.norms[i](h)
             if h.shape[-1] != length:                        # stretch back so every scale lines up
-                h = F.interpolate(h, size=length, mode="linear", align_corners=False)
+                # align_corners is only a valid argument for the "linear" family; for "nearest",
+                # "nearest-exact" and "area" PyTorch raises if we pass it at all.
+                extra = ({"align_corners": self.align_corners}
+                         if self.interpolation in self.ALIGN_CORNERS_MODES else {})
+                h = F.interpolate(h, size=length, mode=self.interpolation, **extra)
             feats.append(h)
 
         if self.fusion == "concat":
@@ -844,7 +893,8 @@ def _build_multiscale_channels(cfg, n_in: int) -> nn.Module:
         encoder:
           type: sea_multiscale_channels
           windows: [3, 7, 15, 31]
-          stats: [max, min, std]
+          stats: [mean, max, min, std, range]   # any subset of MultiScaleChannels.KNOWN_STATS,
+                                                # in any order; repeats are dropped
           add_diff_sign: true
           base:
             type: sea_mstcn_sep_bottleneck
@@ -868,6 +918,15 @@ def _build_multiscale_pyramid(cfg, n_in: int) -> nn.Module:
 
     Like the channel wrapper, the encoder being wrapped is nested under "base". `base` can itself be
     another wrapper, so "pyramid on top of channels" is just one config nested inside another.
+
+        encoder:
+          type: sea_multiscale_pyramid
+          scales: [1, 2, 4, 8]
+          fusion: attention         # attention | mean | max | concat
+          interpolation: linear     # linear | nearest | nearest-exact | area  (3-D tensors only)
+          align_corners: false      # read only when interpolation is "linear"
+          base:
+            ...
     """
     return MultiScalePyramid(
         base_cfg=cfg.base,
@@ -876,6 +935,9 @@ def _build_multiscale_pyramid(cfg, n_in: int) -> nn.Module:
         fusion=getattr(cfg, "fusion", "attention"),
         d_attn=getattr(cfg, "d_attn", 8),
         per_scale_bn=getattr(cfg, "per_scale_bn", True),
+        # how the shrunk scales are stretched back to length T. "linear" = the old behaviour.
+        interpolation=getattr(cfg, "interpolation", "linear"),
+        align_corners=getattr(cfg, "align_corners", False),   # only read when interpolation=linear
     )
 
 

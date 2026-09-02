@@ -29,7 +29,7 @@ The one thing we change vs MILLET:
     AdjustedUCRDataset). We do NOT edit the millet code to do this; we subclass it here.
 """
 import os
-from typing import Dict, List, Tuple
+from typing import Dict, List, Optional, Tuple
 
 import pandas as pd
 import torch
@@ -127,8 +127,12 @@ assert len(UCR_128_DATASETS) == 128, f"expected 128 UCR names, got {len(UCR_128_
 # dataset with per-timestep labels, so it is the only one where the NDCG@n metric is defined.
 WEB_TRAFFIC = "WebTraffic"
 
-# Where we save the per-dataset summary table.
-DATA_SUMMARY_CSV = os.path.join("results", "SEA_NET", "data_summary.csv")
+# Where we save the per-dataset summary table. It belongs to whichever results root is active
+# (configs/main.yaml -> output.results_dir), so it follows the results when they are moved.
+def data_summary_csv() -> str:
+    """The path of data_summary.csv inside the results root that is currently in use."""
+    from seanet import results as R          # imported here: results.py imports us, so not at the top
+    return os.path.join(R.RESULTS_ROOT, "data_summary.csv")
 
 
 # --------------------------------------------------------------------------------------
@@ -442,7 +446,7 @@ def summarise_dataset(name: str) -> Dict:
     }
 
 
-def write_summary_row(row: Dict, path: str = DATA_SUMMARY_CSV) -> None:
+def write_summary_row(row: Dict, path: Optional[str] = None) -> None:
     """
     Write one dataset's summary row into data_summary.csv (one row per dataset).
 
@@ -450,8 +454,9 @@ def write_summary_row(row: Dict, path: str = DATA_SUMMARY_CSV) -> None:
     of duplicating), otherwise it is added.
 
     row : a summary dict from summarise_dataset.
-    path : the csv file to write (default results/SEA_NET/data_summary.csv).
+    path : the csv file to write; None = data_summary.csv in the active results root.
     """
+    path = path or data_summary_csv()
     os.makedirs(os.path.dirname(path), exist_ok=True)
     new = pd.DataFrame([row])
     if os.path.exists(path):
@@ -463,14 +468,15 @@ def write_summary_row(row: Dict, path: str = DATA_SUMMARY_CSV) -> None:
     combined.to_csv(path, index=False)
 
 
-def summary_row_exists(name: str, path: str = DATA_SUMMARY_CSV) -> bool:
+def summary_row_exists(name: str, path: Optional[str] = None) -> bool:
     """
     Say whether data_summary.csv already has a row for this dataset (used to skip re-summarising).
 
     name : dataset name.
-    path : the csv file to check.
+    path : the csv file to check; None = data_summary.csv in the active results root.
     returns : True if a row for `name` is already present.
     """
+    path = path or data_summary_csv()
     if not os.path.exists(path):
         return False
     existing = read_our_csv(path)

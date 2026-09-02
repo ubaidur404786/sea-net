@@ -43,7 +43,7 @@ import matplotlib.pyplot as plt                              # noqa: E402
 # Where the comparison figures go. One folder per QUESTION, so you can find a figure by what it
 # answers rather than by which model produced it.
 # --------------------------------------------------------------------------------------
-ANALYSIS_ROOT = os.path.join("results", "analysis")
+ANALYSIS_ROOT = os.path.join("results", "top_results", "analysis")
 PAPER_ROOT = ANALYSIS_ROOT          # old name, kept so nothing that imports it breaks
 
 

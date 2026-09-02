@@ -276,7 +276,7 @@ def main() -> int:
                    help="model to run the paired test against (default: baselines/millet, our MILLET rerun)")
     p.add_argument("--datasets", choices=["millet85", "all"], default="millet85",
                    help="millet85 = the 85 datasets MILLET published (default); all = all 128 UCR")
-    p.add_argument("--out", default=os.path.join("results", "SEA_NET", "ensemble_vote.csv"),
+    p.add_argument("--out", default=os.path.join("results", "top_results", "SEA_NET", "ensemble_vote.csv"),
                    help="where to write the per-dataset ensemble table")
     args = p.parse_args()
 

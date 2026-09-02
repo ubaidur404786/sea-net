@@ -12,6 +12,13 @@ What this file is for:
         cfg.seed                         -> 0
         cfg.model_config.training.learning_rate   -> 0.00125
 
+    A model file may start from another one with a single line, so the "best models" folder does
+    not have to copy anything:
+
+        extends: seanet/seanet_bottleneck_topk
+
+    Everything else in the file then overrides the parent (see read_model_file).
+
     It also names the model: model_folder_name(cfg) -> "seanet__sea_mstcn_sep__mil_additive"
     (config file name + encoder + pooling). That name is the folder all of this model's results go
     in - see seanet/results.py.
@@ -141,6 +148,40 @@ def find_model_file(model_name: str) -> str:
     )
 
 
+def read_model_file(model_name: str, _seen=None) -> Dict:
+    """
+    Read one model YAML, following an optional "extends:" line.
+
+    Why this exists: the top models in configs/models/top/ are the SAME models we already tuned in
+    configs/models/seanet/. Copying those files would mean two places to fix whenever anything
+    changes. Instead a short file says which config it starts from and only lists what differs:
+
+        # configs/models/top/top_bottleneck_topk.yaml
+        extends: seanet/seanet_bottleneck_topk    <- the parent, as you would pass it to --model
+        name: top_bottleneck_topk                 <- everything below overrides the parent
+
+    The merge is the same deep merge used everywhere else (seanet/config._merge), so a child can
+    change one nested value - e.g. only pooling.pooling_method - and inherit all the rest.
+    A chain is allowed (A extends B extends C); a LOOP is refused with a clear message.
+
+    model_name : the name of the config, as passed to --model.
+    _seen : internal, the names already visited (used to spot a loop).
+    returns : the model config as a plain dict, with "extends" resolved and removed.
+    """
+    _seen = _seen or []
+    if model_name in _seen:
+        chain = " -> ".join(_seen + [model_name])
+        raise ValueError(f"'extends' goes in a circle: {chain}. A config cannot extend itself.")
+    child = _read_yaml(find_model_file(model_name))
+    parent_name = child.pop("extends", None)
+    if not parent_name:
+        return child
+    parent = read_model_file(str(parent_name), _seen=_seen + [model_name])
+    # the parent's recorded results belong to the parent's own runs, not to this new config
+    parent.pop("records", None)
+    return _merge(parent, child)
+
+
 def available_models() -> list:
     """
     List every model config in the repo, as the names you can pass to --model.
@@ -229,7 +270,7 @@ def load_config(main_path: str = os.path.join(CONFIGS_DIR, "main.yaml"),
     if not model_name:
         raise ValueError(f"No model specified in {main_path!r} and none given as an override.")
     model_path = find_model_file(model_name)             # accepts "seanet/x" or just "x"
-    model_cfg = _read_yaml(model_path)
+    model_cfg = read_model_file(model_name)              # follows "extends:" if the file has one
 
     # decide default vs Optuna-best recipe from the recorded results in the SAME file (no .best.yaml)
     model_cfg, choice = _select_params(model_cfg, use_params_override=use_params)

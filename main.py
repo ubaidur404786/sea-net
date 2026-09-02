@@ -31,8 +31,8 @@ Cheap - they only read results that already exist, so they are safe to run any t
     params                        parameter counts: SEA-Net vs the baselines
     results [--model M]           rebuild each model's comparison table vs MILLET
     leaderboard [--fast]          one table of every model, best WebTraffic accuracy first
-    analyse [--refresh]           all the comparison figures + tables -> results/analysis/
-    report                        the per-model figures -> results/SEA_NET/<model>/figures/
+    analyse [--refresh]           all the comparison figures + tables -> results/top_results/analysis/
+    report                        the per-model figures -> results/top_results/SEA_NET/<model>/figures/
     web-compare                   WebTraffic-only comparison + accuracy tiers + the winner
 
 Expensive - these really train. Add --smoke to test the flow in 3 epochs instead:
@@ -67,16 +67,16 @@ EXAMPLES
     python main.py analyse                                         rebuild every comparison figure
 
 WHERE THE OUTPUT GOES
-    results/SEA_NET/<model_id>/    one folder per model: results.csv, history/, predictions/,
+    results/top_results/SEA_NET/<model_id>/    one folder per model: results.csv, history/, predictions/,
                                    figures/, interpretation/, logs/, done_train_dataset.txt
-    results/analysis/              the cross-model comparison figures and tables + INDEX.md
+    results/top_results/analysis/              the cross-model comparison figures and tables + INDEX.md
     mlflow.db                      every run, comparable in the MLflow web page
 
     <model_id> is "<config name>__<encoder>__<pooling>", so two configs that happen to build the
     same encoder+pooling never share a folder and can never mix their numbers up.
 
 RESUMING
-    Each model has results/SEA_NET/<model_id>/done_train_dataset.txt listing what it finished.
+    Each model has results/top_results/SEA_NET/<model_id>/done_train_dataset.txt listing what it finished.
     "train" skips those. To retrain: delete the file (everything), delete one line (that dataset),
     or set run.re_train: true in configs/main.yaml.
 
@@ -106,7 +106,7 @@ from seanet import results as R
 from seanet.results import (result_exists, save_result_row, build_comparison, compare_models,
                             millet_baseline, sweep_order, summarise_model, write_summary,
                             results_csv, done_txt, interpretation_dir, model_dir,
-                            predictions_dir, history_dir, MILLET_WEBTRAFFIC_DIR)
+                            predictions_dir, history_dir, deploy_dir, MILLET_WEBTRAFFIC_DIR)
 from seanet.training import train_one_from_config, fit_model_from_config
 from seanet.utils import resolve_device, start_logging
 
@@ -164,6 +164,27 @@ def print_row(row):
 # ---------------------------------------------------------------------------
 # shared plumbing: resolve the config, decide what to skip, start MLflow, train + save
 # ---------------------------------------------------------------------------
+def _output_overrides(args):
+    """
+    Turn --results-dir / --analysis-dir into a config override.
+
+    The results were split into results/old_results/ (everything from the 72-model sweep) and
+    results/top_results/ (what we run from now on). configs/main.yaml points at top_results, so
+    these two flags are how you look at the OLD ones without editing the file:
+
+        python main.py leaderboard --results-dir results/old_results/SEA_NET
+
+    args : the parsed command-line arguments.
+    returns : a dict to merge into the config, or {} if neither flag was given.
+    """
+    out = {}
+    if getattr(args, "results_dir", None):
+        out["results_dir"] = args.results_dir
+    if getattr(args, "analysis_dir", None):
+        out["analysis_dir"] = args.analysis_dir
+    return {"output": out} if out else {}
+
+
 def _resolve_model(args):
     """
     Load the config a command will run with, and work out the model id it writes under.
@@ -182,6 +203,7 @@ def _resolve_model(args):
         overrides["model"] = args.model
     if getattr(args, "seed", None) is not None:
         overrides["seed"] = int(args.seed)                   # --seed beats main.yaml's seed
+    overrides.update(_output_overrides(args))                # --results-dir / --analysis-dir
     cfg = load_config(config_path, overrides=overrides or None, env=getattr(args, "env", None))
     _apply_output_paths(cfg)                                 # honour output.results_dir / analysis_dir
     return cfg, model_folder_name(cfg)
@@ -263,6 +285,32 @@ def _start_mlflow(cfg, model_id, smoke):
     return mlf, log_weights
 
 
+def _deploy_dir_for(cfg, model_id, dataset, smoke):
+    """
+    Decide whether this run should also save a full deployment bundle, and where.
+
+    configs/main.yaml -> output.save_deploy says when:
+        "webtraffic" (default) : only for WebTraffic. That is the dataset we would put on an ESP32,
+                                 and it keeps a 129-dataset UCR sweep from writing 129 copies of the
+                                 weights (~200 MB) that nobody will ever deploy.
+        "always"               : every dataset.
+        "never"                : switch the feature off.
+    Smoke runs never save one - a 3-epoch model is not something to deploy.
+
+    cfg : the loaded config.  model_id : the model folder id.  dataset : the dataset name.
+    smoke : True = a throwaway check.
+    returns : the folder to write the bundle into, or None.
+    """
+    if smoke:
+        return None
+    when = str(getattr(getattr(cfg, "output", None), "save_deploy", "webtraffic")).lower()
+    if when == "never":
+        return None
+    if when == "always" or dataset == "WebTraffic":
+        return deploy_dir(model_id)
+    return None
+
+
 def _train_and_save(name, cfg, model_id, device, smoke, command, mlf, log_weights, verbose=True):
     """
     Train one dataset through the config path, stamp the row with its encoder/pooling, and save it.
@@ -290,6 +338,9 @@ def _train_and_save(name, cfg, model_id, device, smoke, command, mlf, log_weight
         # (fit() already builds it) and it is the only way to see the training behaviour after the
         # results have been copied off the training machine.
         history_dir=None if smoke else history_dir(model_id),
+        # keep the WHOLE model (weights + the config that built them + ONNX), not only its score,
+        # so a good model can be rebuilt and put on a device later. See seanet/deployment.py.
+        deploy_dir=_deploy_dir_for(cfg, model_id, name, smoke),
     )
     # the two things that define this model, written into every row so results.csv is self-describing
     row["encoder"] = cfg.model_config.encoder.type
@@ -363,7 +414,7 @@ def cmd_summary(args):
         print("=== summary rows ===")
         for name in [D.WEB_TRAFFIC, "Coffee"]:
             summarise_and_print(name)
-    print(f"\ndata_summary.csv -> {D.DATA_SUMMARY_CSV}")
+    print(f"\ndata_summary.csv -> {D.data_summary_csv()}")
 
 
 def cmd_params(args):
@@ -576,7 +627,7 @@ def cmd_interpret(args):
     each of the first few classes, using a test series the model predicted CORRECTLY.
 
     The figures go into this model's own folder:
-        results/SEA_NET/<model_id>/interpretation/<dataset>/<date-time>/
+        results/top_results/SEA_NET/<model_id>/interpretation/<dataset>/<date-time>/
 
     args : parsed arguments (args.config, args.model, args.dataset, args.smoke).
     returns : nothing.
@@ -656,7 +707,7 @@ def cmd_results(args):
 
     With --model it reports that one model: its comparison_vs_millet.csv plus the means over the 85
     datasets MILLET published. Without --model it does that for EVERY model that has results and
-    also writes the cross-model ranking, results/SEA_NET/model_comparison.csv - the "which
+    also writes the cross-model ranking, results/top_results/SEA_NET/model_comparison.csv - the "which
     encoder+pooling wins" table.
 
     args : parsed arguments (args.model, args.config).
@@ -689,7 +740,7 @@ def cmd_leaderboard(args):
     empty means "not run yet", never zero.
 
     It rebuilds from each model's own results.csv every time, so a new model shows up by itself and a
-    re-trained model's numbers replace themselves. Writes results/SEA_NET/leaderboard.csv.
+    re-trained model's numbers replace themselves. Writes results/top_results/SEA_NET/leaderboard.csv.
 
     args : parsed arguments (args.fast).
     returns : nothing.
@@ -703,7 +754,7 @@ def cmd_analyse(args):
     "analyse" command: build every CROSS-MODEL comparison figure and table.
 
     This is where the questions the project exists to answer get answered, from the results that
-    are already saved (nothing is retrained). It writes results/analysis/:
+    are already saved (nothing is retrained). It writes results/top_results/analysis/:
 
       01_leaderboard/  who is strongest overall, in non-overlapping accuracy bands
       02_ablation/     what each ENCODER and each POOLING head contributes (the full grid)
@@ -728,7 +779,7 @@ def cmd_report(args):
     "report" command: build the PER-MODEL figures (one model against the MILLET baseline).
 
     Use "analyse" to compare models with each other; use this to look at one model in detail.
-    Every figure goes under results/SEA_NET/<model_id>/figures/.
+    Every figure goes under results/top_results/SEA_NET/<model_id>/figures/.
 
     args : parsed arguments (unused).
     returns : nothing.
@@ -770,6 +821,7 @@ def _add_model_flags(p, with_dataset=False):
     returns : nothing.
     """
     p.add_argument("--config", default=os.path.join("configs", "main.yaml"), help="path to main.yaml")
+    _add_output_flags(p)
     p.add_argument("--model", help="model config under configs/models/ without .yaml. The folder is "
                                    "optional: 'seanet_bottleneck_topk' or 'seanet/seanet_bottleneck_topk'. "
                                    "List them with `python main.py models`.")
@@ -781,6 +833,22 @@ def _add_model_flags(p, with_dataset=False):
                                             "Results are stored per seed, so --seed 1 adds a repeat "
                                             "instead of overwriting seed 0.")
     p.add_argument("--smoke", action="store_true", help="quick check (3 epochs), not saved")
+
+
+def _add_output_flags(p) -> None:
+    """
+    Add --results-dir / --analysis-dir, which override configs/main.yaml's output paths.
+
+    They exist because the results are split in two: results/old_results/ holds the finished
+    72-model sweep and results/top_results/ is where new runs go. main.yaml points at top_results,
+    so these flags are the quick way to read the archive without editing any file.
+
+    p : the sub-parser to add them to.
+    returns : nothing.
+    """
+    p.add_argument("--results-dir", help="override output.results_dir "
+                                         "(e.g. results/old_results/SEA_NET to read the archive)")
+    p.add_argument("--analysis-dir", help="override output.analysis_dir")
 
 
 def main():
@@ -800,6 +868,7 @@ def main():
     p = sub.add_parser("summary", help="data summary (one dataset, --all, or the demo)")
     p.add_argument("dataset", nargs="?", help="dataset name (omit for the WebTraffic+Coffee demo)")
     p.add_argument("--all", action="store_true", help="summarise WebTraffic + all 128 UCR")
+    _add_output_flags(p)
     p.set_defaults(func=cmd_summary)
 
     p = sub.add_parser("params", help="SEA-Net vs baseline parameter counts")
@@ -809,26 +878,31 @@ def main():
     p.add_argument("--config", default=os.path.join("configs", "main.yaml"), help="path to main.yaml")
     p.add_argument("--env", help="environment config (local | grid5000)")
     p.add_argument("--model", help="report only this model config (default: every model with results)")
+    _add_output_flags(p)
     p.set_defaults(func=cmd_results)
 
     p = sub.add_parser("leaderboard", help="one table of every model ranked by WebTraffic accuracy "
                                            "(UCR columns empty for models only screened)")
     p.add_argument("--fast", action="store_true",
                    help="reuse model_comparison.csv instead of recomputing every model's UCR comparison")
+    _add_output_flags(p)
     p.set_defaults(func=cmd_leaderboard)
 
     p = sub.add_parser("analyse", help="all the cross-model comparison figures + tables "
-                                       "-> results/analysis/")
+                                       "-> results/top_results/analysis/")
     p.add_argument("--refresh", action="store_true",
                    help="recompute the leaderboard first (slower; default reuses the saved one)")
+    _add_output_flags(p)
     p.set_defaults(func=cmd_analyse)
 
     p = sub.add_parser("report", help="the per-model figures (one model vs MILLET) "
-                                      "-> results/SEA_NET/<model>/figures/")
+                                      "-> results/top_results/SEA_NET/<model>/figures/")
+    _add_output_flags(p)
     p.set_defaults(func=cmd_report)
 
     p = sub.add_parser("web-compare", help="WebTraffic comparison of all models vs MILLET: "
                                            "table + accuracy-tier figures + winner")
+    _add_output_flags(p)
     p.set_defaults(func=cmd_webcompare)
 
     # --- expensive commands: these train --------------------------------------------------
@@ -865,8 +939,8 @@ def main():
     args = parser.parse_args()
 
     # Model-specific commands resolve their config FIRST, so their log file can be written inside
-    # that model's own folder (results/SEA_NET/<model_id>/logs/). Everything else logs to the
-    # shared results/SEA_NET/logs/ folder.
+    # that model's own folder (results/top_results/SEA_NET/<model_id>/logs/). Everything else logs to the
+    # shared results/top_results/SEA_NET/logs/ folder.
     model_id = None
     if args.command in MODEL_COMMANDS:
         args._cfg, args._model_id = _resolve_model(args)
@@ -876,6 +950,7 @@ def main():
         try:
             _apply_output_paths(load_config(getattr(args, "config", None)
                                             or os.path.join("configs", "main.yaml"),
+                                            overrides=_output_overrides(args) or None,
                                             env=getattr(args, "env", None)))
         except Exception as e:                               # a broken config must not hide the real command
             print(f"[config] could not read the output paths ({type(e).__name__}: {e}) - using the defaults")

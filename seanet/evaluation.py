@@ -91,7 +91,8 @@ def score_model(model, name: str, train_ds, val_ds, test_ds, device: torch.devic
                 lambda_entropy: float, train_time_s: float, verbose: bool = False,
                 mlf=None, mlf_params: Optional[Dict] = None, mlf_tags: Optional[Dict] = None,
                 logged_model_name: Optional[str] = None, log_model_weights: bool = True,
-                pred_dir: Optional[str] = None, history_dir: Optional[str] = None) -> Dict:
+                pred_dir: Optional[str] = None, history_dir: Optional[str] = None,
+                deploy_dir: Optional[str] = None) -> Dict:
     """
     Score a trained model on the test set, pack the results into one flat row, and (optionally)
     record the whole run in MLflow so every model can be compared later.
@@ -110,6 +111,8 @@ def score_model(model, name: str, train_ds, val_ds, test_ds, device: torch.devic
     log_model_weights : also save the trained network's weights as an artifact.
     pred_dir : if given, save the per-series test probabilities there (for ensembling later).
     history_dir : if given, save the per-epoch training history + its curve figures there.
+    deploy_dir : if given, save the complete deployment bundle there - the weights AND the config
+                 that built them, plus TorchScript/ONNX. See seanet/deployment.py.
     returns : one flat results-row dict (same shape written to results.csv).
     """
     from seanet.training import save_history                     # imported here to avoid a cycle
@@ -155,6 +158,23 @@ def score_model(model, name: str, train_ds, val_ds, test_ds, device: torch.devic
         "best_epoch": int(getattr(model, "best_epoch", 0)),
         "overfit_gap": _overfit_gap(model),
     }
+
+    if deploy_dir:                                               # keep the whole model, not just
+        try:                                                     # its score, so it can be deployed
+            from seanet.deployment import save_bundle
+            path = save_bundle(
+                model, name, seed, deploy_dir,
+                model_cfg=getattr(model, "model_cfg", None),
+                model_id=os.path.basename(os.path.dirname(deploy_dir)),
+                metrics={k: row[k] for k in ("test_acc", "test_loss", "test_aopcr", "test_ndcg",
+                                             "params", "model_size_mb") if k in row},
+                series_length=row["series_length"], n_in=1,
+            )
+            if verbose:
+                print(f"    deployment bundle -> {path}", flush=True)
+        except Exception as e:                                   # never fail a run over a side file
+            print(f"    (could not save the deployment bundle for {name}: "
+                  f"{type(e).__name__}: {e})", flush=True)
 
     # Record this run in MLflow (if it is switched on). Wrapped in try/except so a logging problem
     # can never fail a training run - especially important during the long 129-dataset sweep.

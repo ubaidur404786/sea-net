@@ -20,6 +20,8 @@ time; after that, jump straight to the one you need.
 | 12 | [Grid5000](12_grid5000.md) | running on the cluster (Lille / Sophia) |
 | 13 | [Debugging](13_debugging.md) | something broke, or you want breakpoints in VS Code |
 | 14 | [Git](14_git.md) | branches and the commit workflow used here |
+| 15 | [Voting pooling + the threshold](15_voting_pooling.md) | the new `voting` head and `confidence_threshold` |
+| 16 | [The deployment bundle](16_deployment_bundle.md) | saving a model so it can go on an ESP32 |
 
 ---
 
@@ -46,7 +48,8 @@ SEA_NET/
 │   └── models/
 │       ├── baselines/          MILLET and the classic baselines
 │       ├── seanet/             our encoder x pooling combinations
-│       └── ablations/          one-knob-at-a-time studies
+│       ├── ablations/          one-knob-at-a-time studies
+│       └── top/                the SHORT LIST we keep - thin files that `extends:` the ones above
 │
 ├── seanet/                  OUR code, one module per job
 │   ├── config.py               load + merge the config layers
@@ -58,6 +61,7 @@ SEA_NET/
 │   │   └── build.py            wire encoder + pooling into one network
 │   ├── training.py             the one training loop (+ the per-epoch history)
 │   ├── evaluation.py           score a trained model -> one results row
+│   ├── deployment.py           save/load a complete model (weights + config + ONNX)
 │   ├── metrics.py              accuracy / balanced accuracy / AUROC / loss / AOPCR / NDCG
 │   ├── results.py              save rows, resume a sweep, build the leaderboard
 │   ├── interpretability.py     per-sample explanation figures
@@ -69,7 +73,10 @@ SEA_NET/
 ├── millet/                  the MILLET BASELINE, upstream code kept unchanged
 ├── scripts/                 stand-alone utilities (profiling, ensembling, Grid5000 launchers)
 ├── data/                    the datasets (not in git - see guide 02)
-├── results/                 all outputs (see guide 05)
+├── results/                 all outputs (see guide 05 and results/README.md)
+│   ├── old_results/            ARCHIVE - the finished 72-model sweep, never written to again
+│   ├── top_results/            LIVE - where every new run writes
+│   └── UCR/, WebTraffic/       NOT ours: MILLET's PUBLISHED numbers, read as inputs
 ├── guide/                   you are here
 └── requirements.txt
 ```

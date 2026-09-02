@@ -1,0 +1,13 @@
+# top/top_bottleneck_topk.yaml - THE ESP32 CANDIDATE.
+#
+# Why it is on the short list: the smallest model we have (41,324 parameters, 1.43 MB of weights,
+# 11x fewer FLOPs than MILLET) and the only one we ran over 3 seeds. On WebTraffic it beats the
+# re-trained MILLET on accuracy (0.931 +- 0.040 vs 0.887 +- 0.010) and on NDCG@n
+# (0.765 +- 0.015 vs 0.677 +- 0.016), with AOPCR a tie.
+#
+# This is the model the deployment bundle is really for - keep its deploy/ folder.
+#
+# Run it:  python main.py webtraffic --model top/top_bottleneck_topk
+
+extends: seanet/seanet_bottleneck_topk
+name: top_bottleneck_topk

@@ -8,7 +8,7 @@ What this file is for:
     the figures and the tables can never disagree.
 
 What it draws:
-    Per model, into results/SEA_NET/<model_id>/figures/:
+    Per model, into results/top_results/SEA_NET/<model_id>/figures/:
       - results.png       : the model on its own (accuracy / loss / AOPCR spread, accuracy vs length)
       - acc_scatter.png   : our accuracy vs MILLET's, one point per dataset (above the line = we win)
       - loss_scatter.png  : our loss vs MILLET's                          (BELOW the line = we win)
@@ -17,7 +17,7 @@ What it draws:
       - means.png         : our mean vs MILLET's mean for all three metrics, side by side
       - acc_diff.png      : the per-dataset accuracy gap, sorted (green = we win)
 
-    Once, into results/SEA_NET/figures/:
+    Once, into results/top_results/SEA_NET/figures/:
       - model_comparison.png : every model's mean accuracy / loss / AOPCR next to MILLET's
       - webtraffic_acc/aopcr/ndcg.png : every model on WebTraffic (one metric per figure)
       - webtraffic_tier_ge95/94/.../90.png : the PAPER figures - models grouped by accuracy tier
@@ -29,14 +29,14 @@ What it draws:
     fair one-to-one comparison exists.
 
 Input:
-    The CSVs under results/SEA_NET/ (data_summary.csv + each model's results).
+    The CSVs under results/top_results/SEA_NET/ (data_summary.csv + each model's results).
 Output:
     PNG figures + each model's summary table (written via seanet.results.write_summary).
 
 Related files:
     - seanet/results.py -> load_results / build_comparison / summarise_model / compare_models (the
       data this module plots) and all the per-model paths.
-    - seanet/data.py    -> read_our_csv() (tolerant CSV reader) and DATA_SUMMARY_CSV.
+    - seanet/data.py    -> read_our_csv() (tolerant CSV reader) and data_summary_csv().
     - main.py ("report" command) -> calls generate_report().
     - main.py ("report") -> the command that calls generate_report().
 """
@@ -157,9 +157,10 @@ def _save(fig, path: str) -> str:
 
 def load_data_summary() -> pd.DataFrame:
     """Load data_summary.csv (facts about the datasets), or an empty frame if it is not there yet."""
-    if not os.path.exists(D.DATA_SUMMARY_CSV):
+    summary_csv = D.data_summary_csv()
+    if not os.path.exists(summary_csv):
         return pd.DataFrame()
-    return _to_num(D.read_our_csv(D.DATA_SUMMARY_CSV),
+    return _to_num(D.read_our_csv(summary_csv),
                    ["n_train", "n_test", "series_length", "n_classes", "imbalance_ratio"])
 
 
@@ -289,7 +290,7 @@ def plot_acc_diff(overlap: pd.DataFrame, model_id: str, figdir: str) -> str:
 
 def plot_model_figures(model_id: str, verbose: bool = True) -> List[str]:
     """
-    Draw every figure for ONE model, into results/SEA_NET/<model_id>/figures/.
+    Draw every figure for ONE model, into results/top_results/SEA_NET/<model_id>/figures/.
 
     model_id : the model to draw, e.g. "seanet__sea_mstcn_sep__mil_additive".
     verbose : print what was written.
@@ -473,7 +474,7 @@ def plot_webtraffic_comparison(figdir: str = SHARED_FIGURES_DIR) -> List[str]:
     Draw the WebTraffic comparison as THREE separate figures - accuracy, AOPCR and NDCG - so each one is
     full-size and easy to read in detail (instead of one cramped 3-in-1 panel).
 
-    Files: webtraffic_acc.png, webtraffic_aopcr.png, webtraffic_ndcg.png (all under results/SEA_NET/
+    Files: webtraffic_acc.png, webtraffic_aopcr.png, webtraffic_ndcg.png (all under results/top_results/SEA_NET/
     figures/). Everything is rebuilt from whatever has finished, so new models appear automatically. The
     short m1/m2 codes are shared across the three figures, so m3 means the same model in all of them.
     """

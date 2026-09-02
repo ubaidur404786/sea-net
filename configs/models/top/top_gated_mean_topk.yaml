@@ -1,0 +1,10 @@
+# top/top_gated_mean_topk.yaml - BEST ACCURACY of the 72 models we trained.
+#
+# Why it is on the short list: rank 1 on WebTraffic (0.9547 acc) with only 61,740 parameters, and
+# its AOPCR (2.225) is still far above MILLET's re-trained number. The "mean" summary gate is what
+# separates it from top_gated_max_topk.
+#
+# Run it:  python main.py webtraffic --model top/top_gated_mean_topk
+
+extends: seanet/seanet_gated_mean_topk
+name: top_gated_mean_topk

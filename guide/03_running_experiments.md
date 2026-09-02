@@ -95,7 +95,7 @@ validation pass was needed for early stopping anyway.
 
 ## Resuming a sweep
 
-Each model has `results/SEA_NET/<model_id>/done_train_dataset.txt` - a plain list of what it
+Each model has `results/top_results/SEA_NET/<model_id>/done_train_dataset.txt` - a plain list of what it
 finished. `train` skips anything in it, so Ctrl+C and restart is always safe.
 
 To retrain:
@@ -119,9 +119,9 @@ Everything that decides an outcome is written down:
 | encoder + pooling + every hyperparameter | the model YAML, and the `encoder`/`pooling` columns of `results.csv` |
 | the device and environment | the `device` column, and the `env` / `host` tags in MLflow |
 | the exact resolved config | printed in full by `python main.py run`, and logged to MLflow as params |
-| the training curve | `results/SEA_NET/<model_id>/history/<dataset>__seed<N>.csv` |
-| the per-series predictions | `results/SEA_NET/<model_id>/predictions/<dataset>__seed<N>.npz` |
-| the console output | `results/SEA_NET/<model_id>/logs/<command>_<date-time>.log` |
+| the training curve | `results/top_results/SEA_NET/<model_id>/history/<dataset>__seed<N>.csv` |
+| the per-series predictions | `results/top_results/SEA_NET/<model_id>/predictions/<dataset>__seed<N>.npz` |
+| the console output | `results/top_results/SEA_NET/<model_id>/logs/<command>_<date-time>.log` |
 
 So to repeat a row of `results.csv`:
 
@@ -150,10 +150,10 @@ Each seed adds its own row. `results.py` averages them (`mean_over_seeds`), and
 ```bash
 python main.py leaderboard                # one row per model
 python scripts/profile_models.py          # FLOPs / latency / memory (once)
-python main.py analyse                    # every comparison figure + table -> results/analysis/
+python main.py analyse                    # every comparison figure + table -> results/top_results/analysis/
 ```
 
-Read `results/analysis/INDEX.md` - it lists every figure and the question it answers.
+Read `results/top_results/analysis/INDEX.md` - it lists every figure and the question it answers.
 
 ---
 

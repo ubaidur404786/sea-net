@@ -44,7 +44,7 @@ def leaderboard(refresh: bool = False) -> pd.DataFrame:
     One row per model: WebTraffic metrics, UCR means, params, size, origin.
 
     refresh : True recomputes it from every model's results.csv (slower, always right);
-              False reuses results/SEA_NET/leaderboard.csv if it exists.
+              False reuses results/top_results/SEA_NET/leaderboard.csv if it exists.
     """
     if not refresh and os.path.exists(R.LEADERBOARD_CSV):
         df = read_our_csv(R.LEADERBOARD_CSV)

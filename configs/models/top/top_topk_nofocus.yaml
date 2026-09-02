@@ -1,0 +1,11 @@
+# top/top_topk_nofocus.yaml - BEST NDCG@n, same tiny encoder as top_bottleneck_topk.
+#
+# Why it is on the short list: identical to top_bottleneck_topk except that the attention focus
+# penalty is off (lambda_entropy = 0). It scored 0.950 acc / 2.303 AOPCR / 0.765 NDCG - the best
+# NDCG@n in the whole sweep - at exactly the same 41,324 parameters. So it is the second ESP32
+# candidate, and the pair (with/without the penalty) is a controlled comparison.
+#
+# Run it:  python main.py webtraffic --model top/top_topk_nofocus
+
+extends: ablations/seanet_topk_nofocus
+name: top_topk_nofocus

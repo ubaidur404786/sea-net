@@ -1,0 +1,10 @@
+# top/top_inputgate_topk.yaml - BEST AOPCR in the top ten.
+#
+# Why it is on the short list: AOPCR 2.803 at 0.946 accuracy and 58,092 parameters. The gate is
+# built straight from the raw input (a small Conv1d), so the per-timestep importance stays sharp -
+# which is exactly what AOPCR measures.
+#
+# Run it:  python main.py webtraffic --model top/top_inputgate_topk
+
+extends: seanet/seanet_inputgate_topk
+name: top_inputgate_topk

@@ -1,0 +1,21 @@
+# ablations/seanet_topk_voting_hard.yaml - STRICT voting (one whole vote to the winner).
+#
+# Same as ablations/seanet_topk_voting, but the forward pass casts a REAL hard vote: at each of the
+# k selected timesteps the winning class gets 1 and the others get 0, giving exactly the [15, 10, 5]
+# vector the supervisor described.
+#
+# The catch, stated openly: arg-max has no gradient. To train at all we use the standard
+# straight-through estimator - the forward pass is hard, the backward pass borrows the soft vote's
+# gradient. That means the gradient the encoder receives does NOT match the function the forward
+# pass computed. It usually still works, but it is a biased gradient, so treat this config as the
+# experiment that tests how much strictness costs, and compare it against seanet_topk_voting.
+#
+# Run it:  python main.py webtraffic --model ablations/seanet_topk_voting_hard
+
+extends: seanet/seanet_bottleneck_topk
+name: seanet_topk_voting_hard
+
+pooling:
+  pooling_method: voting
+  vote_temperature: 0.5     # only used by the backward pass now
+  vote_hard: true           # forward = a real 1/0 vote (straight-through backward)

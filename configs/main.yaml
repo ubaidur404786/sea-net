@@ -69,9 +69,20 @@ seed: 0
 # ---------------------------------------------------------------------------------------
 # Every model gets its OWN folder under results_dir, named "<config>__<encoder>__<pooling>",
 # so two models can never mix their numbers up. See seanet/results.py for the layout.
+# results/ is split in two (see results/README.md):
+#   results/old_results/  the finished 72-model sweep - kept, never written to again
+#   results/top_results/  everything from now on
+# Read the archive without editing this file:
+#   python main.py leaderboard --results-dir results/old_results/SEA_NET
 output:
-  results_dir: results/SEA_NET
-  analysis_dir: results/analysis # the cross-model comparison figures and tables
+  results_dir: results/top_results/SEA_NET
+  analysis_dir: results/top_results/analysis # the cross-model comparison figures and tables
+
+  # WHEN to also save a full deployment bundle (weights + config + ONNX, see seanet/deployment.py):
+  #   webtraffic : only for WebTraffic - the dataset we would actually put on an ESP32. (default)
+  #   always     : every dataset. Careful: a 129-dataset UCR sweep then writes ~200 MB of weights.
+  #   never      : off.
+  save_deploy: webtraffic
 
 # ---------------------------------------------------------------------------------------
 # INTERPRETABILITY FIGURES  (python main.py interpret)
