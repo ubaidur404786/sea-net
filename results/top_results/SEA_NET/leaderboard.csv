@@ -1,6 +1,6 @@
-rank, model                                                                    , config                   , encoder                 , pooling             , origin, web_acc, web_loss, web_aopcr, web_ndcg, params, size_mb, ucr85_n, ucr_all_n
-   1, top_bottleneck_topk__sea_mstcn_sep_bottleneck__sea_topk_conjunctive      , top_bottleneck_topk      , sea_mstcn_sep_bottleneck, sea_topk_conjunctive, ours  ,   0.942,   0.2943,    2.951 ,   0.7863,  41324,   1.428,       0,         0
-   2, seanet_topk_thresh__sea_mstcn_sep_bottleneck__sea_topk_conjunctive       , seanet_topk_thresh       , sea_mstcn_sep_bottleneck, sea_topk_conjunctive, ours  ,   0.93 ,   0.3296,    2.6035,   0.7443,  41324,   1.428,       0,         0
-   3, seanet_topk_voting_thresh__sea_mstcn_sep_bottleneck__sea_topk_conjunctive, seanet_topk_voting_thresh, sea_mstcn_sep_bottleneck, sea_topk_conjunctive, ours  ,   0.886,   0.4682,    2.1952,   0.6037,  41325,   1.428,       0,         0
-   4, seanet_topk_voting__sea_mstcn_sep_bottleneck__sea_topk_conjunctive       , seanet_topk_voting       , sea_mstcn_sep_bottleneck, sea_topk_conjunctive, ours  ,   0.87 ,   0.5163,    2.2122,   0.6009,  41325,   1.428,       0,         0
-   5, seanet_topk_voting_hard__sea_mstcn_sep_bottleneck__sea_topk_conjunctive  , seanet_topk_voting_hard  , sea_mstcn_sep_bottleneck, sea_topk_conjunctive, ours  ,   0.672,   1.173 ,    1.7702,   0.6974,  41325,   1.428,       0,         0
+rank,model,config,encoder,pooling,origin,web_acc,web_loss,web_aopcr,web_ndcg,params,size_mb,ucr85_n,ucr_all_n
+1,top_bottleneck_topk__sea_mstcn_sep_bottleneck__sea_topk_conjunctive,top_bottleneck_topk,sea_mstcn_sep_bottleneck,sea_topk_conjunctive,ours,0.942,0.2943,2.951,0.7863,41324,1.428,0,0
+2,seanet_topk_thresh__sea_mstcn_sep_bottleneck__sea_topk_conjunctive,seanet_topk_thresh,sea_mstcn_sep_bottleneck,sea_topk_conjunctive,ours,0.93,0.3296,2.6035,0.7443,41324,1.428,0,0
+3,seanet_topk_voting_thresh__sea_mstcn_sep_bottleneck__sea_topk_voting,seanet_topk_voting_thresh,sea_mstcn_sep_bottleneck,sea_topk_voting,ours,0.886,0.4682,2.1952,0.6037,41325,1.428,0,0
+4,seanet_topk_voting__sea_mstcn_sep_bottleneck__sea_topk_voting,seanet_topk_voting,sea_mstcn_sep_bottleneck,sea_topk_voting,ours,0.87,0.5163,2.2122,0.6009,41325,1.428,0,0
+5,seanet_topk_voting_hard__sea_mstcn_sep_bottleneck__sea_topk_voting,seanet_topk_voting_hard,sea_mstcn_sep_bottleneck,sea_topk_voting,ours,0.672,1.173,1.7702,0.6974,41325,1.428,0,0

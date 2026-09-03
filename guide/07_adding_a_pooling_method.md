@@ -172,6 +172,15 @@ Ours (`sea_`), each fixing one weak point of Conjunctive pooling:
 
 Each is a strict generalisation of Conjunctive, so a well-trained model can only match or beat it.
 
+One head is deliberately **not** in that list, because it is not a generalisation of anything:
+
+| head | what it does differently |
+|---|---|
+| `sea_topk_voting` | the top-k timesteps **vote** for a class instead of having their evidence averaged. It throws the magnitude away on purpose, so it can do worse than Conjunctive — and on WebTraffic it does. Kept as a tested experiment; see [15 Voting pooling](15_voting_pooling.md). |
+
+It is a separate class from `sea_topk_conjunctive` on purpose: an experiment must never be able to
+change the behaviour of the model we actually ship.
+
 ---
 
 Next: [08 - Adding a dataset](08_adding_a_dataset.md)

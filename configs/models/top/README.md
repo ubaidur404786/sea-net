@@ -15,7 +15,7 @@ name: top_bottleneck_topk                # everything below this line overrides 
 ```
 
 The loader (`seanet/config.read_model_file`) deep-merges the parent and the child, so a top config
-can change one nested value — say only `pooling.pooling_method` — and inherit all the rest. If the
+can change one nested value — say only `pooling.top_frac` — and inherit all the rest. If the
 parent is ever re-tuned, every top model that extends it follows automatically. A chain
 (A extends B extends C) works; a loop is refused with a clear message.
 

@@ -1,2 +1,2 @@
 dataset,model,encoder,pooling,seed,device,params,model_size_mb,n_train,n_val,n_test,series_length,n_classes,lambda_entropy,test_acc,test_bal_acc,test_auroc,test_loss,test_aopcr,test_ndcg,train_time_s,epochs_run,best_epoch,overfit_gap,run_datetime
-WebTraffic,seanet_topk_voting_thresh,sea_mstcn_sep_bottleneck,sea_topk_conjunctive,0,cuda,41325,1.4281,400,100,500,1008,10,0.01,0.886,0.886,0.9871,0.4682,2.1952,0.6037,70.91,247,187,0.3212,2026-09-03 02:45:44
+WebTraffic,seanet_topk_voting_thresh,sea_mstcn_sep_bottleneck,sea_topk_voting,0,cuda,41325,1.4281,400,100,500,1008,10,0.01,0.886,0.886,0.9871,0.4682,2.1952,0.6037,70.91,247,187,0.3212,2026-09-03 02:45:44

@@ -1,8 +1,8 @@
-# seanet_topk_voting_hard__sea_mstcn_sep_bottleneck__sea_topk_conjunctive - results summary
+# seanet_topk_voting_hard__sea_mstcn_sep_bottleneck__sea_topk_voting - results summary
 
 | metric | value |
 |---|---|
-| model | seanet_topk_voting_hard__sea_mstcn_sep_bottleneck__sea_topk_conjunctive |
+| model | seanet_topk_voting_hard__sea_mstcn_sep_bottleneck__sea_topk_voting |
 | millet85_datasets | 0 |
 | overall_ucr_datasets | 0 |
 | webtraffic_acc | 0.672 |

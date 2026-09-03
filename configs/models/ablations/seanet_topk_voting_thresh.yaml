@@ -1,12 +1,20 @@
-# ablations/seanet_topk_voting_thresh.yaml - voting AND the ambiguity threshold together.
+# ablations/seanet_topk_voting_thresh.yaml - voting, with ambiguous timesteps silenced.
 #
-# This is the full version of the supervisor's idea: pick the k best timesteps, throw away the ones
-# that cannot decide between their top two classes, and let the rest vote. The vote share is then
-# divided by how many timesteps ACTUALLY voted, not by k - otherwise removing points would silently
-# make the model less confident instead of more.
+# On top of ablations/seanet_topk_voting: if at one timestep the best class and the second-best class
+# score almost the same, that timestep is not really evidence for anybody, so it is not allowed to
+# vote. The vote share is then divided by how many timesteps ACTUALLY voted, not by k - otherwise
+# removing voters would quietly make the model less confident instead of more.
 #
-# Only run this after seanet_topk_voting and seanet_topk_thresh, so you can tell which of the two
-# changes is responsible for whatever happens.
+# WHAT THE NUMBER MEANS. The gap is measured on the per-timestep class PROBABILITIES (softmax over
+# classes of the gated evidence), so it always sits in [0, 1] and 0.002 means "the best two classes
+# are within 0.2 percentage points". On the raw evidence scale the same number would mean something
+# different in every model, because that scale is an unnormalised logit.
+#
+# Sweep it: 0.002 -> 0.01 -> 0.05 -> 0.10, watching accuracy AND AOPCR. If nothing moves it is too
+# small to matter; if accuracy falls it is throwing away real evidence.
+#
+# Safety: if the threshold silences EVERY chosen timestep of a series, the head lets them all vote
+# again for that series, so the loss can never become NaN.
 #
 # Run it:  python main.py webtraffic --model ablations/seanet_topk_voting_thresh
 
@@ -14,7 +22,7 @@ extends: seanet/seanet_bottleneck_topk
 name: seanet_topk_voting_thresh
 
 pooling:
-  pooling_method: voting
-  vote_temperature: 0.5
-  vote_hard: false
-  confidence_threshold: 0.002
+  type: sea_topk_voting
+  temperature: 0.5
+  hard: false
+  confidence_threshold: 0.002   # 0.0 = off

@@ -9,10 +9,10 @@ looks at the shapes and the gradients. On a laptop it takes about a minute.
 What it checks, in order:
     1. MultiScaleChannels  - all five statistics, correct values, bad input refused
     2. MultiScalePyramid   - all four legal 1-D interpolation modes, image-only modes refused
-    3. TopKConjunctivePooling
-         a. the default (topk_mean, threshold 0) is BYTE-IDENTICAL to the old formula
-         b. voting: shapes, finite logits, real gradients, the vote counts add up
-         c. the threshold never produces a NaN, even when it removes everything
+    3a. TopKConjunctivePooling - still the plain top-k mean, untouched by the voting work
+    3b. TopKVotingPooling - the SEPARATE voting head: shapes, finite logits, real gradients,
+        the vote counts add up, and the threshold never produces a NaN even when it silences
+        every chosen timestep
     4. every model config in configs/models/ still builds, runs and trains a step
     5. the deployment bundle saves and reloads to bit-identical outputs
 
@@ -37,7 +37,8 @@ from seanet.deployment import load_bundle, save_bundle                        # 
 from seanet.models.build import build_model_from_config, num_params           # noqa: E402
 from seanet.models.encoders import (ENCODER_REGISTRY, MultiScaleChannels,     # noqa: E402
                                     MultiScalePyramid, build_encoder)
-from seanet.models.pooling import TopKConjunctivePooling, build_pooling       # noqa: E402
+from seanet.models.pooling import (TopKConjunctivePooling, TopKVotingPooling,  # noqa: E402
+                                   build_pooling)
 from seanet.training import make_model                                        # noqa: E402
 
 FAILURES = []
@@ -107,7 +108,7 @@ for bad in ("bilinear", "bicubic", "trilinear"):
 
 
 # ======================================================================================
-section("3. TopKConjunctivePooling - topk_mean, voting, threshold")
+section("3a. TopKConjunctivePooling - the plain top-k mean (must be untouched)")
 # ======================================================================================
 torch.manual_seed(0)
 B, T, d, C = 4, 100, 16, 3
@@ -115,35 +116,45 @@ z = torch.randn(B, d, T)
 y = torch.randint(0, C, (B,))
 ce = nn.CrossEntropyLoss(label_smoothing=0.13)
 
-# 3a. the default must not have changed at all
+# the top-k head must be the plain mean of the k largest values - nothing else
 head = TopKConjunctivePooling(d, C, d_attn=8, dropout=0.0).eval()
 with torch.no_grad():
     xp = head._prepare(z, None)
     g = head.attention_head(xp) * head.instance_classifier(xp)
-    old_formula = torch.topk(g, k=math.ceil(0.1 * T), dim=1).values.mean(dim=1)
-    new_code = head(z)["bag_logits"]
-check("default topk_mean is byte-identical to the old formula",
-      float((old_formula - new_code).abs().max()) == 0.0)
+    plain_formula = torch.topk(g, k=math.ceil(0.1 * T), dim=1).values.mean(dim=1)
+    from_head = head(z)["bag_logits"]
+check("bag_logits == mean of the k largest gated values",
+      float((plain_formula - from_head).abs().max()) == 0.0)
+check("it has NO voting settings on it",
+      not any(hasattr(head, n) for n in
+              ("pooling_method", "confidence_threshold", "vote_temperature", "vote_hard", "scale")),
+      "(voting lives in TopKVotingPooling)")
+check("it has exactly the parameters it always had",
+      sum(pr.numel() for pr in head.parameters()) == 214)
 
-# 3b + 3c. every option: shapes, finite logits, real gradients
+h = TopKConjunctivePooling(d, C)
+out = h(z); loss = ce(out["bag_logits"], y); loss.backward()
+check("forward + backward still fine",
+      out["bag_logits"].shape == (B, C) and out["interpretation"].shape == (B, C, T)
+      and torch.isfinite(loss), f"loss={float(loss):.4f}")
+
+
+section("3b. TopKVotingPooling - the separate voting head")
 cases = {
-    "topk_mean (default)": {},
-    "topk_mean + threshold 0.002": dict(confidence_threshold=0.002),
-    "topk_mean + threshold 0.9 (extreme)": dict(confidence_threshold=0.9),
-    "voting (soft)": dict(pooling_method="voting"),
-    "voting, tau=0.1": dict(pooling_method="voting", vote_temperature=0.1),
-    "voting, hard (straight-through)": dict(pooling_method="voting", vote_hard=True),
-    "voting + threshold 0.002": dict(pooling_method="voting", confidence_threshold=0.002),
-    "voting + threshold 0.999 (removes all)": dict(pooling_method="voting",
-                                                   confidence_threshold=0.999),
-    "voting, top_frac=1.0": dict(pooling_method="voting", top_frac=1.0),
+    "voting (soft, default)": {},
+    "voting, temperature=0.1": dict(temperature=0.1),
+    "voting, hard (straight-through)": dict(hard=True),
+    "voting + threshold 0.002": dict(confidence_threshold=0.002),
+    "voting hard + threshold 0.002": dict(hard=True, confidence_threshold=0.002),
+    "voting + threshold 0.999 (silences all)": dict(confidence_threshold=0.999),
+    "voting, top_frac=1.0": dict(top_frac=1.0),
 }
 for label, kwargs in cases.items():
-    h = TopKConjunctivePooling(d, C, **kwargs)
+    h = TopKVotingPooling(d, C, **kwargs)
     out = h(z)
     loss = ce(out["bag_logits"], y)
     loss.backward()
-    grads = [p.grad for p in h.parameters() if p.grad is not None]
+    grads = [pr.grad for pr in h.parameters() if pr.grad is not None]
     ok = (out["bag_logits"].shape == (B, C)
           and out["interpretation"].shape == (B, C, T)
           and torch.isfinite(out["bag_logits"]).all()
@@ -152,7 +163,7 @@ for label, kwargs in cases.items():
     check(f"{label:40s}", ok, f"loss={float(loss):.4f}")
 
 # the votes really are votes
-hv = TopKConjunctivePooling(d, C, pooling_method="voting", vote_hard=True, top_frac=0.3).eval()
+hv = TopKVotingPooling(d, C, hard=True, top_frac=0.3).eval()
 with torch.no_grad():
     hv(z)
 counts = hv.last_vote_counts
@@ -160,26 +171,47 @@ check("hard votes are whole numbers summing to k",
       bool(torch.allclose(counts.sum(dim=1), torch.full((B,), 30.0)))
       and bool(torch.allclose(counts, counts.round())),
       f"first series: {[int(v) for v in counts[0]]}")
+# a SOFT vote is still exactly one vote per timestep - it may just be split between classes,
+# so the counts must still add up to the number of voters
+hsoft = TopKVotingPooling(d, C, top_frac=0.3).eval()
+with torch.no_grad():
+    hsoft(z)
+check("soft votes also sum to k (one vote each, possibly split)",
+      bool(torch.allclose(hsoft.last_vote_counts.sum(dim=1), torch.full((B,), 30.0), atol=1e-4)),
+      f"first series: {[round(float(v), 2) for v in hsoft.last_vote_counts[0]]}")
 
-# short series and few classes
-o = TopKConjunctivePooling(d, 2, pooling_method="voting", confidence_threshold=0.5)(torch.randn(2, d, 3))
+# log(share), not softmax(share): feeding the logits through softmax must give back the vote share
+hs = TopKVotingPooling(d, C, top_frac=0.3).eval()
+with torch.no_grad():
+    logits = hs(z)["bag_logits"]
+    share = hs.last_vote_counts / hs.last_vote_counts.sum(dim=1, keepdim=True)
+    check("softmax(bag_logits) reproduces the vote share (scale starts at 1)",
+          bool(torch.allclose(torch.softmax(logits, dim=1), share, atol=1e-5)))
+
+# edge cases
+o = TopKVotingPooling(d, 2, confidence_threshold=0.5)(torch.randn(2, d, 3))
 check("C=2, T=3 still works", o["bag_logits"].shape == (2, 2) and torch.isfinite(o["bag_logits"]).all())
-o = TopKConjunctivePooling(d, C, pooling_method="voting", top_frac=5.0)(torch.randn(2, d, 4))
-check("top_frac > 1 is clipped to T", o["bag_logits"].shape == (2, C)
-      and torch.isfinite(o["bag_logits"]).all())
+o = TopKVotingPooling(d, C, top_frac=5.0)(torch.randn(2, d, 4))
+check("top_frac > 1 is clipped to T",
+      o["bag_logits"].shape == (2, C) and torch.isfinite(o["bag_logits"]).all())
+try:
+    TopKVotingPooling(d, C, temperature=0.0)
+    check("temperature <= 0 is refused", False)
+except ValueError:
+    check("temperature <= 0 is refused", True)
 
 # built from a config
-cfg = SimpleNamespace(type="sea_topk_conjunctive", d_attn=8, dropout=0.2, positional_encoding=True,
-                      top_frac=0.1, pooling_method="voting", confidence_threshold=0.002,
-                      vote_temperature=0.5, vote_hard=True)
+cfg = SimpleNamespace(type="sea_topk_voting", d_attn=8, dropout=0.2, positional_encoding=True,
+                      top_frac=0.1, temperature=0.5, hard=True, confidence_threshold=0.002)
 h = build_pooling(cfg, d_in=d, n_clz=C)
-check("build_pooling passes the new keys through",
-      h.pooling_method == "voting" and h.confidence_threshold == 0.002 and h.vote_hard)
+check("build_pooling wires the voting settings up",
+      isinstance(h, TopKVotingPooling) and h.hard and h.confidence_threshold == 0.002
+      and h.temperature == 0.5)
 old_cfg = SimpleNamespace(type="sea_topk_conjunctive", d_attn=8, dropout=0.2,
                           positional_encoding=True, top_frac=0.1)
 h = build_pooling(old_cfg, d_in=d, n_clz=C)
-check("an OLD config still gets the old behaviour",
-      h.pooling_method == "topk_mean" and h.confidence_threshold == 0.0)
+check("an existing topk config still builds the plain head",
+      isinstance(h, TopKConjunctivePooling) and h.top_frac == 0.1)
 
 
 # ======================================================================================

@@ -1,10 +1,20 @@
 # 15. Voting pooling, and the ambiguity threshold
 
-This guide explains the two new options on `sea_topk_conjunctive`:
+This guide explains **`sea_topk_voting`** — a pooling head where the top-k timesteps **vote** for a
+class instead of having their evidence averaged — and its `confidence_threshold` setting, which
+stops a timestep that cannot decide between its two best classes from voting at all.
 
-* `pooling_method: voting` — the top-k timesteps **vote** instead of being averaged,
-* `confidence_threshold` — timesteps that cannot decide between their two best classes are thrown
-  out before the decision is made.
+> **It is its own head.** Voting started life as an option *inside* `sea_topk_conjunctive`. That was
+> a mistake: it put an experiment inside our best model, so a bug in the experiment could change the
+> model we actually ship. On 2026-09-03 the two were split. `sea_topk_conjunctive` is now back to
+> exactly what it always was — the plain mean of the top-k — and every voting setting lives in
+> `sea_topk_voting`. The split was checked to be numerically exact: the new head reproduces the old
+> voting code to a maximum absolute difference of **0.0**, so the results in §6 still stand.
+
+| head | what it does with the top-k timesteps |
+|---|---|
+| `sea_topk_conjunctive` | averages their gated evidence (per class). **Our best model. Untouched.** |
+| `sea_topk_voting` | lets them vote, one vote each. The experiment. |
 
 It also answers, honestly, the question that matters most: **can this thing even be trained?**
 
@@ -82,7 +92,7 @@ softmax(log share) == share
 That is what the code returns:
 
 ```python
-bag_logits = softplus(vote_scale) * log(share)
+bag_logits = softplus(self.scale) * torch.log(share)
 ```
 
 | what you might write | what CrossEntropyLoss then computes | verdict |
@@ -92,9 +102,9 @@ bag_logits = softplus(vote_scale) * log(share)
 | `counts / k` | `softmax(counts / k)` | better, but still an exponential distortion of the vote |
 | **`log(counts / n_kept)`** | **`counts / n_kept`** | **the loss sees exactly the vote share** |
 
-`vote_scale` is one learned number (starts at exactly 1.0). It is there because a pure vote share
-can never be more confident than "all k points agree", which caps how low the loss can go;
-`vote_scale` lets the model sharpen or flatten that distribution as training needs.
+`scale` is one learned number (starts at exactly 1.0). It is there because a pure vote share can
+never be more confident than "all k points agree", which would cap how low the loss can go; `scale`
+lets the model sharpen or flatten that distribution as training needs. (§6 shows it did its job.)
 
 Dividing by `n_kept` and not by a fixed `k` matters once the threshold is on — see §4.
 
@@ -138,10 +148,10 @@ The counts still sum to `n_kept`, so it is still a vote; it is just a vote that 
 differentiated. A small `vote_temperature` (0.5, 0.2, 0.1) makes it sharper — closer and closer to
 "all of it to the winner" — at the cost of smaller gradients.
 
-`vote_hard: true` gives the strict version with a **straight-through estimator**: forward pass uses
-the real 1/0 vote, backward pass borrows the soft vote's gradient. It trains, but the gradient no
-longer matches the function that was computed, so it is a *biased* gradient. Use it as an
-experiment (`ablations/seanet_topk_voting_hard.yaml`) and compare, do not assume it is better.
+`hard: true` gives the strict version with a **straight-through estimator**: forward pass uses the
+real 1/0 vote, backward pass borrows the soft vote's gradient. It trains, but the gradient no longer
+matches the function that was computed, so it is a *biased* gradient. Use it as an experiment
+(`ablations/seanet_topk_voting_hard.yaml`) and compare, do not assume it is better.
 
 **5. Could this improve accuracy?** Possibly, on data where the class evidence is spread over many
 timesteps and a few points are extreme. On WebTraffic our best models already lean on a small
@@ -152,10 +162,11 @@ config and not a change to the default.
 
 * Early training: `g` is near zero everywhere, so `softmax(g)` is nearly uniform, every point votes
   ~1/C for every class, the logits are ~`log(1/C)` for all classes, and gradients are small. Warm-up
-  may be slow. If it stalls, lower `vote_temperature`.
+  may be slow. If it stalls, lower `temperature`.
 * Ties: with `C = 3` and `k = 101`, a 34/34/33 split is a near-coin-flip prediction. Voting has a
   coarser resolution than a mean.
-* Confidence ceiling: without `vote_scale` the model could never be more sure than 100 % of votes.
+* Confidence ceiling: without `scale` the model could never be more sure than 100 % of votes.
+  (Measured in §6: this did NOT bite - the head reached 100 % training accuracy.)
 * Calibration: vote shares are not well-calibrated probabilities. AUROC should still be fine
   (it only needs the ranking), but the test *loss* may look worse than the accuracy suggests.
 * AOPCR / NDCG are computed from `interpretation`, which is still `g` — unchanged — so the
@@ -200,10 +211,14 @@ raw `g` scale. Expect them to be *small*, though: sweep upwards.
 
 ### Where it is applied
 
-| method | where | why there |
-|---|---|---|
-| `voting` | **before** selection (ambiguous points are pushed out of the top-k) **and** silenced if they still get picked | a vote from an undecided point is exactly what we want gone, and the slot is better used by a confident point |
-| `topk_mean` | **after** selection (removed from the average) | the per-class top-k is what defines this head; changing the selection would change the model, not just filter it |
+It applies **before** selection - ambiguous points are pushed to the back of the queue for the
+top-k - **and** again after, so one that still gets picked is silenced. A vote from an undecided
+point is exactly what we want gone, and the slot is better spent on a confident point.
+
+The threshold exists only on the voting head. It used to also apply to the top-k *mean*, but that
+put an experimental knob inside our best model for no strong reason: an averaged value is already
+weighted by how strong the evidence is, so a near-tied point contributes little anyway. In a vote it
+contributes a **whole vote**, which is where the idea actually earns its place.
 
 ### The empty-selection problem
 
@@ -224,8 +239,8 @@ finite and the loss stays finite.
 All four extend `seanet/seanet_bottleneck_topk`, so the *only* difference is the pooling knob.
 
 ```bash
-# the baseline these are all measured against (already trained: 0.938 acc, 2.778 AOPCR)
-python main.py webtraffic --model seanet/seanet_bottleneck_topk
+# the baseline these are measured against (0.942 acc / 2.951 AOPCR / 0.786 NDCG, same encoder)
+python main.py webtraffic --model top/top_bottleneck_topk
 
 # 1. soft voting
 python main.py webtraffic --model ablations/seanet_topk_voting --smoke   # flow check first
@@ -234,10 +249,7 @@ python main.py webtraffic --model ablations/seanet_topk_voting
 # 2. strict voting (straight-through)
 python main.py webtraffic --model ablations/seanet_topk_voting_hard
 
-# 3. the threshold on its own, no voting
-python main.py webtraffic --model ablations/seanet_topk_thresh
-
-# 4. both together - only after 1 and 3, so you know which one did what
+# 3. voting with the ambiguity threshold
 python main.py webtraffic --model ablations/seanet_topk_voting_thresh
 ```
 
@@ -260,7 +272,7 @@ only the pooling knob differs, so the comparison is clean.
 | model | pooling | acc | AOPCR | NDCG@n |
 |---|---|---|---|---|
 | `top_bottleneck_topk` | topk_mean (baseline) | **0.942** | **2.951** | **0.786** |
-| `seanet_topk_thresh` | topk_mean + threshold 0.002 | 0.930 | 2.604 | 0.744 |
+| `seanet_topk_thresh` | topk_mean + threshold (head since removed, see note) | 0.930 | 2.604 | 0.744 |
 | `seanet_topk_voting_thresh` | voting + threshold | 0.886 | 2.195 | 0.604 |
 | `seanet_topk_voting` | voting (soft) | 0.870 | 2.212 | 0.601 |
 | `seanet_topk_voting_hard` | voting (strict, straight-through) | 0.672 | 1.770 | 0.697 |
@@ -336,4 +348,21 @@ The head keeps the last batch's counts, so you can look at them:
 net.pool.last_vote_counts        # (B, C), e.g. tensor([[19., 8., 3.], ...])
 ```
 
-Each row sums to the number of timesteps that actually voted.
+Each row sums to the number of timesteps that actually voted - with `hard: true` those are whole
+numbers, with soft votes they are fractions that still add up to the same total.
+
+---
+
+## 8. The settings, in one place
+
+```yaml
+pooling:
+  type: sea_topk_voting
+  d_attn: 8
+  dropout: 0.2
+  positional_encoding: true
+  top_frac: 0.1             # fraction of timesteps allowed to vote (0.1 = the best 10 %)
+  temperature: 0.5          # < 1 sharpens each vote toward its winner
+  hard: false               # true = a real 1/0 vote (straight-through backward). See §3 and §6.
+  confidence_threshold: 0.0 # > 0 stops near-tied timesteps from voting. Measured on probabilities.
+```

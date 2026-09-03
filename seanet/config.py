@@ -161,7 +161,7 @@ def read_model_file(model_name: str, _seen=None) -> Dict:
         name: top_bottleneck_topk                 <- everything below overrides the parent
 
     The merge is the same deep merge used everywhere else (seanet/config._merge), so a child can
-    change one nested value - e.g. only pooling.pooling_method - and inherit all the rest.
+    change one nested value - e.g. only pooling.top_frac - and inherit all the rest.
     A chain is allowed (A extends B extends C); a LOOP is refused with a clear message.
 
     model_name : the name of the config, as passed to --model.
