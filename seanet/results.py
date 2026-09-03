@@ -96,6 +96,12 @@ def set_results_root(path: str) -> str:
     path : the new root folder.
     returns : the path that was set.
     """
+    # NOTE for anyone adding a function that writes into the results root: give it
+    # `out: Optional[str] = None` and resolve the path INSIDE the function body. A default argument
+    # like `out: str = LEADERBOARD_CSV` is evaluated once, when Python first reads the file, so it
+    # keeps the value this function had BEFORE set_results_root was called - the command would then
+    # read from the folder you asked for but write to the old one. That bug is why compare_models,
+    # compare_webtraffic and build_leaderboard below all take None.
     global RESULTS_ROOT, MODEL_COMPARISON_CSV, SHARED_FIGURES_DIR, SHARED_LOGS_DIR
     global WEBTRAFFIC_COMPARISON_CSV, LEADERBOARD_CSV
     RESULTS_ROOT = str(path)
@@ -673,7 +679,7 @@ def discover_models() -> List[str]:
             if os.path.exists(os.path.join(RESULTS_ROOT, name, RESULTS_FILE))]
 
 
-def compare_models(models: Optional[List[str]] = None, out: str = MODEL_COMPARISON_CSV,
+def compare_models(models: Optional[List[str]] = None, out: Optional[str] = None,
                    verbose: bool = True) -> pd.DataFrame:
     """
     Build the head-to-head table ACROSS models: one row per model with its mean accuracy / loss /
@@ -684,10 +690,12 @@ def compare_models(models: Optional[List[str]] = None, out: str = MODEL_COMPARIS
     comparison_vs_millet.csv), so the per-model and cross-model numbers can never disagree.
 
     models : which models to include (default: every model with a results folder).
-    out : where to write the table (default: results/top_results/SEA_NET/model_comparison.csv).
+    out : where to write the table; None = model_comparison.csv in the ACTIVE results root
+          (read at call time, so --results-dir / output.results_dir is honoured).
     verbose : if True, print the ranking.
     returns : the cross-model DataFrame (also saved to `out`), best mean accuracy first.
     """
+    out = out or MODEL_COMPARISON_CSV                         # read the global NOW, not at import
     models = discover_models() if models is None else models
     rows = []
     for model_id in models:
@@ -699,8 +707,19 @@ def compare_models(models: Optional[List[str]] = None, out: str = MODEL_COMPARIS
         rows.append(perf)
     df = pd.DataFrame(rows)
     if not df.empty:
-        sort_col = "mean_acc_ours" if "mean_acc_ours" in df.columns else "overall_mean_acc"
-        df = df.sort_values(sort_col, ascending=False).reset_index(drop=True)
+        # Sort by the best column we actually have. Which columns exist depends on WHAT was trained:
+        #   mean_acc_ours     only if a model finished a dataset MILLET published (the 85),
+        #   overall_mean_acc  only if a model finished ANY UCR dataset,
+        #   webtraffic_acc    if WebTraffic was trained (our fast screen).
+        # A results folder holding ONLY WebTraffic runs has none of the first two, and asking pandas
+        # to sort by a missing column raises KeyError - which is exactly what used to happen to a
+        # fresh results root. So we take the first column that is really there, and if none is, we
+        # leave the natural (alphabetical) order alone rather than crash.
+        for sort_col in ("mean_acc_ours", "overall_mean_acc", "webtraffic_acc"):
+            if sort_col in df.columns:
+                df = df.sort_values(sort_col, ascending=False, na_position="last")
+                break
+        df = df.reset_index(drop=True)
         os.makedirs(os.path.dirname(out), exist_ok=True)
         df.to_csv(out, index=False)
     if verbose:
@@ -810,15 +829,17 @@ def webtraffic_table(models: Optional[List[str]] = None) -> pd.DataFrame:
     return df
 
 
-def compare_webtraffic(models: Optional[List[str]] = None, out: str = WEBTRAFFIC_COMPARISON_CSV,
+def compare_webtraffic(models: Optional[List[str]] = None, out: Optional[str] = None,
                        verbose: bool = True) -> pd.DataFrame:
     """
     Build + save the WebTraffic-only comparison table, and print every model next to the paper baseline.
 
-    out : where to write the CSV.
+    out : where to write the CSV; None = webtraffic_comparison.csv in the ACTIVE results root
+          (read at call time, so --results-dir / output.results_dir is honoured).
     verbose : print the ranking.
     returns : the table (also saved to `out`).
     """
+    out = out or WEBTRAFFIC_COMPARISON_CSV                    # read the global NOW, not at import
     df = webtraffic_table(models)
     if df.empty:
         if verbose:
@@ -923,7 +944,7 @@ def origin_label(encoder: str, pooling: str) -> str:
     return "?"                                                 # an untagged name (should not happen)
 
 
-def build_leaderboard(models: Optional[List[str]] = None, out: str = LEADERBOARD_CSV,
+def build_leaderboard(models: Optional[List[str]] = None, out: Optional[str] = None,
                       refresh: bool = True, verbose: bool = True) -> pd.DataFrame:
     """
     Build the one-file leaderboard: every model, best WebTraffic accuracy first, UCR columns
@@ -942,12 +963,14 @@ def build_leaderboard(models: Optional[List[str]] = None, out: str = LEADERBOARD
     to screen. Empty cells are the honest answer.
 
     models : which models to include (default: every model that has a results.csv).
-    out : where to write the table (default: results/top_results/SEA_NET/leaderboard.csv).
+    out : where to write the table; None = leaderboard.csv in the ACTIVE results root
+          (read at call time, so --results-dir / output.results_dir is honoured).
     refresh : True = recompute each model's UCR comparison first (slower, always correct).
               False = reuse the model_comparison.csv already on disk (fast, for a quick re-look).
     verbose : print the table after writing it.
     returns : the leaderboard as a DataFrame (also saved to `out`).
     """
+    out = out or LEADERBOARD_CSV                                # read the global NOW, not at import
     web = webtraffic_table(models)                              # model, acc, loss, aopcr, ndcg, params, size_mb
 
     # the UCR side. Refreshing also rewrites model_comparison.csv + each model's summary, so the
@@ -1047,7 +1070,12 @@ def _print_leaderboard(df: pd.DataFrame, out: str) -> None:
             return f"{int(value):>{width}d}"
         return f"{float(value):>{width}.{decimals}f}"
 
-    n_swept = int(df["ucr85_n"].notna().sum()) if "ucr85_n" in df.columns else 0
+    # count only models that really finished UCR datasets. ucr85_n is 0 (not empty) for a model we
+    # screened on WebTraffic alone, and 0 is "not NaN", so counting notna() called every screened
+    # model "swept" - it once reported "1 of them also finished the full UCR sweep" next to a
+    # ucr85_n column that plainly read 0.
+    n_swept = int((pd.to_numeric(df["ucr85_n"], errors="coerce") > 0).sum()) \
+        if "ucr85_n" in df.columns else 0
     print(f"Leaderboard: {len(df)} model(s), best WebTraffic accuracy first "
           f"({n_swept} of them also finished the full UCR sweep; '-' means not run yet).")
     print(f"  {'#':>3s} {'model':56s} {'web_acc':>8s} {'web_ndcg':>9s} {'params':>8s} "

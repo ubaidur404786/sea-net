@@ -1,0 +1,6 @@
+model                                                                    , millet85_datasets, overall_ucr_datasets, webtraffic_acc, webtraffic_ndcg, params, model_size_mb
+top_bottleneck_topk__sea_mstcn_sep_bottleneck__sea_topk_conjunctive      ,                 0,                    0,          0.942,          0.7863,  41324,         1.428
+seanet_topk_thresh__sea_mstcn_sep_bottleneck__sea_topk_conjunctive       ,                 0,                    0,          0.93 ,          0.7443,  41324,         1.428
+seanet_topk_voting_thresh__sea_mstcn_sep_bottleneck__sea_topk_conjunctive,                 0,                    0,          0.886,          0.6037,  41325,         1.428
+seanet_topk_voting__sea_mstcn_sep_bottleneck__sea_topk_conjunctive       ,                 0,                    0,          0.87 ,          0.6009,  41325,         1.428
+seanet_topk_voting_hard__sea_mstcn_sep_bottleneck__sea_topk_conjunctive  ,                 0,                    0,          0.672,          0.6974,  41325,         1.428

@@ -54,9 +54,21 @@ from seanet import results as R
 # keeps this module torch-free too (it must stay importable without torch).
 from seanet.config import is_millet, split_model_id
 
-# the shared figure (not tied to one model) lives with the other shared outputs
-SHARED_FIGURES_DIR = R.SHARED_FIGURES_DIR
-DATA_SUMMARY_FIG = os.path.join(SHARED_FIGURES_DIR, "data_summary.png")
+# The shared figures (not tied to one model) live with the other shared outputs.
+#
+# These are FUNCTIONS, not constants, on purpose. seanet/results.set_results_root() moves the whole
+# results tree at start-up (configs/main.yaml -> output.results_dir, or --results-dir). A module
+# constant would be frozen at import time - i.e. BEFORE that call - so the figures would be written
+# into the old folder while everything else went to the new one. Reading R.* inside a function means
+# we always get the folder that is active right now.
+def shared_figures_dir() -> str:
+    """The folder for the figures that belong to no single model, in the ACTIVE results root."""
+    return R.SHARED_FIGURES_DIR
+
+
+def data_summary_fig() -> str:
+    """Path of the shared data_summary.png, in the ACTIVE results root."""
+    return os.path.join(shared_figures_dir(), "data_summary.png")
 
 # Telling OUR work from MILLET's, straight off the model id.
 #
@@ -167,8 +179,12 @@ def load_data_summary() -> pd.DataFrame:
 # --------------------------------------------------------------------------------------
 # 1. The shared figure: what the datasets look like (nothing to do with any model)
 # --------------------------------------------------------------------------------------
-def plot_data_summary(summary: pd.DataFrame, path: str = DATA_SUMMARY_FIG) -> str:
-    """Draw the dataset overview (series length, #classes, train size, adjusted-folder count)."""
+def plot_data_summary(summary: pd.DataFrame, path: Optional[str] = None) -> str:
+    """Draw the dataset overview (series length, #classes, train size, adjusted-folder count).
+
+    path : where to save it; None = the shared figures folder of the ACTIVE results root.
+    """
+    path = path or data_summary_fig()                        # resolved NOW, not at import time
     fig, ax = plt.subplots(2, 2, figsize=(11, 7))
     ax[0, 0].hist(summary["series_length"].dropna(), bins=30, color=OURS_COLOUR)
     ax[0, 0].set_title("Series length (T)"); ax[0, 0].set_xlabel("T"); ax[0, 0].set_ylabel("# datasets")
@@ -327,7 +343,7 @@ def plot_model_figures(model_id: str, verbose: bool = True) -> List[str]:
 # --------------------------------------------------------------------------------------
 # 3. The cross-model figure: which encoder+pooling wins?
 # --------------------------------------------------------------------------------------
-def plot_model_comparison(cross: pd.DataFrame, figdir: str = SHARED_FIGURES_DIR,
+def plot_model_comparison(cross: pd.DataFrame, figdir: Optional[str] = None,
                           top_n: int = 15) -> List[str]:
     """
     Draw the best models' mean accuracy / loss / AOPCR over the 85 datasets MILLET published.
@@ -355,6 +371,7 @@ def plot_model_comparison(cross: pd.DataFrame, figdir: str = SHARED_FIGURES_DIR,
     figdir : where to save the PNG.  top_n : how many models to draw.
     returns : the saved figure path in a list (empty if there is nothing to plot).
     """
+    figdir = figdir or shared_figures_dir()               # resolved NOW, not at import time
     if cross.empty or "mean_acc_ours" not in cross.columns:
         return []
     ranked = cross.dropna(subset=["mean_acc_ours"]).sort_values("mean_acc_ours", ascending=False)
@@ -469,7 +486,7 @@ def _plot_webtraffic_metric(df, paper: Dict[str, float], code: Dict[str, str], c
     return _save(fig, os.path.join(figdir, f"webtraffic_{col}.png"))
 
 
-def plot_webtraffic_comparison(figdir: str = SHARED_FIGURES_DIR) -> List[str]:
+def plot_webtraffic_comparison(figdir: Optional[str] = None) -> List[str]:
     """
     Draw the WebTraffic comparison as THREE separate figures - accuracy, AOPCR and NDCG - so each one is
     full-size and easy to read in detail (instead of one cramped 3-in-1 panel).
@@ -478,6 +495,7 @@ def plot_webtraffic_comparison(figdir: str = SHARED_FIGURES_DIR) -> List[str]:
     figures/). Everything is rebuilt from whatever has finished, so new models appear automatically. The
     short m1/m2 codes are shared across the three figures, so m3 means the same model in all of them.
     """
+    figdir = figdir or shared_figures_dir()               # resolved NOW, not at import time
     df = R.webtraffic_table()
     if df.empty:
         return []
@@ -670,7 +688,7 @@ def _plot_one_tier(sub: pd.DataFrame, low: float, high: Optional[float], paper: 
     return _save(fig, os.path.join(figdir, f"webtraffic_band_{tag}.png"))
 
 
-def plot_webtraffic_tiers(figdir: str = SHARED_FIGURES_DIR) -> List[str]:
+def plot_webtraffic_tiers(figdir: Optional[str] = None) -> List[str]:
     """
     Draw the WebTraffic accuracy figures as NON-OVERLAPPING bands, so every model appears once.
 
@@ -685,6 +703,7 @@ def plot_webtraffic_tiers(figdir: str = SHARED_FIGURES_DIR) -> List[str]:
 
     returns : the list of saved figure paths (one per non-empty band).
     """
+    figdir = figdir or shared_figures_dir()               # resolved NOW, not at import time
     df = R.webtraffic_table()                                # already sorted best-accuracy-first
     if df.empty:
         return []
@@ -758,7 +777,7 @@ def pick_winner(df: pd.DataFrame, ucr: pd.DataFrame) -> Optional[str]:
     return str(ranks.mean(axis=1).idxmax())
 
 
-def plot_winner_dashboard(figdir: str = SHARED_FIGURES_DIR) -> List[str]:
+def plot_winner_dashboard(figdir: Optional[str] = None) -> List[str]:
     """
     Draw ONE detailed figure for the winning model, so a reader can see all its headline numbers at
     once: WebTraffic accuracy / AOPCR / NDCG vs the MILLET paper, the UCR-85 mean accuracy vs MILLET,
@@ -766,6 +785,7 @@ def plot_winner_dashboard(figdir: str = SHARED_FIGURES_DIR) -> List[str]:
 
     returns : the saved figure path in a list (empty if no model has results yet).
     """
+    figdir = figdir or shared_figures_dir()               # resolved NOW, not at import time
     df = R.webtraffic_table()
     if df.empty:
         return []

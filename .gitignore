@@ -89,11 +89,18 @@ results/**/logs/smoke/
 results/**/interpretation/*/smoke/
 /results/_selftest/
 
-# TorchScript and ONNX exports inside a deploy/ bundle. They are REGENERATED from
-# the committed <stem>.pt (weights + config) by seanet/deployment.py, so keeping
-# them out saves ~3 MB per model without losing anything. The .pt, _config.yaml
-# and _meta.json ARE committed - those are what make a model rebuildable.
-# Delete these two lines if you want the ONNX files to travel with the repo.
+# THE DEPLOYMENT BUNDLE. Read this before touching the three rules below.
+#
+# There is a blanket `*.pt` further up (it was there to keep stray checkpoints out of the repo).
+# It also matched results/**/deploy/<dataset>__seed<N>.pt - the weights file that is the WHOLE
+# POINT of a bundle. The symptom is nasty because it is silent: `git add -A` looks clean, the
+# bundle's _config.yaml and _meta.json get committed, and the weights simply never travel. You
+# only find out when you clone somewhere else and load_bundle() cannot find its file.
+#
+# So: un-ignore the bundle weights, then re-ignore only the two files that are REGENERATED from
+# them (TorchScript and ONNX, ~3 MB per model, rebuilt in seconds by seanet/deployment.py).
+# Order matters here - in .gitignore the LAST rule that matches a path wins.
+!results/**/deploy/*.pt
 results/**/deploy/*_traced.pt
 results/**/deploy/*.onnx
 
@@ -124,7 +131,8 @@ core.*
 #   results/*/SEA_NET/*/history/          per-epoch train/val loss + accuracy, and the curves
 #   results/*/SEA_NET/*/summary.*         the per-model headline
 #   results/*/SEA_NET/*/comparison_vs_millet.csv
-#   results/*/SEA_NET/*/deploy/*.pt       weights + the config that built them (the ESP32 bundle)
+#   results/*/SEA_NET/*/deploy/*.pt       the WEIGHTS (needs the !-rule above to beat `*.pt`)
+#   results/*/SEA_NET/*/deploy/*_config.yaml, *_meta.json   how to rebuild them
 #   results/*/SEA_NET/leaderboard.csv, model_comparison.csv, profile.csv, data_summary.csv
 #   results/*/analysis/                   the comparison figures + tables (PNG/CSV/MD, ~11 MB)
 #   results/UCR/, results/WebTraffic/     the MILLET paper's PUBLISHED numbers - never regenerate

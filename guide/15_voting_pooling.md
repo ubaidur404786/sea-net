@@ -252,7 +252,83 @@ Watch **three** numbers, not one: `web_acc`, `web_aopcr` and `web_ndcg`. A votin
 
 ---
 
-## 6. Reading the votes
+## 6. THE RESULTS (first run, 2026-09-03, WebTraffic, seed 0)
+
+All five trained on Grid5000. Same encoder (`sea_mstcn_sep_bottleneck`, 41 K params), same recipe -
+only the pooling knob differs, so the comparison is clean.
+
+| model | pooling | acc | AOPCR | NDCG@n |
+|---|---|---|---|---|
+| `top_bottleneck_topk` | topk_mean (baseline) | **0.942** | **2.951** | **0.786** |
+| `seanet_topk_thresh` | topk_mean + threshold 0.002 | 0.930 | 2.604 | 0.744 |
+| `seanet_topk_voting_thresh` | voting + threshold | 0.886 | 2.195 | 0.604 |
+| `seanet_topk_voting` | voting (soft) | 0.870 | 2.212 | 0.601 |
+| `seanet_topk_voting_hard` | voting (strict, straight-through) | 0.672 | 1.770 | 0.697 |
+| MILLET (paper, published) | — | 0.924 | — | 0.674 |
+
+**Voting lost, on every metric.** That is a real result, not a bug - see the diagnosis below.
+
+### Why - read the training curves, not just the scores
+
+WebTraffic has **10 classes** and we train with `label_smoothing: 0.13`. That puts a floor under the
+training loss: the lowest value `nn.CrossEntropyLoss` can ever return is the entropy of the smoothed
+target, **0.618**. Measuring each run against that floor separates "could not learn" from "learned
+fine but does not generalise":
+
+| model | best train_acc | min train_loss | above the 0.618 floor | val_acc |
+|---|---|---|---|---|
+| baseline | 1.000 | 0.638 | +0.020 | 0.910 |
+| threshold | 1.000 | 0.639 | +0.021 | 0.880 |
+| voting (soft) | **1.000** | 0.656 | **+0.038** | 0.840 |
+| voting + threshold | 1.000 | 0.643 | +0.025 | 0.870 |
+| voting (hard) | **0.757** | 1.128 | **+0.510** | 0.640 |
+
+Two different failures, and it matters which is which:
+
+**Soft voting fits the training set perfectly** (train_acc 1.000, loss within 0.04 of the theoretical
+floor). So the "confidence ceiling" this guide warned about did NOT bite - the learned `vote_scale`
+did its job. The head is trainable; it simply **generalises worse** (val_acc 0.84 vs 0.91). Discarding
+the magnitude costs real information, exactly as §3.2 predicted, and on WebTraffic that information
+was worth about 7 accuracy points.
+
+**Hard voting could not even fit the training data** (train_acc 0.757, loss 0.51 above the floor).
+This is the straight-through estimator's bias showing up as predicted in §3.4: the gradient the
+encoder receives does not match the function the forward pass computed, so optimisation stalls well
+short of a fit. Its higher NDCG (0.697) next to its terrible accuracy is not a redeeming feature -
+an under-fitted model can still rank timesteps sensibly while getting the class wrong.
+
+### The threshold
+
+On its own it cost about 1 point of accuracy (0.942 -> 0.930) and 0.35 AOPCR. Combined with voting it
+*helped* (0.870 -> 0.886), which fits the theory: voting is the method that actually suffers from
+undecided points, because each one still casts a full vote. But both gaps are inside single-seed
+noise (this project has seen the same config move 0.938 -> 0.888 on a re-run), so neither is
+established yet.
+
+### What this does and does not settle
+
+- **Settled:** hard/strict voting is not viable here. Do not spend more GPU time on it.
+- **Settled enough:** soft voting is trainable but worse than the top-k mean on WebTraffic.
+- **NOT settled:** everything above is **one seed**. Before this goes in the paper, run seeds 1 and 2
+  for the baseline and soft voting at least:
+  ```bash
+  for s in 1 2; do
+    python main.py webtraffic --model top/top_bottleneck_topk      --seed $s
+    python main.py webtraffic --model ablations/seanet_topk_voting --seed $s
+  done
+  ```
+- **Untested:** whether voting helps on data where evidence is spread out rather than spiky. Our
+  best WebTraffic models lean on a few sharp points - the regime where §3.5 predicted voting would
+  lose. A UCR dataset with diffuse evidence is the fair test, if it is worth the time.
+
+The honest one-line summary for the paper: *we tested majority voting over the top-k instances as an
+alternative to averaging their gated evidence; it trains but generalises worse, and the strict
+(non-differentiable) form fails to fit at all.* That is a legitimate negative result about a
+reasonable idea, and it is worth one paragraph.
+
+---
+
+## 7. Reading the votes
 
 The head keeps the last batch's counts, so you can look at them:
 

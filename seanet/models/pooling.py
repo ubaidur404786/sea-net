@@ -329,7 +329,7 @@ class TopKConjunctivePooling(_AttnPoolingBase):
         Why: on long series most timesteps are background. Averaging over all of them dilutes a few
         strong evidence points. top_frac = 1.0 recovers ordinary classwise Conjunctive.
 
-    pooling_method = "voting"   (the supervisor's idea)
+    pooling_method = "voting"   (the new idea)
         1. Score every timestep by its strongest class, s_j = max_k g_j^k, and keep the k best.
            The k timesteps are now SHARED by all classes - voting only makes sense if every class is
            judged at the same time points (per-class top-k would compare different points).
