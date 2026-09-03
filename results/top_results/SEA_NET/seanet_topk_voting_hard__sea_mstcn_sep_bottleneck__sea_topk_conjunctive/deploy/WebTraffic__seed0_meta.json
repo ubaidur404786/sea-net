@@ -1,0 +1,88 @@
+{
+  "model_id": "seanet_topk_voting_hard__sea_mstcn_sep_bottleneck__sea_topk_conjunctive",
+  "dataset": "WebTraffic",
+  "seed": 0,
+  "saved": "2026-09-03 02:42:34",
+  "git_commit": "c79ef6e9edcb9b9b4eadb71853095e0bc46c7a10",
+  "input": {
+    "shape": [
+      "batch",
+      1,
+      1008
+    ],
+    "dtype": "float32",
+    "channels": 1,
+    "series_length": 1008,
+    "preprocessing": "each series is z-normalised on its own (mean 0, std 1) before it reaches the model - see seanet/preprocessing.py",
+    "fixed_length_in_exports": "the .onnx and _traced.pt files are exported at THIS length only (the top-k head turns k = ceil(top_frac * T) into a constant). The .pt bundle works at any length."
+  },
+  "output": {
+    "bag_logits": [
+      "batch",
+      10
+    ],
+    "interpretation": [
+      "batch",
+      10,
+      1008
+    ],
+    "note": "bag_logits are RAW logits (no softmax). Apply softmax yourself if you want probabilities; the training loss (nn.CrossEntropyLoss) does it internally."
+  },
+  "n_classes": 10,
+  "encoder": {
+    "type": "sea_mstcn_sep_bottleneck",
+    "d": 64,
+    "n_blocks": 4,
+    "dropout": 0.2,
+    "max_dilation": 16,
+    "kernels": [
+      5,
+      11,
+      23
+    ],
+    "bottleneck_ratio": 4
+  },
+  "pooling": {
+    "type": "sea_topk_conjunctive",
+    "d_attn": 8,
+    "dropout": 0.2,
+    "positional_encoding": true,
+    "top_frac": 0.1,
+    "pooling_method": "voting",
+    "vote_temperature": 0.5,
+    "vote_hard": true
+  },
+  "training": {
+    "n_epochs": 400,
+    "patience": 60,
+    "max_batch": 16,
+    "learning_rate": 0.00125,
+    "weight_decay": 0.00012,
+    "label_smoothing": 0.13,
+    "lambda_entropy": 0.01,
+    "min_train_for_val": 100,
+    "val_frac": 0.2,
+    "optimizer": "adam"
+  },
+  "params": 41325,
+  "metrics": {
+    "test_acc": 0.672,
+    "test_loss": 1.173,
+    "test_aopcr": 1.7702,
+    "test_ndcg": 0.6974,
+    "params": 41325,
+    "model_size_mb": 1.4281
+  },
+  "versions": {
+    "torch": "2.0.1+cu118",
+    "python": "3.10.20",
+    "platform": "Linux-6.12.101+deb13-amd64-x86_64-with-glibc2.41"
+  },
+  "files": {
+    "weights": "WebTraffic__seed0.pt",
+    "config": "WebTraffic__seed0_config.yaml",
+    "torchscript": "not saved (RuntimeError: Expected all tensors to be on the same device, but found at least two devices, cpu and cuda:0! (when checking argument for argument weight in method wrapper_CUDA___slow_conv2d_forward))",
+    "onnx": "not saved (RuntimeError: Expected all tensors to be on the same device, but found at least two devices, cpu and cuda:0! (when checking argument for argument weight in method wrapper_CUDA___slow_conv2d_forward))"
+  },
+  "rebuild": "from seanet.deployment import load_bundle; net, meta = load_bundle('WebTraffic__seed0.pt')"
+}

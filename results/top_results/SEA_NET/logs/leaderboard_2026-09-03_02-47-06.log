@@ -1,0 +1,19 @@
+[log] command 'leaderboard' started at 2026-09-03_02-47-06
+[log] a copy of everything below is being saved to: results/top_results/SEA_NET/logs/leaderboard_2026-09-03_02-47-06.log
+
+Traceback (most recent call last):
+  File "/home/urehman/projects/sea-net/main.py", line 962, in main
+    args.func(args)      # call the function set by set_defaults for the chosen command
+  File "/home/urehman/projects/sea-net/main.py", line 749, in cmd_leaderboard
+    build_leaderboard(refresh=not args.fast, verbose=True)
+  File "/home/urehman/projects/sea-net/seanet/results.py", line 956, in build_leaderboard
+    full = compare_models(models, verbose=False)
+  File "/home/urehman/projects/sea-net/seanet/results.py", line 703, in compare_models
+    df = df.sort_values(sort_col, ascending=False).reset_index(drop=True)
+  File "/home/urehman/miniforge3/envs/seanet/lib/python3.10/site-packages/pandas/core/frame.py", line 6758, in sort_values
+    k = self._get_label_or_level_values(by, axis=axis)
+  File "/home/urehman/miniforge3/envs/seanet/lib/python3.10/site-packages/pandas/core/generic.py", line 1778, in _get_label_or_level_values
+    raise KeyError(key)
+KeyError: 'overall_mean_acc'
+
+[log] finished; full output saved to results/top_results/SEA_NET/logs/leaderboard_2026-09-03_02-47-06.log

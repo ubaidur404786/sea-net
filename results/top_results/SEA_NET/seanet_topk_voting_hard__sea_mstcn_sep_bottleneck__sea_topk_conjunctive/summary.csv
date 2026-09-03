@@ -1,0 +1,8 @@
+metric,value
+model,seanet_topk_voting_hard__sea_mstcn_sep_bottleneck__sea_topk_conjunctive
+millet85_datasets,0
+overall_ucr_datasets,0
+webtraffic_acc,0.672
+webtraffic_ndcg,0.6974
+params,41325
+model_size_mb,1.428
