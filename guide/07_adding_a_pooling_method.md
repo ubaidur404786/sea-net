@@ -176,7 +176,11 @@ One head is deliberately **not** in that list, because it is not a generalisatio
 
 | head | what it does differently |
 |---|---|
-| `sea_topk_voting` | the top-k timesteps **vote** for a class instead of having their evidence averaged. It throws the magnitude away on purpose, so it can do worse than Conjunctive — and on WebTraffic it does. Kept as a tested experiment; see [15 Voting pooling](15_voting_pooling.md). |
+| `sea_simple_voting` | **every** timestep votes once for its strongest class; count the votes. The plainest form of the idea. |
+| `sea_topk_voting` | the same, but only the top-k timesteps may vote (plus a temperature and an optional ambiguity threshold). |
+
+Both throw the magnitude away on purpose, so they can do worse than Conjunctive — and on WebTraffic
+they do. Kept as tested experiments; see [15 Voting pooling](15_voting_pooling.md).
 
 It is a separate class from `sea_topk_conjunctive` on purpose: an experiment must never be able to
 change the behaviour of the model we actually ship.

@@ -1,0 +1,39 @@
+# ablations/seanet_simple_voting.yaml - the SIMPLEST voting head: every timestep gets one vote.
+#
+# The idea in one line: at every timestep, look at which class has the most evidence, give that
+# class one vote, and at the end the class with the most votes wins.
+#
+#   1008 timesteps on WebTraffic -> a vote vector like [430, 290, 288, ...]
+#   bag_logits = log(votes / 1008)
+#
+# No top-k, no temperature, no threshold. This is the plain reading of "let the evidence vote", and
+# it is the baseline that ablations/seanet_topk_voting (only the strongest 10 % may vote) is
+# measured against. The head lives in its own class, sea_simple_voting, so sea_topk_conjunctive
+# (our best model) is not touched by any of this.
+#
+# ONE THING TO KNOW BEFORE READING THE RESULT: counting votes needs argmax, and argmax has no
+# gradient. The head uses a straight-through estimator - the forward pass really does cast hard 1/0
+# votes, but the backward pass borrows a smooth gradient. So the gradient is an APPROXIMATION, not
+# the true derivative of what was computed. Its top-k cousin failed badly for exactly this reason
+# (0.672 accuracy, and it could not even fit the training set). Expect the same risk here.
+# See guide/15_voting_pooling.md.
+#
+# Baseline to beat: top/top_bottleneck_topk = 0.942 acc, 2.951 AOPCR, 0.786 NDCG (same encoder).
+#
+# Run it (smoke first):
+#   python main.py webtraffic --model ablations/seanet_simple_voting --smoke
+#   python main.py webtraffic --model ablations/seanet_simple_voting
+
+extends: seanet/seanet_bottleneck_topk
+name: seanet_simple_voting
+
+pooling:
+  type: sea_simple_voting   # every timestep votes once; nothing else to configure
+  d_attn: 8
+  dropout: 0.2
+  positional_encoding: true
+  # NOTE about top_frac: the parent (seanet_bottleneck_topk) sets top_frac: 0.1 for the top-k head,
+  # and `extends:` has no way to REMOVE an inherited key - so it is still there after the merge.
+  # It is harmless: build_pooling only passes a setting on if the head's constructor actually
+  # accepts it, and sea_simple_voting does not take top_frac, so the value is ignored. If you want
+  # a top_frac that really does something, use ablations/seanet_topk_voting instead.

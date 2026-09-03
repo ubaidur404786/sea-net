@@ -221,6 +221,7 @@ described by what it puts in the two slots:
 | `sea_attention_max` | per-class gate | `(1−λ_k)·mean + λ_k·max` | `λ_k -> 0` |
 | `sea_gated_attention` | `tanh(Vz) ⊙ σ(Uz)`, then per-class score + softmax | weighted sum | **never** — no safety net |
 | `sea_dualstream_conjunctive` | per-class gate + a query compared with the critical step | blend of the mean stream and the critical-step stream | `λ -> 0` |
+| `sea_simple_voting` | per-class gate | **every** timestep votes once for its best class; logits = `log(vote share)` | **never** — it discards magnitude by design |
 | `sea_topk_voting` | per-class gate | the `k` largest **vote**, one vote each; logits = `log(vote share)` | **never** — it discards magnitude by design |
 
 Only **Top-k** makes the interpretation *exactly zero* where the model used no evidence; every other

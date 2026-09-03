@@ -10,9 +10,10 @@ What it checks, in order:
     1. MultiScaleChannels  - all five statistics, correct values, bad input refused
     2. MultiScalePyramid   - all four legal 1-D interpolation modes, image-only modes refused
     3a. TopKConjunctivePooling - still the plain top-k mean, untouched by the voting work
-    3b. TopKVotingPooling - the SEPARATE voting head: shapes, finite logits, real gradients,
-        the vote counts add up, and the threshold never produces a NaN even when it silences
-        every chosen timestep
+    3b. SimpleVotingPooling - every timestep votes once. Checks the forward pass really is a
+        HARD vote and that gradients still flow (a plain argmax count cannot be trained at all)
+    3c. TopKVotingPooling - only the top-k vote: shapes, finite logits, real gradients, the vote
+        counts add up, and the threshold never produces a NaN even when it silences everything
     4. every model config in configs/models/ still builds, runs and trains a step
     5. the deployment bundle saves and reloads to bit-identical outputs
 
@@ -37,8 +38,8 @@ from seanet.deployment import load_bundle, save_bundle                        # 
 from seanet.models.build import build_model_from_config, num_params           # noqa: E402
 from seanet.models.encoders import (ENCODER_REGISTRY, MultiScaleChannels,     # noqa: E402
                                     MultiScalePyramid, build_encoder)
-from seanet.models.pooling import (TopKConjunctivePooling, TopKVotingPooling,  # noqa: E402
-                                   build_pooling)
+from seanet.models.pooling import (SimpleVotingPooling, TopKConjunctivePooling,  # noqa: E402
+                                   TopKVotingPooling, build_pooling)
 from seanet.training import make_model                                        # noqa: E402
 
 FAILURES = []
@@ -139,7 +140,48 @@ check("forward + backward still fine",
       and torch.isfinite(loss), f"loss={float(loss):.4f}")
 
 
-section("3b. TopKVotingPooling - the separate voting head")
+section("3b. SimpleVotingPooling - every timestep votes once")
+hsv = SimpleVotingPooling(d, C)
+out = hsv(z)
+loss = ce(out["bag_logits"], y)
+loss.backward()
+grads = [pr.grad for pr in hsv.parameters() if pr.grad is not None]
+check("shapes are right",
+      out["bag_logits"].shape == (B, C) and out["interpretation"].shape == (B, C, T))
+check("loss is finite", bool(torch.isfinite(loss)), f"loss={float(loss):.4f}")
+check("gradients actually flow (a plain argmax count would give NONE)",
+      bool(grads) and any(float(gr.abs().sum()) > 0 for gr in grads),
+      f"max|grad|={max(float(gr.abs().max()) for gr in grads):.3e}")
+check("it adds NO parameters over the plain top-k head",
+      sum(pr.numel() for pr in hsv.parameters()) == 214)
+
+# the forward pass must be the REAL hard vote, not the smooth surrogate
+hsv.eval()
+with torch.no_grad():
+    xp = hsv._prepare(z, None)
+    gg = hsv.attention_head(xp) * hsv.instance_classifier(xp)
+    plain = torch.nn.functional.one_hot(gg.argmax(dim=-1), num_classes=C).float().sum(dim=1)
+    hsv(z)
+check("forward output IS the plain argmax vote count",
+      float((hsv.last_vote_counts - plain).abs().max()) == 0.0,
+      f"first series: {[int(v) for v in hsv.last_vote_counts[0]]}")
+check("every timestep voted exactly once (counts sum to T)",
+      bool(torch.allclose(hsv.last_vote_counts.sum(dim=1), torch.full((B,), float(T)))))
+
+# log(counts / T) and log(counts) must train identically - the difference is a per-row constant
+la = ce(torch.log(plain / T + 1e-8), y)
+lb = ce(torch.log(plain + 1e-8), y)
+check("log(counts/T) == log(counts) as far as the loss is concerned",
+      bool(torch.allclose(la, lb, atol=1e-6)), f"{float(la):.6f} vs {float(lb):.6f}")
+
+cfg = SimpleNamespace(type="sea_simple_voting", d_attn=8, dropout=0.2,
+                      positional_encoding=True, top_frac=0.1)   # top_frac is inherited + ignored
+h = build_pooling(cfg, d_in=d, n_clz=C)
+check("builds from a config, and an inherited top_frac is harmlessly ignored",
+      isinstance(h, SimpleVotingPooling) and not hasattr(h, "top_frac"))
+
+
+section("3c. TopKVotingPooling - only the top-k vote")
 cases = {
     "voting (soft, default)": {},
     "voting, temperature=0.1": dict(temperature=0.1),

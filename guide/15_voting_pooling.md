@@ -11,16 +11,20 @@ stops a timestep that cannot decide between its two best classes from voting at 
 > `sea_topk_voting`. The split was checked to be numerically exact: the new head reproduces the old
 > voting code to a maximum absolute difference of **0.0**, so the results in §6 still stand.
 
-| head | what it does with the top-k timesteps |
+| head | what it does |
 |---|---|
-| `sea_topk_conjunctive` | averages their gated evidence (per class). **Our best model. Untouched.** |
-| `sea_topk_voting` | lets them vote, one vote each. The experiment. |
+| `sea_topk_conjunctive` | averages the gated evidence of the top-k timesteps. **Our best model. Untouched.** |
+| `sea_simple_voting` | **every** timestep votes once for its best class. The plainest form of the idea — no top-k, no temperature, no threshold. |
+| `sea_topk_voting` | only the top-k timesteps vote, with a temperature and an optional ambiguity threshold. |
+
+Read `sea_simple_voting` first: it is the shortest and it is the baseline the other one is measured
+against. §9 covers it on its own.
 
 It also answers, honestly, the question that matters most: **can this thing even be trained?**
 
 ---
 
-## 1. What the head does today (`topk_mean`)
+## 1. What the top-k head does (`sea_topk_conjunctive`)
 
 For every timestep `j` and every class `k`:
 
@@ -242,6 +246,9 @@ All four extend `seanet/seanet_bottleneck_topk`, so the *only* difference is the
 # the baseline these are measured against (0.942 acc / 2.951 AOPCR / 0.786 NDCG, same encoder)
 python main.py webtraffic --model top/top_bottleneck_topk
 
+# 0. the plainest version: every timestep votes (see section 8)
+python main.py webtraffic --model ablations/seanet_simple_voting
+
 # 1. soft voting
 python main.py webtraffic --model ablations/seanet_topk_voting --smoke   # flow check first
 python main.py webtraffic --model ablations/seanet_topk_voting
@@ -353,7 +360,64 @@ numbers, with soft votes they are fractions that still add up to the same total.
 
 ---
 
-## 8. The settings, in one place
+## 8. `sea_simple_voting` — the plainest version
+
+```text
+1. every timestep votes for its best class:   argmax_k g_j^k
+2. count the votes:                           n = [430, 290, 288]
+3. bag_logits = log(n / T)
+```
+
+That is the whole head. No top-k, no temperature, no threshold, and **no extra parameter** — 214,
+exactly the same as `sea_topk_conjunctive`.
+
+### The one line that is not obvious
+
+Written the natural way it **cannot be trained at all**:
+
+```python
+votes = F.one_hot(g.argmax(dim=-1), C).float()   # looks right...
+counts = votes.sum(dim=1)
+loss.backward()   # RuntimeError: element 0 of tensors does not require grad
+```
+
+`argmax` keeps only *which* class won and throws every number away; `one_hot` of an integer is a
+constant. The counts are no longer connected to the network, so there is nothing to differentiate
+and `backward()` raises. (Verified — it really does raise, not merely train badly.)
+
+The fix is one line, the **straight-through estimator**:
+
+```python
+votes = one_vote - share.detach() + share
+```
+
+Forward, the two `share` terms cancel, so `votes` is the true hard 1/0 vote and the counts you get
+out are exactly the `[430, 290, 288]` you wanted (checked: max abs difference 0.0 against a plain
+`argmax` count). Backward, `one_vote` and `share.detach()` are constants and drop out, so the
+gradient flows through the smooth `share`. **Forward hard, backward soft.**
+
+The cost, stated plainly: the gradient no longer matches the function the forward pass computed, so
+it is a *biased* gradient. That is the same mechanism that made `seanet_topk_voting_hard` fail to
+fit the training set at all (§6). Expect the same risk here.
+
+### `log(n / T)` or `log(n)` — it makes no difference
+
+`log(n/T) = log(n) − log(T)`, and `log(T)` is the same for every class in a row, so softmax cannot
+see it. **Measured: both give a loss of 0.943519.** So the Option A / Option B choice is cosmetic;
+dividing by `T` just keeps the numbers readable. What you must *not* do is pass the raw counts —
+the loss would then compute `softmax(n)`, a far more extreme distribution whose scale grows with the
+length of the series (same input: 7.76 instead of 0.94).
+
+### Run it
+
+```bash
+python main.py webtraffic --model ablations/seanet_simple_voting --smoke
+python main.py webtraffic --model ablations/seanet_simple_voting
+```
+
+---
+
+## 9. The settings, in one place
 
 ```yaml
 pooling:
